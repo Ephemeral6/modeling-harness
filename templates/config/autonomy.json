@@ -1,0 +1,16 @@
+{
+  "mode": "autonomous_until_s6",
+  "max_parallel_agents": 3,
+  "review_repair_loops": 3,
+  "same_blocker_stop_after": 3,
+  "progress_update_minutes": 45,
+  "long_run_checkpoint_minutes": 15,
+  "rules": {
+    "advance_after_gate": true,
+    "cold_start_reviewers": true,
+    "disjoint_file_ownership": true,
+    "resume_from_checkpoints": true,
+    "stop_after_stage": false
+  }
+}
+

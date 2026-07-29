@@ -27,3 +27,13 @@ Intake 模式。不要要求用户手动创建目录、复制文件、运行命�
 用户只需要上传文件并说：
 
 > 使用这个 Harness 完整解决该题。全程不使用 Claude，直接开始。
+
+## 自治推进
+
+Intake 后读取 `AUTOPILOT.md`，并立即运行：
+
+```powershell
+python -m modelharness.autopilot next
+```
+
+每次完成证据、审核或 gate 后再次运行。不得在 S0 或任一中间阶段结束任务；持续推进到 S6，除非满足 AUTOPILOT.md 中的明确停止条件。按返回的 parallel_agent_plan 创建文件写入范围互不重叠的 subagent，并让审核者冷启动。

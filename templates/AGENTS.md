@@ -35,3 +35,13 @@ verified 节点。
 角色提示词位于 `prompts/roles/`。只有任务确实可并行且文件写入范围互不重叠时，
 才创建 subagent。
 
+
+## Autopilot 持续执行
+
+本项目不是“一阶段一轮对话”。主控必须在每个工作单元后运行：
+
+```powershell
+python -m modelharness.autopilot next --project .
+```
+
+按照返回的阶段、phase、缺失证据、并行角色和文件所有权继续工作。gate 通过后立即再次调用并进入下一阶段，不能把 S0–S5 的完成当作回合终点。只有 S6 完成、需要用户新授权，或同一阻断连续三轮无法解决时才停止。
