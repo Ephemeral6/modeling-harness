@@ -1,0 +1,36 @@
+{
+  "principle": "论文不是按工作日志排列，而是按读者的认知问题排列。",
+  "sections": [
+    {
+      "title": "问题重构：真正要决定什么",
+      "question": "把题面翻译为可检验的决策问题、评价指标与成功标准。",
+      "evidence_kinds": ["problem", "decision"]
+    },
+    {
+      "title": "困难定位：信息缺口在哪里",
+      "question": "说明数据删失、不可辨识性、动态耦合或组合爆炸为何是核心障碍。",
+      "evidence_kinds": ["data", "assumption", "limitation"]
+    },
+    {
+      "title": "模型机制：结构怎样化解困难",
+      "question": "先给机制直觉，再给变量、方程和求解路径；每个复杂组件都要有必要性。",
+      "evidence_kinds": ["model", "claim"]
+    },
+    {
+      "title": "可信度链：为什么可以相信",
+      "question": "按不变量→已知解→留出验证→不确定性→敏感性组织证据，而非罗列图表。",
+      "evidence_kinds": ["experiment", "result", "code"]
+    },
+    {
+      "title": "决策答案：结论在什么条件下成立",
+      "question": "先给行动建议，再给收益、风险、稳定范围、基线比较和失效条件。",
+      "evidence_kinds": ["decision", "result", "limitation"]
+    },
+    {
+      "title": "边界与迁移：模型何时需要重做",
+      "question": "明确外推边界、触发器、所需新增数据，以及可迁移的结构。",
+      "evidence_kinds": ["limitation", "assumption", "decision"]
+    }
+  ]
+}
+

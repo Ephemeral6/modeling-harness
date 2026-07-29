@@ -1,0 +1,45 @@
+{
+  "s0": {
+    "name": "题意诊断与成功标准",
+    "requires": ["problem.statement", "problem.success"],
+    "reviews": [],
+    "checks": []
+  },
+  "s1": {
+    "name": "候选模型竞争与形式化",
+    "requires": ["model.spec", "model.assumptions"],
+    "reviews": ["reviews/s1_referee.json", "reviews/s1_redteam.json"],
+    "checks": []
+  },
+  "s2": {
+    "name": "数据审计与参数估计",
+    "requires": ["data.ledger", "result.parameters"],
+    "reviews": ["reviews/s2_data_audit.json"],
+    "checks": []
+  },
+  "s3": {
+    "name": "求解器实现与分层验证",
+    "requires": ["code.solver", "experiment.toy", "result.nominal"],
+    "reviews": ["reviews/s3_numerics.json"],
+    "checks": ["python checks/run_all.py --max-level 2"]
+  },
+  "s4": {
+    "name": "不确定性、稳健性与反事实",
+    "requires": ["result.uq", "result.robustness"],
+    "reviews": ["reviews/s4_redteam.json"],
+    "checks": ["python checks/run_all.py --max-level 4"]
+  },
+  "s5": {
+    "name": "决策回答与预注册锁定",
+    "requires": ["decision.answer", "decision.lock"],
+    "reviews": [],
+    "checks": ["python checks/check_prediction_lock.py"]
+  },
+  "s6": {
+    "name": "论文成文与逐句证据复核",
+    "requires": ["narrative.paper"],
+    "reviews": ["reviews/s6_paper_audit.json"],
+    "checks": ["python -m modelharness narrative audit --paper paper/draft.md"]
+  }
+}
+
