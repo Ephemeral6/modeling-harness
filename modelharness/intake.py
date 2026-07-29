@@ -1,87 +1,112 @@
 from __future__ import annotations
 
 import mimetypes
+import os
 import re
 import shutil
+import uuid
+from datetime import datetime
 from pathlib import Path
 
+from .contracts import safe_relative
 from .scaffold import create
+from .storage import file_lock
 from .util import now, sha256, write_json
+
+WINDOWS_RESERVED = {
+    "con", "prn", "aux", "nul",
+    *(f"com{i}" for i in range(1, 10)),
+    *(f"lpt{i}" for i in range(1, 10)),
+}
 
 
 def slugify(value: str) -> str:
     value = re.sub(r"[^\w\u4e00-\u9fff-]+", "-", value, flags=re.UNICODE)
-    return (value.strip("-_").lower()[:48] or "modeling-task")
+    return value.strip("-_").lower()[:48] or "modeling-task"
 
 
-def unique_destination(directory: Path, name: str) -> Path:
-    target = directory / name
-    if not target.exists():
-        return target
-    stem, suffix = Path(name).stem, Path(name).suffix
-    index = 2
-    while (directory / f"{stem}_{index}{suffix}").exists():
-        index += 1
-    return directory / f"{stem}_{index}{suffix}"
+def safe_attachment_name(name: str) -> str:
+    candidate = Path(name).name
+    if candidate != name or ":" in candidate or "\x00" in candidate:
+        raise ValueError(f"非法附件名称: {name}")
+    stem = Path(candidate).stem.rstrip(". ").casefold()
+    if not candidate or stem in WINDOWS_RESERVED:
+        raise ValueError(f"Windows 保留附件名称: {name}")
+    return candidate
 
 
 def intake(harness_root: Path, title: str, prompt: str, files: list[Path],
            project_dir: Path | None = None) -> dict:
-    """Create an isolated run and preserve conversational inputs verbatim."""
     harness_root = harness_root.resolve()
     projects = harness_root / "projects"
     projects.mkdir(parents=True, exist_ok=True)
-    destination = (project_dir or projects / slugify(title)).resolve()
-    if not destination.is_relative_to(harness_root):
-        raise ValueError("Intake 项目必须位于 Harness 仓库内")
-    root = create(destination, title)
-    inbox = root / "problem" / "data_raw"
-    manifest, text_candidates = [], []
-    for raw in files:
-        source = raw.resolve()
-        if not source.is_file():
-            raise ValueError(f"附件不存在: {raw}")
-        target = unique_destination(inbox, source.name)
-        shutil.copy2(source, target)
-        mime, _ = mimetypes.guess_type(target.name)
-        manifest.append({
-            "original_path": str(source),
-            "stored_as": target.relative_to(root).as_posix(),
-            "name": target.name,
-            "bytes": target.stat().st_size,
-            "sha256": sha256(target),
-            "mime": mime or "application/octet-stream",
-            "received_at": now(),
+    sources = [Path(item).resolve(strict=True) for item in files]
+    if any(not source.is_file() for source in sources):
+        raise ValueError("所有 Intake 输入都必须是普通文件")
+    names = [safe_attachment_name(source.name) for source in sources]
+    with file_lock(projects / "intake", timeout=30):
+        if project_dir:
+            destination = safe_relative(harness_root, project_dir)
+            if destination.exists():
+                raise ValueError(f"目标项目已存在: {destination}")
+        else:
+            stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            destination = projects / f"{slugify(title)}--{stamp}"
+            counter = 2
+            while destination.exists():
+                destination = projects / f"{slugify(title)}--{stamp}-{counter}"
+                counter += 1
+        staging = projects / f".intake-{uuid.uuid4().hex}"
+        try:
+            root = create(staging, title)
+            inbox = root / "problem" / "data_raw"
+            manifest, text_candidates = [], []
+            for index, (source, name) in enumerate(zip(sources, names), start=1):
+                target = inbox / f"{index:03d}__{name}"
+                shutil.copy2(source, target, follow_symlinks=False)
+                mime, _ = mimetypes.guess_type(name)
+                manifest.append({
+                    "index": index, "original_name": name,
+                    "stored_as": target.relative_to(root).as_posix(),
+                    "bytes": target.stat().st_size, "sha256": sha256(target),
+                    "mime": mime or "application/octet-stream",
+                    "received_at": now(),
+                })
+                if source.suffix.lower() in {".md", ".txt"}:
+                    text_candidates.append(target)
+            (root / "problem" / "user_prompt.md").write_text(
+                "# 用户任务要求\n\n" + prompt.strip() + "\n", encoding="utf-8"
+            )
+            statement = root / "problem" / "statement.md"
+            if len(text_candidates) == 1:
+                statement.write_text(
+                    text_candidates[0].read_text(encoding="utf-8", errors="replace"),
+                    encoding="utf-8",
+                )
+            else:
+                listing = "\n".join(f"- `{x['stored_as']}`" for x in manifest)
+                statement.write_text(
+                    "# 待解析题面\n\nS0 必须读取下列原始附件并识别题面，"
+                    "不得凭文件名推测内容：\n\n" + listing + "\n",
+                    encoding="utf-8",
+                )
+            write_json(root / "problem" / "intake_manifest.json", {
+                "schema": 2, "title": title, "received_at": now(),
+                "user_prompt": "problem/user_prompt.md", "files": manifest,
+            })
+            os.replace(staging, destination)
+        except BaseException:
+            if staging.exists():
+                shutil.rmtree(staging)
+            raise
+        write_json(projects / ".current.json", {
+            "schema": 2,
+            "project": destination.relative_to(harness_root).as_posix(),
+            "title": title, "updated_at": now(),
         })
-        if target.suffix.lower() in {".md", ".txt"}:
-            text_candidates.append(target)
-    (root / "problem" / "user_prompt.md").write_text(
-        "# 用户任务要求\n\n" + prompt.strip() + "\n", encoding="utf-8"
-    )
-    statement = root / "problem" / "statement.md"
-    if len(text_candidates) == 1:
-        statement.write_text(
-            text_candidates[0].read_text(encoding="utf-8", errors="replace"),
-            encoding="utf-8",
-        )
-    else:
-        names = "\n".join(f"- `{x['stored_as']}`" for x in manifest)
-        statement.write_text(
-            "# 待解析题面\n\n题面包含在本次对话上传的附件中。S0 必须先读取并"
-            "解析以下原始文件，不得凭文件名推测内容：\n\n" + names + "\n",
-            encoding="utf-8",
-        )
-    manifest_path = root / "problem" / "intake_manifest.json"
-    write_json(manifest_path, {
-        "schema": 1, "title": title, "received_at": now(),
-        "user_prompt": "problem/user_prompt.md", "files": manifest,
-    })
-    write_json(harness_root / ".modelharness-current.json", {
-        "project": root.relative_to(harness_root).as_posix(),
-        "title": title, "updated_at": now(),
-    })
     return {
-        "project": str(root), "title": title,
-        "files_received": len(manifest), "manifest": str(manifest_path),
-        "next_action": "读取项目 AGENTS.md、题面、user_prompt.md 和 manifest，执行 S0。",
+        "project": str(destination), "title": title,
+        "files_received": len(sources),
+        "manifest": str(destination / "problem" / "intake_manifest.json"),
+        "next_action": "运行 modelharness autopilot next 并持续推进到 S6。",
     }

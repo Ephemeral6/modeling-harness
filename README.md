@@ -1,176 +1,104 @@
-# Modeling Harness
+# Modeling Harness 2.0
 
-面向真实数学建模问题的、证据门禁式多智能体执行系统。它不是提示词合集，也不是
-Codex Skill：它是一个可复制的项目骨架、命令行控制面、证据 DAG、阶段门禁、独立
-审核协议和论文叙事流水线。
+面向真实数学建模任务的、可恢复的多智能体执行框架。用户在 Codex 中上传题目与附件
+并说“直接开始”，系统自动创建隔离项目，持续推进 S0–S6，协调 subagent，验证证据，
+处理返工，并从可信证据生成论文。
 
-## 核心闭环
+## 2.0 架构
 
 ```text
-题面 → 候选模型竞争 → 数据/实现 → 分层验证 → UQ/红队
-  → 决策锁定 → 证据驱动成文 → 论文逐句复核
-                ↑
-       verified evidence DAG
+Codex Conversation / CLI
+          ↓
+Unified Command Interface
+          ↓
+Autonomous Workflow Engine ── SQLite task lease / heartbeat / retry
+          ↓
+Stage Service ── chained, self-validating S0–S6 stamps
+          ↓
+Evidence Kernel ── typed DAG / atomic transaction / cascade revoke
+          ↓
+Filesystem + Process Adapters ── atomic JSON / locks / checkpoints
 ```
 
-系统借鉴 Danus 的职责隔离：主控负责计划与调度，工作者探索局部任务，独立验证器
-掌握“写入真相层”的唯一入口；但本系统把 theorem fact graph 扩展成建模 evidence
-graph，使数据血缘、假设、代码、实验、结果、决策和限制都可追溯。
+核心不变量：
 
-## 与普通 Agent 的区别
+- 所有 JSON 状态使用临时文件、`fsync` 和原子替换；
+- Evidence 读改写有跨进程锁和 revision；
+- Subagent 任务保存在 SQLite，支持 claim、lease、heartbeat、失败恢复；
+- 父目录和子目录被视为冲突写入范围；
+- Gate 印章覆盖配置、上游印章、证据和审核哈希；
+- 伪造、陈旧或上游失效的印章不能推动 Autopilot；
+- 状态损坏时 fail closed，不把缺失/损坏解释成空状态；
+- 撤销证据时保守失效下游阶段，旧印章归档而非直接删除。
 
-- 计划和草稿不等于事实；只有通过检查的节点才是 `verified`。
-- 上游证据撤销会沿依赖图级联撤销下游结论。
-- S0–S6 门禁阻止“模型没验证就优化、稳健性没做就写唯一最优”等跳步。
-- 论文写作者只能读取 verified 证据包；论文审核者再逐句检查结论强度。
-- Harness 不绑定 Claude、Codex CLI 或某个模型。Codex Desktop 是推荐的交互主控。
+详细设计见 [ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md)。
 
-## 安装
-
-在 PowerShell 中：
+## 对话式使用
 
 ```powershell
-cd C:\Users\你的用户名\Desktop\数学建模\modeling-harness
+git clone https://github.com/Ephemeral6/modeling-harness.git
+cd modeling-harness
 python -m pip install -e .
-modelharness --help
 ```
 
-不安装也可使用：
+在 Codex Desktop 中打开仓库，上传题面 PDF、Word、Excel、CSV 等文件，然后说：
+
+> 使用这个 Harness 完整解决该题。全程不使用 Claude，直接开始。
+
+根目录 `AGENTS.md` 会要求 Codex 自动 Intake，并持续调用：
 
 ```powershell
-$env:PYTHONPATH="C:\...\modeling-harness"
-python -m modelharness.cli --help
+modelharness autopilot next
 ```
 
-## 创建项目
+直到 S6 完成或遇到真正需要用户输入/授权的阻断。
+
+## 统一 CLI
 
 ```powershell
-modelharness new C:\work\contest-2026-A --title "2026 国赛 A 题"
-cd C:\work\contest-2026-A
-```
-
-把题面写入 `problem/statement.md`，原始数据放入 `problem/data_raw/`，然后在 Codex
-中打开该目录。
-
-## 证据图
-
-候选结论先登记：
-
-```powershell
-modelharness evidence add problem.statement `
-  --kind problem `
-  --statement "题面和约束已完整登记" `
-  --artifact problem/statement.md
-
-modelharness evidence verify problem.statement
-```
-
-带依赖和机械检查的节点：
-
-```powershell
-modelharness evidence add result.nominal `
-  --kind result `
-  --statement "标称场景求解结果" `
-  --artifact results/nominal.json `
-  --depends code.solver,result.parameters `
-  --check "python checks/l2_nominal.py"
-
-modelharness evidence verify result.nominal
-```
-
-如果上游假设被推翻：
-
-```powershell
-modelharness evidence revoke model.assumptions --reason "留出残差显示时序相关"
-modelharness invalidate s1
-```
-
-## 阶段推进
-
-`config/stages.json` 定义每阶段必须存在的 verified 节点、独立审核 JSON 和机械检查：
-
-```powershell
+modelharness intake --title "真实题目" --prompt "完整解决" --file 题面.pdf --file 数据.xlsx
 modelharness status
+modelharness doctor
+modelharness autopilot next
+
+modelharness evidence add result.nominal --kind result `
+  --statement "标称求解结果" --artifact results/nominal.json
+modelharness evidence verify result.nominal
+
+modelharness task list
+modelharness task claim TASK_ID --worker solver-agent
+modelharness task heartbeat TASK_ID --worker solver-agent
+modelharness task finish TASK_ID --worker solver-agent --result '{"artifact":"results/x.json"}'
+
 modelharness gate s0
-modelharness gate s1
-```
-
-推荐阶段：
-
-| 阶段 | 交付目标 |
-|---|---|
-| S0 | 题意、决策问题、成功标准、失效出口 |
-| S1 | 多候选竞争、正式模型、假设与验证映射 |
-| S2 | 数据血缘、清洗、参数估计和数据审计 |
-| S3 | 求解器、toy、已知解、标称结果和数值审计 |
-| S4 | 留出验证、UQ、敏感性、基线、反事实和红队 |
-| S5 | 最终决策、适用条件、预测/结果哈希锁 |
-| S6 | 证据驱动成文、逐句论文复核 |
-
-模板里的节点名是契约，可以在 `config/stages.json` 中按题目调整。
-
-## 论文叙事
-
-生成只包含已验证材料的写作包：
-
-```powershell
+modelharness invalidate s2 --reason "数据口径变化"
 modelharness narrative build
+modelharness narrative audit
 ```
 
-写作者按六个读者问题组织，而不是按工作时间线：
+旧的模块入口 `python -m modelharness.conversation` 与
+`python -m modelharness.autopilot next` 仍可使用，但推荐统一 CLI。
 
-1. 真正要做什么决策？
-2. 题目的核心信息困难是什么？
-3. 模型的哪一部分化解了这个困难？
-4. 哪条验证链说明结果可信？
-5. 在收益、风险和基线下应采取什么行动？
-6. 在什么条件下结论失效或需要重做？
+## S0–S6
 
-正文关键句保留 `[[result.uq]]` 这样的节点引用。审核：
+| 阶段 | 目标 |
+|---|---|
+| S0 | 题意、决策问题、数据清单、成功标准和失效出口 |
+| S1 | 多候选竞争、正式模型、假设与验证映射 |
+| S2 | 数据血缘、清洗、估计与数据审核 |
+| S3 | 求解器、toy、已知解与数值审核 |
+| S4 | 留出验证、UQ、基线、敏感性和稳健性 |
+| S5 | 条件式决策、复跑和结果锁定 |
+| S6 | 证据驱动成文与逐句论文复核 |
+
+## 开发与测试
 
 ```powershell
-modelharness narrative audit --paper paper/draft.md
+python -m pytest -q
+python -m compileall -q modelharness
 ```
 
-## 在 Codex Desktop 中使用
+测试覆盖并发 Evidence 更新、半写 JSON、伪造/陈旧印章、附件重试、写入范围冲突、
+worker lease 过期恢复、Autopilot 幂等任务生成和验证失败持久化。
 
-打开新项目目录，给主控第一条消息：
-
-> 读取 AGENTS.md 和 modeling-project.json。你是 Main Orchestrator。接管这个真实
-> 数学建模问题，从 S0 开始；先检查现有状态和题面，建立任务图。可并行且写入不
-> 冲突时使用 subagent。每个阶段先完成证据登记和独立审核，再运行 gate；不要跨阶段。
-
-后续通常只需说：
-
-- “汇报状态，继续当前阶段。”
-- “开 3 个 subagent 独立提出不同候选模型，禁止互相读取草稿。”
-- “让无状态 numerics-auditor 只看规格、代码和产物做复核。”
-- “发现上游问题就撤销依赖节点并返工，不要修饰最终文字。”
-- “S5 通过后生成 narrative brief，再写论文并让 paper-verifier 逐句审。”
-
-Codex 会自动读取项目根目录的 `AGENTS.md`。角色的细化合同位于
-`prompts/roles/`；主控应把相应合同和明确的文件写入范围交给 subagent。
-
-## 项目目录
-
-```text
-.harness/          证据图与不可伪造的阶段印章
-config/            阶段契约、论文叙事配置
-problem/           题面和只读原始数据
-data/              清洗数据与血缘账本
-docs/              规格、假设、决策日志
-src/               模型与求解器
-checks/            L0–L5 分层机械检查
-results/           机器生成结果
-reviews/           独立审核 JSON
-predictions/       最终决策/预测及哈希锁
-paper/             证据包和论文
-prompts/roles/     多智能体角色合同
-```
-
-## 设计边界
-
-Harness 能强制留下证据链和阻止明显跳步，但不能保证研究问题必然可解，也不能替代
-参赛者对创新性、题意取舍和最终表达负责。外部数据、文献和竞赛规则仍需人工核验；
-超长计算应使用检查点和互不重叠的 worker 范围。
-
+项目采用 [MIT License](LICENSE)。

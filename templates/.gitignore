@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Ephemeral workflow runtime; evidence and stage stamps remain trackable.
+.harness/*.lock
+.harness/*.sqlite3
+.harness/*.sqlite3-wal
+.harness/*.sqlite3-shm
+logs/*.log
+
+# Large generated simulation shards should be archived deliberately.
+results/checkpoints/
+results/shards/
