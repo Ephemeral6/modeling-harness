@@ -1,0 +1,20 @@
+{
+  "name": "differential-equations",
+  "version": "1.0.0",
+  "description": "常微分、偏微分和动力系统的量纲、离散化与收敛验证。",
+  "task_types": ["differential_equations", "simulation"],
+  "protocol": [
+    "先做量纲分析、守恒律、平衡点和解析极限",
+    "明确初边值条件、离散格式、步长和稳定性条件",
+    "执行网格或步长加密并与解析解或高精度参考对拍",
+    "报告误差阶、守恒误差和参数敏感性"
+  ],
+  "required_tests": ["解析极限", "网格收敛", "守恒或不变量", "步长敏感性"],
+  "fallbacks": ["不稳定时采用更保守格式并缩小可解释时间范围"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["differential_equations"],
+    "preferred_capabilities": ["symbolic_math", "numerical_computing", "visualization"],
+    "validation_protocols": ["解析解对拍", "网格收敛", "守恒检查"]
+  }
+}

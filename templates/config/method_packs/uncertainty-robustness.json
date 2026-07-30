@@ -1,14 +1,20 @@
 {
   "name": "uncertainty-robustness",
-  "version": "1.0.0",
-  "description": "留出验证、不确定性传播、强基线和失效域搜索。",
-  "task_types": ["uncertainty_robustness", "sensitivity_analysis"],
+  "version": "1.1.0",
+  "description": "区分参数、随机和结构不确定性并定位结论翻转边界。",
+  "task_types": ["uncertainty_robustness"],
   "protocol": [
-    "区分参数不确定性、结构不确定性与内禀随机性",
-    "使用独立检验批比较强基线",
-    "沿不可辨识方向和分布偏移搜索结论翻转边界",
-    "最优不稳定时改报集合、区间或条件式建议"
+    "区分参数误差、内禀随机性、结构选择和分布偏移",
+    "锁定随机种子、采样方案、基线与评价指标",
+    "运行灵敏度、反事实、留出、压力和翻转边界扫描",
+    "不稳结论改报区间、集合或条件式结果"
   ],
-  "required_tests": ["强基线", "留出验证", "翻转边界"],
-  "fallbacks": ["稳健集为空时诚实报告方向、区间和新增数据需求"]
+  "required_tests": ["重复种子", "强基线", "翻转边界", "覆盖率或校准"],
+  "fallbacks": ["计算预算不足时采用分层抽样并报告蒙特卡洛误差"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["numerical_computing"],
+    "preferred_capabilities": ["monte_carlo", "statistics", "uncertainty_quantification", "diagnostic_plotting"],
+    "validation_protocols": ["重复种子", "收敛诊断", "基线与翻转边界"]
+  }
 }

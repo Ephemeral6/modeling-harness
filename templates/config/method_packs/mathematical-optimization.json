@@ -1,0 +1,20 @@
+{
+  "name": "mathematical-optimization",
+  "version": "1.0.0",
+  "description": "线性、整数、凸或非线性规划的建模、求解与最优性验证。",
+  "task_types": ["optimization", "routing", "scheduling"],
+  "protocol": [
+    "显式声明变量、目标、约束、单位、尺度和可行性",
+    "根据结构选择 LP、MIP、CP、凸或非线性后端",
+    "在可枚举小实例上对拍并检查全部约束残差",
+    "报告 gap、界、终止条件、运行时间和不可行诊断"
+  ],
+  "required_tests": ["穷举或解析 toy", "约束残差", "下界或 gap", "独立后端对拍"],
+  "fallbacks": ["精确求解超时则给界、可行解和启发式质量证据"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": [],
+    "preferred_capabilities": ["continuous_optimization", "mixed_integer_optimization", "constraint_programming", "formal_constraints"],
+    "validation_protocols": ["穷举 toy", "约束残差", "双后端对拍", "最优性 gap"]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "machine-learning",
+  "version": "1.0.0",
+  "description": "防泄漏、强基线、校准和分布偏移下的机器学习协议。",
+  "task_types": ["machine_learning", "classification", "regression"],
+  "protocol": [
+    "先锁定标签定义、预测时点、数据切分和评价指标",
+    "所有预处理只在训练折拟合并审计泄漏",
+    "与常数、线性和领域简单规则基线比较",
+    "执行校准、子群、偏移和误差案例分析"
+  ],
+  "required_tests": ["泄漏检查", "简单基线", "嵌套或留出验证", "校准与子群误差"],
+  "fallbacks": ["复杂模型无稳定增益时回退到可解释基线"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["machine_learning"],
+    "preferred_capabilities": ["model_selection", "statistics", "diagnostic_plotting"],
+    "validation_protocols": ["防泄漏切分", "简单基线", "校准", "偏移压力测试"]
+  }
+}

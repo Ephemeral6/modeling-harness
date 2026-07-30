@@ -6,42 +6,45 @@
 2. 在同一条消息上传题面、数据、图片和参考材料。
 3. 输入：
 
-   > 使用这个 Harness 完整解决该题。全程不使用 Claude，直接开始。
+   > 使用 Modeling Harness 完整解决该题，允许 Agent 自主选择本地计算工具，直接开始。
 
-不需要手工建目录、复制附件或粘贴启动提示词。
+不需要手工建目录、复制附件、安装所有可选工具或粘贴启动提示词。
 
 ## Codex 自动执行
 
 根目录 `AGENTS.md` 要求 Codex：
 
-- 取得附件本地路径和用户原始要求；
-- 执行 `modelharness intake`；
-- 创建隔离项目并锁定原始附件哈希；
-- 生成 Intake manifest、用户要求和初始 Problem Graph；
-- 快照方法包和交付 Profile；
-- 运行 `modelharness doctor`；
-- 运行 `modelharness work next`；
-- 按关键局部问题前沿持续推进到完整交付。
+- 执行 Intake，创建隔离项目并锁定原始附件哈希；
+- 选择交付 Profile，生成初始 Problem Graph；
+- 快照方法包、工具目录、自主策略和计算环境；
+- 运行 `modelharness doctor` 与 `modelharness tool doctor`；
+- 按关键局部问题前沿持续推进；
+- 对每个计算节点自主选择 use 或 skip 并记录理由；
+- use 时记录工具版本、命令、种子、输入输出哈希、日志和验证；
+- 持续运行 `work next`，直到完整交付。
 
-项目位于 `projects/`，默认不进入 Git。
+默认自主权限覆盖项目内本地计算，不覆盖联网、安装、商业许可证和项目外写入。
 
 ## 手工调试
 
 ```powershell
 modelharness intake `
   --title "真实题目测试" `
-  --prompt "完整解决，全程不使用 Claude" `
+  --prompt "完整解决，Agent 自主选择本地计算工具" `
   --file "C:\path\题面.pdf" `
   --file "C:\path\附件.xlsx"
 
+modelharness profile use cumcm
+modelharness doctor
+modelharness tool doctor
 modelharness plan show
 modelharness work next
 ```
 
-默认 Profile 为 `general`。需要时可在开始研究前选择：
+工具决策示例：
 
 ```powershell
-modelharness profile use cumcm
-modelharness profile use mcm_icm
-modelharness profile use real_world
+modelharness tool recommend s3.solver_validation
+modelharness tool decide s3.solver_validation `
+  --action auto --reason "需要正式求解、toy 和残差检查"
 ```

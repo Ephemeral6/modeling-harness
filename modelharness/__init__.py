@@ -1,3 +1,3 @@
-"""Modeling Harness: problem-graph-driven evidence-gated orchestration."""
+"""Modeling Harness: problem-graph and toolchain-driven orchestration."""
 
-__version__ = "3.0.0"
+__version__ = "3.1.0"

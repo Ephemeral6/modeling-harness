@@ -1,0 +1,20 @@
+{
+  "name": "bayesian-modeling",
+  "version": "1.0.0",
+  "description": "先验预测、后验诊断和贝叶斯决策协议。",
+  "task_types": ["bayesian_modeling", "statistical_estimation"],
+  "protocol": [
+    "明确似然、先验、层级结构与可辨识性",
+    "执行先验预测检查和合成真值回收",
+    "报告链、R-hat、有效样本量、发散和后验预测",
+    "比较先验敏感性并把后验传播到决策"
+  ],
+  "required_tests": ["先验预测", "合成真值回收", "R-hat 与 ESS", "后验预测"],
+  "fallbacks": ["采样失败时简化参数化或报告部分辨识集合"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["bayesian_inference"],
+    "preferred_capabilities": ["bayesian_diagnostics", "monte_carlo", "diagnostic_plotting"],
+    "validation_protocols": ["先验预测", "真值回收", "链诊断", "后验预测"]
+  }
+}

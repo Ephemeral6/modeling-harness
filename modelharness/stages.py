@@ -1,303 +1,34 @@
-"""Authoritative milestone service with self-validating chained stamps."""
+"""Milestone facade binding autonomous computation decisions and runs."""
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
-from .checks import run_check
-from .contracts import STAGES, validate_review, validate_stage_config
-from .evidence import EvidenceGraph
-from .method_packs import MethodPackRegistry
 from .problem_graph import ProblemGraph
-from .profiles import ProfileService
-from .storage import file_lock, read_json
-from .util import now, sha256, write_json
+from .stages_core import StageService as _StageService
+from .toolchain import ToolchainService
+from .toolchain_registry import ToolRegistry
 
 
-class StageService:
+class StageService(_StageService):
     def __init__(self, project: Path):
-        self.project = project.resolve()
-        self.config_path = self.project / "config" / "stages.json"
-        self.stamps = self.project / ".harness" / "stamps"
-
-    @property
-    def config(self) -> dict:
-        data = read_json(self.config_path)
-        if data is None:
-            raise ValueError(f"阶段配置缺失: {self.config_path}")
-        return validate_stage_config(data)
-
-    def stamp_path(self, stage: str) -> Path:
-        if stage not in STAGES:
-            raise ValueError(f"非法阶段: {stage}")
-        return self.stamps / f"{stage}.json"
+        # ToolRegistry performs one-time V3.0 -> V3.1 config migration before
+        # ProblemGraph starts including tool configuration in contract hashes.
+        ToolRegistry(project)
+        super().__init__(project)
 
     def _problem_metadata(self, stage: str) -> dict:
-        graph = ProblemGraph(self.project)
-        if not graph.exists:
-            return {}
-        names = {
-            node.get("method_pack", "generic")
-            for node in graph.nodes.values()
-            if not node.get("superseded", False)
-            and STAGES.index(node["milestone"]) <= STAGES.index(stage)
-        }
-        return {
-            "problem_closure_sha256": graph.closure_hash(stage),
-            "delivery_profile_sha256": ProfileService(
+        metadata = super()._problem_metadata(stage)
+        if ProblemGraph(self.project).exists:
+            metadata["toolchain_contract_sha256"] = ToolRegistry(
                 self.project
-            ).content_hash(),
-            "method_pack_closure_sha256": MethodPackRegistry(
-                self.project
-            ).closure_hash(names),
-        }
-
-    def validate_stamp(self, stage: str) -> list[str]:
-        errors = []
-        path = self.stamp_path(stage)
-        try:
-            stamp = read_json(path)
-        except RuntimeError as exc:
-            return [str(exc)]
-        if not isinstance(stamp, dict):
-            return [f"{stage}: 印章缺失或损坏"]
-        if stamp.get("schema") not in {2, 3} or stamp.get("stage") != stage:
-            errors.append(f"{stage}: 印章 schema/stage 非法")
-        expected_config = sha256(self.config_path)
-        if stamp.get("config_sha256") != expected_config:
-            errors.append(f"{stage}: 阶段配置在落章后发生变化")
-        index = STAGES.index(stage)
-        if index:
-            previous = self.stamp_path(STAGES[index - 1])
-            if not previous.is_file():
-                errors.append(f"{stage}: 上游印章缺失")
-            elif stamp.get("previous_stamp_sha256") != sha256(previous):
-                errors.append(f"{stage}: 上游印章链不匹配")
-        if stamp.get("schema") == 3:
-            try:
-                expected_meta = self._problem_metadata(stage)
-                for field, value in expected_meta.items():
-                    if stamp.get(field) != value:
-                        errors.append(f"{stage}: {field} 已变化")
-            except (ValueError, RuntimeError) as exc:
-                errors.append(f"{stage}: V3 合同审计失败: {exc}")
-        graph = EvidenceGraph(self.project)
-        nodes = graph.nodes
-        for item in stamp.get("evidence", []):
-            node = nodes.get(item.get("id"))
-            if not node or node.get("status") != "verified":
-                errors.append(f"{stage}: 印章证据已失效: {item.get('id')}")
-            elif node.get("artifact_sha256") != item.get("sha256"):
-                errors.append(f"{stage}: 印章证据哈希不匹配: {item.get('id')}")
-            elif (
-                item.get("obligation_hash") is not None
-                and node.get("obligation_hash") != item["obligation_hash"]
-            ):
-                errors.append(f"{stage}: 证据合同哈希不匹配: {item.get('id')}")
-        errors.extend(f"{stage}: {item}" for item in graph.audit())
-        for item in stamp.get("reviews", []):
-            review = self.project / item["path"]
-            if not review.is_file() or sha256(review) != item.get("sha256"):
-                errors.append(f"{stage}: 审核文件缺失或变更: {item['path']}")
-        return errors
-
-    def valid_prefix(self) -> list[str]:
-        valid = []
-        for stage in STAGES:
-            if not self.stamp_path(stage).is_file():
-                break
-            if self.validate_stamp(stage):
-                break
-            valid.append(stage)
-        return valid
-
-    def current(self) -> str | None:
-        prefix = self.valid_prefix()
-        return None if len(prefix) == len(STAGES) else STAGES[len(prefix)]
-
-    def _required_evidence(self, stage: str) -> list[tuple[str, str | None, bool]]:
-        required = [
-            (node_id, None, False)
-            for node_id in self.config[stage]["requires"]
-        ]
-        graph = ProblemGraph(self.project)
-        if graph.exists:
-            required.extend(graph.milestone_outputs(stage))
-        result = {}
-        for evidence_id, contract, enforce in required:
-            existing = result.get(evidence_id)
-            if existing and existing[0] and contract and existing[0] != contract:
-                raise RuntimeError(
-                    f"同一阶段对 {evidence_id} 声明了冲突合同"
-                )
-            result[evidence_id] = (
-                contract or (existing[0] if existing else None),
-                enforce or (existing[1] if existing else False),
-            )
-        return [
-            (evidence_id, contract, enforce)
-            for evidence_id, (contract, enforce) in result.items()
-        ]
+            ).catalog_hash()
+        return metadata
 
     def gate(self, stage: str) -> dict:
-        if stage != self.current():
-            raise RuntimeError(
-                f"当前不可签发 {stage}；有效前缀为 {self.valid_prefix()}"
-            )
-        spec = self.config[stage]
-        graph = EvidenceGraph(self.project)
-        errors = graph.audit()
-        nodes = graph.nodes
-        required = self._required_evidence(stage)
-        for node_id, contract, enforce in required:
-            node = nodes.get(node_id)
-            if not node or node.get("status") != "verified":
-                errors.append(f"缺少 verified 证据: {node_id}")
-            elif enforce and node.get("obligation_hash") != contract:
-                errors.append(f"证据未绑定当前问题合同: {node_id}")
-        reviews = []
-        for relative in spec["reviews"]:
-            path = self.project / relative
-            if not path.is_file():
-                errors.append(f"独立审核缺失: {relative}")
-                continue
-            try:
-                review = validate_review(read_json(path), path)
-                if review["verdict"].upper() != "APPROVE":
-                    errors.append(f"审核拒绝: {relative}")
-            except ValueError as exc:
-                errors.append(str(exc))
-                continue
-            reviews.append({"path": relative, "sha256": sha256(path)})
-        checks = [run_check(self.project, raw) for raw in spec["checks"]]
-        for item in checks:
-            if not item["ok"]:
-                errors.append(f"机械检查失败: {item['argv']}")
-        problem_meta = {}
         if ProblemGraph(self.project).exists:
-            pack_errors = MethodPackRegistry(self.project).audit()
-            errors.extend(pack_errors)
-            problem_meta = self._problem_metadata(stage)
-        if errors:
-            raise RuntimeError("\n".join(errors))
-        index = STAGES.index(stage)
-        previous_hash = (
-            sha256(self.stamp_path(STAGES[index - 1])) if index else None
-        )
-        record = {
-            "schema": 3 if problem_meta else 2,
-            "stage": stage,
-            "name": spec["name"],
-            "time": now(),
-            "config_sha256": sha256(self.config_path),
-            "previous_stamp_sha256": previous_hash,
-            "evidence_revision": graph.data["revision"],
-            "evidence": [
-                {
-                    "id": node_id,
-                    "sha256": nodes[node_id]["artifact_sha256"],
-                    "obligation_hash": (
-                        nodes[node_id].get("obligation_hash")
-                        if enforce else None
-                    ),
-                }
-                for node_id, _contract, enforce in required
-            ],
-            "reviews": reviews,
-            "checks": checks,
-            **problem_meta,
-        }
-        with file_lock(self.project / ".harness" / "stage", timeout=30):
-            with file_lock(graph.path, timeout=30):
-                fresh_graph = EvidenceGraph(self.project)
-                fresh_nodes = fresh_graph.nodes
-                if fresh_graph.data["revision"] != record["evidence_revision"]:
-                    raise RuntimeError("evidence changed during gate signing")
-                if fresh_graph.audit():
-                    raise RuntimeError("evidence became invalid during gate signing")
-                for item in record["evidence"]:
-                    node = fresh_nodes.get(item["id"])
-                    artifact = self.project / node["artifact"] if node else None
-                    if (
-                        not node
-                        or node["status"] != "verified"
-                        or not artifact.is_file()
-                        or sha256(artifact) != item["sha256"]
-                    ):
-                        raise RuntimeError(f"signed evidence changed: {item['id']}")
-                    if (
-                        item.get("obligation_hash") is not None
-                        and node.get("obligation_hash") != item["obligation_hash"]
-                    ):
-                        raise RuntimeError(
-                            f"signed obligation changed: {item['id']}"
-                        )
-                if sha256(self.config_path) != record["config_sha256"]:
-                    raise RuntimeError("stage config changed during gate signing")
-                for item in record["reviews"]:
-                    review_path = self.project / item["path"]
-                    if (
-                        not review_path.is_file()
-                        or sha256(review_path) != item["sha256"]
-                    ):
-                        raise RuntimeError(f"review changed: {item['path']}")
-                if problem_meta != self._problem_metadata(stage):
-                    raise RuntimeError("problem/profile/method contract changed")
-                if stage != self.current():
-                    raise RuntimeError("stage state changed during gate signing")
-                write_json(self.stamp_path(stage), record)
-        return record
-
-    def earliest_stage_for_evidence(self, evidence_ids: list[str]) -> str:
-        targets = set(evidence_ids)
-        for stage in STAGES:
-            stamp = read_json(self.stamp_path(stage))
-            if isinstance(stamp, dict) and any(
-                item.get("id") in targets
-                for item in stamp.get("evidence", [])
-            ):
-                return stage
-        graph = ProblemGraph(self.project)
-        if graph.exists:
-            candidates = [
-                node["milestone"]
-                for node in graph.nodes.values()
-                if any(
-                    output["evidence_id"] in targets
-                    for output in node["outputs"]
-                )
-            ]
-            if candidates:
-                return min(candidates, key=STAGES.index)
-        return self.current() or "s6"
-
-    def invalidate_for_evidence(
-        self, evidence_ids: list[str], reason: str
-    ) -> list[str]:
-        return self.invalidate(
-            self.earliest_stage_for_evidence(evidence_ids), reason
-        )
-
-    def invalidate(self, stage: str, reason: str) -> list[str]:
-        if stage not in STAGES:
-            raise ValueError(f"非法阶段: {stage}")
-        archive = (
-            self.project / ".harness" / "archive" /
-            now().replace(":", "-")
-        )
-        moved = []
-        with file_lock(self.project / ".harness" / "stage", timeout=30):
-            for item in STAGES[STAGES.index(stage):]:
-                path = self.stamp_path(item)
-                if path.exists():
-                    archive.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(path), str(archive / path.name))
-                    moved.append(item)
-            if moved:
-                write_json(archive / "invalidation.json", {
-                    "time": now(),
-                    "from_stage": stage,
-                    "reason": reason,
-                    "stamps": moved,
-                })
-        return moved
+            registry_errors = ToolRegistry(self.project).audit_catalog()
+            decision_errors = ToolchainService(self.project).audit_stage(stage)
+            errors = [*registry_errors, *decision_errors]
+            if errors:
+                raise RuntimeError("\n".join(errors))
+        return super().gate(stage)

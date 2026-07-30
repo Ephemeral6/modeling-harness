@@ -1,15 +1,20 @@
-"""Cross-node consistency audit for problem/evidence interfaces."""
+"""Cross-node consistency audit for problem, evidence and tool interfaces."""
 from __future__ import annotations
 
 from pathlib import Path
 
 from .evidence import EvidenceGraph
+from .method_packs import MethodPackRegistry
 from .problem_graph import ProblemGraph
+from .toolchain import ToolchainService, validate_tool_policy
+from .workflow import WorkflowEngine
 
 
 def audit_integration(root: Path) -> list[str]:
     graph = ProblemGraph(root)
-    evidence = EvidenceGraph(root).nodes
+    evidence_graph = EvidenceGraph(root)
+    evidence = evidence_graph.nodes
+    tasks = WorkflowEngine(root).list_tasks()
     errors = []
     declared_outputs = {
         output["evidence_id"]
@@ -17,6 +22,8 @@ def audit_integration(root: Path) -> list[str]:
         if not node.get("superseded", False)
         for output in node["outputs"]
     }
+    packs = MethodPackRegistry(root)
+    tools = ToolchainService(root)
     for node_id, node in graph.nodes.items():
         if node.get("superseded", False):
             continue
@@ -40,4 +47,9 @@ def audit_integration(root: Path) -> list[str]:
                 errors.append(
                     f"{node_id}: 输入证据既不存在也无生产义务: {input_id}"
                 )
+        if graph.completion(node_id, evidence):
+            pack = packs.match(node["task_type"], node.get("method_pack"))
+            policy = validate_tool_policy(pack.get("tool_policy"))
+            if policy["decision_required"]:
+                errors.extend(tools.audit_decision(node_id, required=True))
     return errors

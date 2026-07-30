@@ -1,14 +1,20 @@
 {
   "name": "decision-analysis",
-  "version": "1.0.0",
-  "description": "将结果分布转化为可行动且不过度外推的决策。",
-  "task_types": ["decision_analysis", "multiobjective_decision"],
+  "version": "1.1.0",
+  "description": "把验证后的结果转化为条件式行动、风险和触发器。",
+  "task_types": ["decision_analysis"],
   "protocol": [
-    "先声明行动、目标和风险容忍度",
-    "比较不行动与领域强基线",
-    "报告收益分布、稳定范围和触发器",
-    "区分期望最优、普遍最优和稳健集合"
+    "显式写出效用、损失、约束和利益相关者",
+    "基于分布或稳健集合比较行动，不只比较点估计",
+    "给出阈值、适用条件、失效触发器和重新建模条件",
+    "锁定机器结果后再形成自然语言建议"
   ],
-  "required_tests": ["基线收益", "结论稳定性", "失效触发器"],
-  "fallbacks": ["优势不显著时拒绝唯一最优结论"]
+  "required_tests": ["行动基线", "阈值敏感性", "最坏情形或后悔值"],
+  "fallbacks": ["偏好未知时报告 Pareto 集或情景表"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": [],
+    "preferred_capabilities": ["continuous_optimization", "mixed_integer_optimization", "monte_carlo", "visualization"],
+    "validation_protocols": ["简单行动基线", "阈值敏感性", "最坏情形"]
+  }
 }

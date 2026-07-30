@@ -29,6 +29,25 @@ def validate_method_pack(data: Any, path: Path | None = None) -> dict:
     for field in ("required_tests", "fallbacks"):
         if not isinstance(data.get(field, []), list):
             raise ValueError(f"method pack.{field} 必须是数组{where}")
+    tool_policy = data.get("tool_policy")
+    if tool_policy is not None:
+        if not isinstance(tool_policy, dict):
+            raise ValueError(f"method pack.tool_policy 必须是对象{where}")
+        if not isinstance(tool_policy.get("decision_required", False), bool):
+            raise ValueError(
+                f"method pack.tool_policy.decision_required 非法{where}"
+            )
+        for field in (
+            "required_capabilities", "preferred_capabilities",
+            "validation_protocols",
+        ):
+            value = tool_policy.get(field, [])
+            if not isinstance(value, list) or not all(
+                isinstance(item, str) and item for item in value
+            ):
+                raise ValueError(
+                    f"method pack.tool_policy.{field} 非法{where}"
+                )
     return data
 
 
@@ -107,4 +126,3 @@ class MethodPackRegistry:
             missing = [key for key, value in selected.items() if value is None]
             raise ValueError(f"问题图引用未知方法包: {missing}")
         return canonical_hash(selected)
-

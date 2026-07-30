@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "name": "cumcm",
+  "description": "国赛过程、数值结果与可复现代码环境",
+  "required_tools": ["python", "numpy", "scipy", "pandas", "matplotlib", "scikit-learn", "statsmodels", "networkx", "cvxpy", "ortools", "openpyxl"],
+  "optional_tools": ["sympy", "z3", "torch", "xgboost", "lightgbm", "simpy", "geopandas", "rasterio", "pandoc", "latexmk", "matlab"],
+  "constraints": [
+    {"tool": "python", "operator": ">=", "version": "3.10", "required": true},
+    {"tool": "cvxpy", "operator": ">=", "version": "1.5", "required": true},
+    {
+      "tool": "ortools",
+      "operator": "<",
+      "version": "9.15",
+      "required": false,
+      "message": "若需要通过 CVXPY 调用 GLOP/PDLP，请使用 OR-Tools <9.15；独立 OR-Tools 不受影响"
+    }
+  ],
+  "pip_requirements": [
+    "numpy>=1.26,<3",
+    "scipy>=1.11,<2",
+    "pandas>=2,<4",
+    "matplotlib>=3.8,<4",
+    "scikit-learn>=1.4,<2",
+    "statsmodels>=0.14,<1",
+    "networkx>=3.2,<4",
+    "cvxpy>=1.5,<2",
+    "ortools>=9.10,<9.15",
+    "openpyxl>=3.1,<4"
+  ]
+}

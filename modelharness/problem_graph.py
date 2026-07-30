@@ -1,4 +1,4 @@
-"""Final Problem Graph facade with method-pack content in node contracts."""
+"""Problem Graph facade binding method-pack and toolchain configuration."""
 from __future__ import annotations
 
 from .problem_graph_core import (
@@ -30,4 +30,25 @@ class ProblemGraph(_ProblemGraph):
                 f"问题节点方法包不存在或重名: {node_id}/{pack_name}"
             )
         contract["method_pack_sha256"] = sha256(matches[0])
+        catalog = self.root / "config" / "tools" / "catalog.json"
+        autonomy = self.root / "config" / "tool_autonomy.json"
+        environments = self.root / "config" / "tool_environments"
+        if catalog.is_file() or autonomy.is_file() or environments.is_dir():
+            if (
+                not catalog.is_file()
+                or not autonomy.is_file()
+                or not environments.is_dir()
+            ):
+                raise ValueError("计算工具目录、自主策略或环境 Profile 不完整")
+            profiles = {
+                path.name: sha256(path)
+                for path in sorted(environments.glob("*.json"))
+            }
+            if not profiles:
+                raise ValueError("计算环境 Profile 为空")
+            contract["tool_catalog_sha256"] = sha256(catalog)
+            contract["tool_autonomy_sha256"] = sha256(autonomy)
+            contract["tool_environment_profiles_sha256"] = canonical_hash(
+                profiles
+            )
         return canonical_hash(contract)

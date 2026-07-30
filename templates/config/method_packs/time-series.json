@@ -1,0 +1,20 @@
+{
+  "name": "time-series",
+  "version": "1.0.0",
+  "description": "带泄漏防护、滚动验证和强基线的时间序列建模。",
+  "task_types": ["forecasting", "time_series"],
+  "protocol": [
+    "按时间而非随机方式切分训练、验证与测试",
+    "检查频率、缺口、趋势、季节性、结构突变和外生变量可用时间",
+    "与季节朴素、漂移和简单指数平滑基线比较",
+    "滚动回测并报告多步误差、区间覆盖和失效时段"
+  ],
+  "required_tests": ["时间泄漏检查", "季节朴素基线", "滚动回测", "区间覆盖"],
+  "fallbacks": ["结构突变显著时分段建模或报告情景区间"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["time_series"],
+    "preferred_capabilities": ["statistics", "machine_learning", "diagnostic_plotting"],
+    "validation_protocols": ["滚动回测", "季节朴素基线", "区间覆盖"]
+  }
+}

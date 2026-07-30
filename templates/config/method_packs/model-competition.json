@@ -1,14 +1,20 @@
 {
   "name": "model-competition",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "用结构不同的候选模型和区分性实验选择最简充分结构。",
   "task_types": ["model_formulation"],
   "protocol": [
-    "提出机制、统计或优化结构不同的候选",
+    "提出机制、统计或优化结构不同的候选模型",
     "逐候选检查可辨识性、计算预算和验证闭环",
-    "设计能最快区分候选的反例或最小实验",
+    "设计能最快区分候选的反例、极限情形或最小实验",
     "记录淘汰模型及死因后再形成正式规格"
   ],
   "required_tests": ["至少一个反例", "至少一个极限或 toy"],
-  "fallbacks": ["无法区分时保留模型集合并传播结构不确定性"]
+  "fallbacks": ["无法区分时保留模型集合并传播结构不确定性"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": [],
+    "preferred_capabilities": ["symbolic_math", "formal_constraints", "graph_analysis"],
+    "validation_protocols": ["解析推导与数值实例对照", "反例优先"]
+  }
 }

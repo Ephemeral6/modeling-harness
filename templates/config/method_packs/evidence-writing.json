@@ -1,14 +1,20 @@
 {
   "name": "evidence-writing",
-  "version": "1.0.0",
-  "description": "按交付 Profile 从已验证证据生成文档。",
+  "version": "1.1.0",
+  "description": "从 verified evidence 生成可复核论文、图表和交付包。",
   "task_types": ["evidence_delivery"],
   "protocol": [
-    "只使用 verified evidence",
-    "关键数字和比较级绑定证据 ID",
-    "先回答决策问题再展开机制与验证",
-    "不得隐藏负结果、空稳健集和适用边界"
+    "只引用 verified evidence 和已锁定机器结果",
+    "图表从机器结果重建并记录数据源",
+    "逐项核对关键数字、单位、限定语和适用范围",
+    "按交付 Profile 渲染并执行最终证据复核"
   ],
-  "required_tests": ["逐项证据引用", "数值一致性", "限定语复核"],
-  "fallbacks": ["证据不足时保留明确占位和未决问题，不补写结论"]
+  "required_tests": ["数字回查", "引用与图表来源", "可重渲染"],
+  "fallbacks": ["渲染后端不可用时交付 Markdown、数据与复现命令"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": [],
+    "preferred_capabilities": ["visualization", "report_rendering"],
+    "validation_protocols": ["机器结果到论文数字回查", "独立渲染检查"]
+  }
 }

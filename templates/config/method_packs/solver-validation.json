@@ -1,14 +1,20 @@
 {
   "name": "solver-validation",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "toy-first 求解器实现和数值正确性验证。",
   "task_types": ["solver_engineering", "optimization", "simulation"],
   "protocol": [
-    "先做量纲和 Fermi 估算",
-    "在已知解或可穷举小系统上对拍",
-    "验证守恒、不变量、边界和确定性种子",
+    "先做量纲、数量级和 Fermi 估算",
+    "在已知解、可枚举小系统或解析极限上对拍",
+    "验证守恒、不变量、边界、约束残差和确定性种子",
     "再从 smoke、小规模推进到正式规模"
   ],
-  "required_tests": ["已知解 toy", "独立实现或极限对拍", "收敛与误差"],
-  "fallbacks": ["求解不稳时缩小结论强度或切换可验证算法"]
+  "required_tests": ["已知解或 toy", "独立实现或极限对拍", "收敛与误差"],
+  "fallbacks": ["求解不稳时缩小结论强度或切换可验证算法"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["numerical_computing"],
+    "preferred_capabilities": ["continuous_optimization", "mixed_integer_optimization", "symbolic_math", "formal_constraints"],
+    "validation_protocols": ["已知解或穷举 toy", "约束残差", "独立后端对拍"]
+  }
 }

@@ -1,0 +1,20 @@
+{
+  "name": "network-analysis",
+  "version": "1.0.0",
+  "description": "图结构、路径、流、中心性和网络稳健性分析。",
+  "task_types": ["network_analysis", "routing"],
+  "protocol": [
+    "明确节点、边、方向、权重、时间和多重边语义",
+    "在手算小图上验证路径、流或中心性定义",
+    "与结构简单基线及随机化网络比较",
+    "执行节点边移除、权重扰动和连通性压力测试"
+  ],
+  "required_tests": ["手算小图", "替代算法对拍", "连通性与扰动测试"],
+  "fallbacks": ["网络过大时使用有界近似并报告采样偏差"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["graph_analysis"],
+    "preferred_capabilities": ["network_optimization", "visualization"],
+    "validation_protocols": ["手算小图", "替代算法对拍", "扰动稳健性"]
+  }
+}

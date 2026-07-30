@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "mcm_icm",
+  "description": "美赛机制、决策叙事、敏感性和论文环境",
+  "required_tools": ["python", "numpy", "scipy", "pandas", "matplotlib", "statsmodels", "networkx", "cvxpy", "pandoc", "latexmk"],
+  "optional_tools": ["scikit-learn", "ortools", "sympy", "z3", "pymc", "arviz", "plotly", "geopandas", "folium", "torch"],
+  "constraints": [
+    {"tool": "python", "operator": ">=", "version": "3.10", "required": true},
+    {"tool": "pandoc", "operator": ">=", "version": "3.0", "required": false}
+  ],
+  "pip_requirements": [
+    "numpy>=1.26,<3",
+    "scipy>=1.11,<2",
+    "pandas>=2,<4",
+    "matplotlib>=3.8,<4",
+    "statsmodels>=0.14,<1",
+    "networkx>=3.2,<4",
+    "cvxpy>=1.5,<2"
+  ],
+  "external_requirements": ["pandoc>=3", "LaTeX distribution with latexmk"]
+}

@@ -1,14 +1,20 @@
 {
   "name": "generic",
-  "version": "1.0.0",
-  "description": "未分类局部问题的保守研究协议。",
+  "version": "1.1.0",
+  "description": "未知局部问题的保守通用研究协议。",
   "task_types": ["*"],
   "protocol": [
-    "精确定义输入、输出和验收标准",
-    "提出至少一个简单基线",
-    "先运行最小可证伪实验",
-    "由独立审核决定是否形成 verified evidence"
+    "明确输入、输出、可证伪假设和最小成功标准",
+    "先用手算、toy 或简单基线建立数量级",
+    "需要计算时显式选择工具、种子、预算和验证器",
+    "记录失败路线、适用范围和回退结论"
   ],
-  "required_tests": ["最小可证伪实验"],
-  "fallbacks": ["无法验证时保持 candidate 并标记阻断"]
+  "required_tests": ["最小可验证实例", "简单基线"],
+  "fallbacks": ["无法闭合时缩小问题或请求必要输入"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": [],
+    "preferred_capabilities": ["scripting", "numerical_computing", "visualization"],
+    "validation_protocols": ["toy", "简单基线"]
+  }
 }

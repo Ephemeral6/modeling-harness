@@ -1,0 +1,20 @@
+{
+  "name": "monte-carlo-simulation",
+  "version": "1.0.0",
+  "description": "可复现蒙特卡洛、方差缩减与置信误差控制。",
+  "task_types": ["simulation", "uncertainty_robustness"],
+  "protocol": [
+    "锁定生成机制、随机种子、抽样方法和目标统计量",
+    "先在已知分布或解析期望上验证采样器",
+    "报告有效样本量、蒙特卡洛标准误和重复种子差异",
+    "必要时使用分层、对偶或重要抽样降低方差"
+  ],
+  "required_tests": ["已知分布回收", "重复种子", "蒙特卡洛标准误", "收敛曲线"],
+  "fallbacks": ["预算不足时报告误差上界而非伪精确点值"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["monte_carlo"],
+    "preferred_capabilities": ["statistics", "numerical_computing", "diagnostic_plotting"],
+    "validation_protocols": ["已知分布回收", "重复种子", "误差随样本量收敛"]
+  }
+}

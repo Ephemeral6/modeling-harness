@@ -5,13 +5,16 @@ from pathlib import Path
 
 from .method_packs import MethodPackRegistry
 from .storage import atomic_write_json, read_json
+from .toolchain_registry import ToolRegistry
 from .util import now
 
 DIRS = [
-    ".harness/stamps", ".harness/archive", "problem/data_raw",
-    "data/processed", "docs/candidates", "src", "checks", "results",
-    "reviews", "predictions", "paper", "paper/figures", "logs",
-    "config/method_packs", "config/profiles",
+    ".harness/stamps", ".harness/archive", ".harness/tool_plans",
+    ".harness/tool_decisions", ".harness/tool_runs",
+    "problem/data_raw", "data/processed", "docs/candidates", "src",
+    "checks", "results", "reviews", "predictions", "paper",
+    "paper/figures", "logs", "logs/tool_runs", "config/method_packs",
+    "config/profiles", "config/tools", "config/tool_environments",
 ]
 
 
@@ -42,7 +45,7 @@ def create(destination: Path, title: str) -> Path:
         "schema": 3,
         "title": title.strip(),
         "created_at": now(),
-        "harness": "modeling-harness/3.0",
+        "harness": "modeling-harness/3.1",
         "status": "active",
     })
     atomic_write_json(destination / ".harness" / "evidence.json", {
@@ -56,4 +59,7 @@ def create(destination: Path, title: str) -> Path:
         "schema": 1, "events": [],
     })
     MethodPackRegistry(destination).refresh_lock()
+    tools = ToolRegistry(destination)
+    tools.refresh_catalog_lock()
+    tools.lock_environment()
     return destination

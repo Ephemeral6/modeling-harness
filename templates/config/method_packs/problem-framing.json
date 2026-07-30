@@ -1,14 +1,20 @@
 {
   "name": "problem-framing",
-  "version": "1.0.0",
-  "description": "将题面转化为可检验的决策问题与问题依赖图。",
+  "version": "1.1.0",
+  "description": "将题面转成可验证的决策问题、边界、指标和失败出口。",
   "task_types": ["problem_framing"],
   "protocol": [
-    "逐附件核对题意和数据语义",
-    "列出必须回答与明确不回答的问题",
-    "定义指标、基线、硬约束和失败出口",
-    "优先识别会让整条路线失效的未知量"
+    "逐附件核对题意、数据字典、单位、子问和交付约束",
+    "区分决策变量、状态变量、观测量、硬约束与评价指标",
+    "明确不回答边界、缺失信息、可接受近似和失败出口",
+    "把整题拆成依赖清楚、可局部证伪的问题节点"
   ],
-  "required_tests": ["附件清单闭合", "量纲与数量级初检"],
-  "fallbacks": ["信息缺失时生成明确的用户输入义务"]
+  "required_tests": ["附件覆盖检查", "单位与符号检查", "子问到证据映射"],
+  "fallbacks": ["信息不足时明确条件化问题，不暗造数据"],
+  "tool_policy": {
+    "decision_required": false,
+    "required_capabilities": [],
+    "preferred_capabilities": ["data_io", "spreadsheet"],
+    "validation_protocols": ["附件和题面交叉核对"]
+  }
 }

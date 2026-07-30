@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "name": "real_world",
+  "description": "真实决策、部署前验证、监控与可复现环境",
+  "required_tools": ["python", "numpy", "scipy", "pandas", "matplotlib", "scikit-learn", "statsmodels", "openpyxl", "pandoc"],
+  "optional_tools": ["networkx", "cvxpy", "ortools", "z3", "pymc", "arviz", "simpy", "geopandas", "rasterio", "plotly", "gurobi", "rscript", "julia"],
+  "constraints": [
+    {"tool": "python", "operator": ">=", "version": "3.10", "required": true},
+    {"tool": "pandas", "operator": ">=", "version": "2.0", "required": true}
+  ],
+  "pip_requirements": [
+    "numpy>=1.26,<3",
+    "scipy>=1.11,<2",
+    "pandas>=2,<4",
+    "matplotlib>=3.8,<4",
+    "scikit-learn>=1.4,<2",
+    "statsmodels>=0.14,<1",
+    "openpyxl>=3.1,<4"
+  ],
+  "external_requirements": [
+    "商业求解器只在许可证和用户授权同时存在时启用",
+    "联网数据源使用项目级凭据和审计日志"
+  ]
+}

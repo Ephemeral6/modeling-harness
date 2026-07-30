@@ -1,0 +1,20 @@
+{
+  "name": "spatial-analysis",
+  "version": "1.0.0",
+  "description": "坐标系、空间连接、栅格矢量处理和空间验证协议。",
+  "task_types": ["spatial_analysis"],
+  "protocol": [
+    "锁定坐标参考系、空间分辨率、时间和几何有效性",
+    "记录投影、裁剪、连接、缓冲和重采样血缘",
+    "采用空间分块留出，避免邻近泄漏",
+    "检查面积、距离、拓扑和边界效应"
+  ],
+  "required_tests": ["CRS 检查", "几何有效性", "空间留出", "面积距离数量级"],
+  "fallbacks": ["GIS 后端缺失时保留原始坐标并使用可审计简化几何"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["spatial_analysis"],
+    "preferred_capabilities": ["gis_vector", "gis_raster", "map_visualization"],
+    "validation_protocols": ["CRS 与单位检查", "空间分块留出", "边界敏感性"]
+  }
+}

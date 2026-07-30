@@ -1,0 +1,20 @@
+{
+  "name": "discrete-event-simulation",
+  "version": "1.0.0",
+  "description": "队列、资源、事件日历和稳态离散事件仿真。",
+  "task_types": ["discrete_event_simulation"],
+  "protocol": [
+    "定义实体、资源、队列规则、事件和时间推进语义",
+    "在确定性小系统上逐事件核对轨迹",
+    "设置预热期、重复次数和公共随机数",
+    "报告置信区间、拥塞机制和策略比较"
+  ],
+  "required_tests": ["逐事件 toy", "守恒检查", "预热期敏感性", "重复种子"],
+  "fallbacks": ["专用库缺失时使用最小堆事件引擎并增加轨迹审计"],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": ["simulation"],
+    "preferred_capabilities": ["discrete_event_simulation", "statistics", "diagnostic_plotting"],
+    "validation_protocols": ["逐事件 toy", "预热期敏感性", "重复种子"]
+  }
+}
