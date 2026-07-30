@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "l1.numeric.example",
+  "level": "L1",
+  "pass_threshold": 1.0,
+  "rubric": [
+    {
+      "kind": "json_numeric",
+      "name": "numeric answer",
+      "path": "results/answer.json",
+      "field": "answer.value",
+      "target": 42.0,
+      "tolerance": 1e-9,
+      "weight": 2
+    },
+    {
+      "kind": "evidence_status",
+      "name": "answer evidence verified",
+      "id": "result.answer",
+      "statuses": ["verified"],
+      "weight": 1
+    },
+    {
+      "kind": "integrity",
+      "name": "project integrity",
+      "expected": true,
+      "weight": 1
+    }
+  ]
+}

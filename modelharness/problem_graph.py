@@ -1,4 +1,4 @@
-"""Problem Graph facade binding method-pack and toolchain configuration."""
+"""Problem Graph facade binding methods, tools, and proposal audit."""
 from __future__ import annotations
 
 from .problem_graph_core import (
@@ -39,7 +39,9 @@ class ProblemGraph(_ProblemGraph):
                 or not autonomy.is_file()
                 or not environments.is_dir()
             ):
-                raise ValueError("计算工具目录、自主策略或环境 Profile 不完整")
+                raise ValueError(
+                    "计算工具目录、自主策略或环境 Profile 不完整"
+                )
             profiles = {
                 path.name: sha256(path)
                 for path in sorted(environments.glob("*.json"))
@@ -48,7 +50,26 @@ class ProblemGraph(_ProblemGraph):
                 raise ValueError("计算环境 Profile 为空")
             contract["tool_catalog_sha256"] = sha256(catalog)
             contract["tool_autonomy_sha256"] = sha256(autonomy)
-            contract["tool_environment_profiles_sha256"] = canonical_hash(
-                profiles
-            )
+            contract[
+                "tool_environment_profiles_sha256"
+            ] = canonical_hash(profiles)
         return canonical_hash(contract)
+
+    def replace(self, proposal: dict, reason: str) -> dict:
+        # During initial scaffolding there is no runtime to audit yet.
+        if (
+            (self.root / "modeling-project.json").is_file()
+            and (self.root / "config" / "tool_autonomy.json").is_file()
+        ):
+            from .proposals import ProposalService
+
+            action = ProposalService(self.root).auto(
+                "problem_graph.replace",
+                reason,
+                {"proposed_revision": proposal.get("revision")},
+            )
+            if action["policy"]["decision"] not in {
+                "ALLOW", "ALLOW_WITH_OBLIGATIONS"
+            }:
+                raise RuntimeError(action["policy"]["reason"])
+        return super().replace(proposal, reason)

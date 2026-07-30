@@ -1,4 +1,4 @@
-"""Evidence facade enforcing review identity and current artifact hashes."""
+"""Evidence facade enforcing identity and current review artifact hashes."""
 from __future__ import annotations
 
 from .contracts import validate_review
@@ -26,10 +26,13 @@ class EvidenceGraph(_EvidenceGraph):
                 continue
             expected_path = node["artifact"]
             expected_hash = sha256(self.root / expected_path)
-            reviewed_hash = review.get("artifact_hashes", {}).get(expected_path)
+            reviewed_hash = review.get(
+                "artifact_hashes", {}
+            ).get(expected_path)
             if reviewed_hash is None:
                 errors.append(
-                    f"V3 审核未记录当前证据产物哈希: {relative}/{expected_path}"
+                    f"V3 审核未记录当前证据产物哈希: "
+                    f"{relative}/{expected_path}"
                 )
             elif reviewed_hash != expected_hash:
                 errors.append(

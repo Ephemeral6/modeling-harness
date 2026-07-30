@@ -58,7 +58,7 @@ class AdaptiveScheduler(_AdaptiveScheduler):
                 f"{node['question']}。方法包={pack['name']}@{pack['version']}。"
                 f"研究协议：{protocol}。{tool_instruction}"
                 f"产出证据必须绑定 obligation_hash={contract}；"
-                f"生成者只登记 candidate，不得自我审核。"
+                f"生成者登记 candidate 时必须传 producer_task_id=本任务 ID，不得自我审核。"
             )
             budget = dict(stream.get("budget", {"max_attempts": 3}))
             budget["tool_plan"] = {
@@ -84,6 +84,8 @@ class AdaptiveScheduler(_AdaptiveScheduler):
                     generation=1 + len(self.workflow.list_tasks(
                         work_item_id=node_id
                     )),
+                    side_effect_class=stream.get("side_effect_class", "project_local"),
+                    idempotent=bool(stream.get("idempotent", True)),
                 )
             except ValueError as exc:
                 task = {

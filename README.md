@@ -1,219 +1,342 @@
-# Modeling Harness 3.1
+# Modeling Harness: Evidence-Gated Mathematical Modeling Agents
 
-面向国赛、美赛和真实数学建模任务的、问题图驱动、工具自主、证据门禁的 Agent 执行
-框架。整题是编排边界，可独立证伪的局部问题是求解单元。
+<p align="center">
+  <img src="https://img.shields.io/badge/version-4.0.0-1f6feb" alt="Modeling Harness 4.0.0">
+  <img src="https://img.shields.io/badge/Python-%3E%3D3.10-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
+</p>
 
-3.1 在 3.0 的 Problem Graph 和可靠性内核上增加正式 Toolchain Layer：Agent 可以根据
-局部问题自主选择调用或不调用计算工具，但选择、版本、输入、输出、种子、日志和验证
-必须可审计。
+Modeling Harness 是面向国赛、美赛与真实项目的数学建模 Agent 运行框架。它让模型自由
+拆题、选模、分支、回退并自主调用计算工具，同时用 Problem Graph、可复现执行和
+Evidence Graph 保证：最终交付中的每个重要结论，都能追溯到当前版本的工件和验证。
 
-## 架构
+> 让模型决定“下一步值得做什么以及怎么做”，让 Harness 只决定“动作是否已有权限、
+> 结果是否可信、状态是否可以提交”。
 
-```text
-Conversation / CLI
-        ↓
-Problem Graph ── obligations / dependencies / contract hashes
-        ↓
-Critical Frontier Scheduler
-        ↓
-Toolchain ── capability probe → Agent use/skip → reproducible run
-        ↓
-Workflow SQLite ── lease / heartbeat / acceptance / retry
-        ↓
-Evidence Graph ── typed DAG / checks / cold review / revoke
-        ↓
-S0–S6 Milestones
-        ↓
-Delivery Profiles ── CUMCM / MCM-ICM / Real World / General
-```
+它不是把整道开放题塞进一个超长提示词，也不是固定的多角色流水线。整题是持续维护的
+研究目标，可独立证伪的局部问题才是求解单元；S0–S6 只是全局完成度投影，不规定 Agent
+必须按顺序工作。
 
-权威状态：
+完整设计见 [4.0 架构](docs/ARCHITECTURE_V4.md)，从 3.1 升级请看
+[迁移指南](docs/MIGRATION_V31_TO_V40.md)。
 
-- `.harness/problem_graph.json`：还必须解决什么；
-- `.harness/tool_*`：为何调用或跳过工具、实际运行了什么；
-- `.harness/evidence.json`：已经验证了什么；
-- `.harness/workflow.sqlite3`：谁在做什么；
-- `.harness/stamps/sN.json`：哪些整体里程碑闭合。
+## How it works
 
-详细设计见 [ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md) 和
-[TOOLCHAIN_V31.md](docs/TOOLCHAIN_V31.md)。
+~~~mermaid
+flowchart TD
+    U["题目、附件与交付 Profile"] --> P["Problem Graph<br/>目标、依赖、验收与失败出口"]
+    P --> S["State Capsule<br/>按需派生当前研究状态"]
+    S --> A["Agent 自由选择下一步<br/>拆分、实验、工具、分支或回退"]
+    A --> L["项目内可逆研究<br/>默认直接执行"]
+    A --> Q["新权限或外部副作用<br/>Action Proposal"]
+    Q --> K{"Policy Kernel"}
+    K -->|"允许或附加义务"| L
+    K -->|"需授权"| H["用户"]
+    L --> R["Artifacts + Trace<br/>资源、日志、输入输出哈希"]
+    R --> V["Verifier Portfolio<br/>机械检查、独立后端、冷启动审核"]
+    V -->|"PASS"| E["Evidence Graph<br/>当前可相信的结论"]
+    V -->|"FAIL / INCONCLUSIVE"| S
+    E --> P
+    E --> M["S0–S6 Milestone Projection"]
+    M --> D["论文、代码、结果与审计包"]
+~~~
 
-## 快速开始
+Agent 可以自由改变研究路线，但不能直接把自己的候选结论写成“已验证”。只有满足当前
+合同、工件鲜度和验证要求的结果，才能进入权威状态。
 
-```powershell
+每条结论通常经历：
+
+~~~text
+局部问题 → 候选方法 → 计算/推导 → 工件 → candidate evidence
+         → 独立验证 → verified evidence → 下游结论与交付
+~~~
+
+若上游数据、程序、参数、策略或证据发生变化，相关结论会变为 stale、revoked 或
+invalidated，并只从最小受影响节点重新计算。
+
+## 自由边界
+
+| Agent 自主决定 | Harness 保持的少量硬边界 |
+|---|---|
+| 如何拆题，是否拆分、合并或放弃路线 | 用户目标和交付义务不能被悄悄改写 |
+| 使用何种模型、算法、近似与基线 | NOT_RUN 永远不能显示为 PASS |
+| 是否调用工具、调用哪个工具、何时跳过 | verified 必须绑定当前输入、工件、审核与策略哈希 |
+| 串行、并行、回溯、竞争路线与停止时机 | 错误证据必须沿依赖图级联失效 |
+| 声明不可辨识、无唯一解或优势不显著 | 未知执行结果必须进入 RECOVERY_PENDING |
+| 在已有权限内使用项目资源 | 已登记的 producer 不能批准自己的结论 |
+
+普通、本地、项目内、可逆的研究不需要逐动作审批。只有联网、安装、商业许可证、外部
+写入、不可恢复操作或超出既有预算时，Policy Kernel 才要求额外授权或附加义务。
+
+## Quickstart
+
+### 1. 安装核心 Harness
+
+~~~powershell
+git clone https://github.com/Ephemeral6/modeling-harness.git
+Set-Location modeling-harness
 python -m pip install -e .
+modelharness --version
+~~~
 
-modelharness intake --title "真实题目" --prompt "完整解决" `
-  --file 题面.pdf --file 数据.xlsx
+核心运行时只依赖 Python 标准库。计算库按题目和环境 Profile 选择安装，例如：
 
+~~~powershell
+python -m pip install -e ".[cumcm]"
+~~~
+
+### 2. 从题目和附件建立隔离项目
+
+~~~powershell
+modelharness intake `
+  --title "2026 数学建模任务" `
+  --prompt "完整求解，交付论文、代码、结果与可复现说明" `
+  --file "题面.pdf" `
+  --file "数据.xlsx"
+~~~
+
+命令会返回新项目路径。进入该目录，让支持终端与文件工具的 Agent 读取项目内
+`AGENTS.md`，然后执行：
+
+~~~powershell
 modelharness profile use cumcm
 modelharness doctor
 modelharness tool doctor
+modelharness state
 modelharness work next
-```
+~~~
 
-主控在每个局部任务、工具运行、审核、证据验证或 Gate 后继续运行 `work next`，直到
-Problem Graph、工具决策、证据、S0–S6 和交付 Profile 全部闭合。
+可选 Profile：
 
-## Agent 自主工具调用
+| Profile | 重点 |
+|---|---|
+| `cumcm` | 过程复现、数据处理、优化、图算法、Excel 与结果核查 |
+| `mcm_icm` | 机制解释、敏感性、决策叙事与英文论文交付 |
+| `real_world` | 数据治理、外部约束、监控、权限与可部署建议 |
+| `general` | 不预设竞赛风格的通用建模 |
 
-```powershell
-modelharness tool capabilities
+Modeling Harness 是 Agent 的研究运行层，不绑定特定模型供应商，也不会仅靠
+`modelharness intake` 在后台凭空生成答案。负责求解的 Codex、Claude Code 或其他
+Agent 需要在项目根目录持续读取 `work next`、生成工件并提交验证。
+
+## Agent loop
+
+`work next` 返回当前关键前沿、合同、可用输入和 State Capsule。Agent 每次只需选择一个
+最值得做的局部动作：
+
+~~~powershell
+# 查看全局状态与关键前沿
+modelharness state
+modelharness work next
+
+# 检查某节点需要什么计算能力，并自主选择 use 或 skip
 modelharness tool recommend s3.solver_validation
-
 modelharness tool decide s3.solver_validation `
   --action auto `
-  --reason "需要正式数值求解、toy 和残差检查"
-```
+  --reason "需要数值求解、toy case 与残差检查"
 
-Agent 可以改选其他允许的工具，也可以 skip：
-
-```powershell
-modelharness tool decide s1.model_formulation `
-  --action skip `
-  --reason "解析反例已淘汰候选，无需数值计算"
-```
-
-use 后必须结构化运行。建议把 argv 和 validators 放入 JSON 文件：
-
-```powershell
+# 用结构化 argv 执行，避免 shell 拼接；记录输入、输出、种子和 validators
 modelharness tool run s3.solver_validation `
   --argv-file config/solver.argv.json `
   --tool numpy --tool scipy `
   --input src/solver.py `
   --output results/nominal.json `
   --validators-file config/solver.validators.json `
-  --seed 2026 --timeout 3600
+  --seed 2026 `
+  --timeout 3600
 
 modelharness tool audit-node s3.solver_validation
-```
+modelharness work next
+~~~
 
-默认自主权限只覆盖项目内本地计算。联网、安装软件、商业许可证、外部写入或超预算运行
-需要新授权。
+如果解析推导、反例或已有证据已经足够，Agent 可以明确跳过工具：
 
-## 内置计算工具目录
+~~~powershell
+modelharness tool decide s1.model_formulation `
+  --action skip `
+  --reason "解析反例已淘汰候选模型，无需数值计算"
+~~~
 
-目录覆盖以下能力，实际可用性由 `tool doctor` 探测：
+## 计算工具自治
 
-- 数值与科学计算：Python、NumPy、SciPy、Julia、Octave、MATLAB；
-- 数据与统计：Pandas、statsmodels、scikit-learn、R；
-- 符号与约束：SymPy、Z3；
-- 优化：CVXPY、OR-Tools、Gurobi、SCIP、CBC、GLPK；
-- 图与网络：NetworkX；
-- 仿真与不确定性：NumPy、SciPy、SimPy、PyMC、ArviZ；
-- 机器学习：scikit-learn、PyTorch、XGBoost、LightGBM；
-- GIS：GeoPandas、Shapely、Rasterio、Folium；
-- 可视化与交付：Matplotlib、Seaborn、Plotly、Pandoc、LaTeX；
-- Excel：openpyxl。
+Harness 提供能力目录、环境探测、选择记录、结构化执行、资源限制、日志和验证器，而不是
+强迫 Agent 使用某一套软件。
 
-Harness 核心仍为零第三方依赖。缺失工具会触发降级或请求授权，不会导致框架本身无法
-启动。
-
-## 可复现与验证
-
-每个 tool run 记录：
-
-- Problem Graph contract hash 和 Agent decision hash；
-- 工具版本、执行器、Python 版本；
-- 完整非 shell argv、cwd、timeout、随机种子；
-- 输入和输出的路径、大小、SHA-256；
-- stdout/stderr 路径及 SHA-256；
-- 退出码、耗时和验证结果。
-
-内置验证器支持非空文件、JSON 字段、有限数、数值断言、跨产物对拍和 `checks/` 下的
-独立 Python 检查。正式计算应至少包含 toy、解析极限、穷举、约束残差、独立后端、
-留出验证或统计收敛中的一种。
-
-## 方法包
-
-```powershell
-modelharness pack list
-modelharness pack audit
-modelharness pack lock
-```
-
-除问题形式化、模型竞争、数据估计、求解验证、稳健性、决策和证据写作外，3.1 还提供：
-
-- 时间序列；
-- 数学优化；
-- 微分方程；
-- 蒙特卡洛；
-- 空间分析；
-- 网络分析；
-- 机器学习；
-- 贝叶斯建模；
-- 离散事件仿真。
-
-方法包声明 required/preferred capability、验证协议和降级出口。
-
-## 计算环境 Profile
-
-```powershell
-modelharness tool env list
+~~~powershell
+modelharness tool capabilities
 modelharness tool env show cumcm
 modelharness tool doctor --profile cumcm
 modelharness tool lock
 modelharness tool audit --environment
-```
+~~~
 
-- `general`：标准数值、数据、符号与绘图；
-- `cumcm`：强化统计、优化、图算法、Excel 和过程复现；
-- `mcm_icm`：强化机制、敏感性、论文渲染和决策叙事；
-- `real_world`：强化治理、监控和外部授权边界。
+目录可以识别或适配：
 
-环境文件包含 required/optional 工具、版本约束和 pip/external requirements。工具目录
-锁与环境快照分离：目录篡改会阻断 Gate，环境漂移由 doctor 报告；已使用工具的版本还会
-写入每个 run。
+- 数值与科学计算：Python、NumPy、SciPy、Julia、Octave、MATLAB；
+- 数据与统计：Pandas、statsmodels、scikit-learn、R；
+- 符号、约束与优化：SymPy、Z3、CVXPY、OR-Tools、Gurobi、SCIP、CBC、GLPK；
+- 图、仿真与不确定性：NetworkX、SimPy、PyMC、ArviZ；
+- 机器学习：PyTorch、XGBoost、LightGBM；
+- GIS：GeoPandas、Shapely、Rasterio、Folium；
+- 可视化与交付：Matplotlib、Seaborn、Plotly、Pandoc、LaTeX、openpyxl。
 
-## Problem Graph
+这些工具不是全部随核心包安装。`tool doctor` 先探测真实环境；缺失能力可降级、换路线或
+请求授权，不能被伪装成已经运行。
 
-```powershell
+每次 tool run 记录完整非 shell argv、cwd、timeout、随机种子、工具版本、输入输出
+SHA-256、stdout/stderr、退出码、耗时和 validator 结果。正式结论应按问题性质加入
+toy case、解析极限、穷举对拍、约束残差、独立后端、留出验证或收敛诊断。
+
+## Trust model
+
+### 正交状态
+
+执行是否完成、结论是否通过、谁作出裁决、工件是否仍然新鲜是四件不同的事：
+
+~~~text
+execution_status = not_run | queued | running | completed | error |
+                   recovery_pending | cancelled
+verdict          = unassessed | pass | fail | inconclusive | not_applicable
+authority        = machine | human | hybrid
+freshness        = valid | stale | missing | tampered
+~~~
+
+因此“检查没运行”“程序报错”“数学结论失败”“人工接受风险”不会被压成同一个模糊状态。
+人工可以判定检查不适用或接受风险，但不能把机械 FAIL 偷换成机械 PASS。
+
+### 工件鲜度与级联撤销
+
+verified evidence 绑定 Problem Graph 合同、输入证据、工件、工具运行、审核和验证策略的
+哈希。绑定对象变化后，旧验证会自动过期。撤销传播但不删除历史：
+
+~~~text
+root evidence       verified → revoked
+dependent evidence  candidate/verified → invalidated
+dependent task      completed → invalidated
+review binding      current → stale
+milestone stamp     valid → archived
+paper claim         current → stale
+~~~
+
+### 独立审核
+
+生成者可以自检、运行测试、登记 candidate 并根据反馈修复；生成者不能把自己产生的语义
+结论提升为 verified。Schema、哈希、残差等确定性义务可以由独立程序批准，模型适用性、
+假设合理性和结论边界则需要隔离上下文的审核。
+
+### 不明执行恢复
+
+超时或断线不等于“没有执行”。若外部动作、后台进程或部分输出的最终状态未知，运行进入
+`RECOVERY_PENDING`，系统冻结下游并禁止盲目重试非幂等动作：
+
+~~~powershell
+modelharness tool recover RUN_ID `
+  --outcome safe_to_retry `
+  --authority human `
+  --note "已核对进程、事务号和输出目录，原执行未生效"
+~~~
+
+可选 outcome 为 `recovered_success`、`confirmed_failed`、`safe_to_retry` 或
+`human_required`。
+
+## Problem Graph, Evidence Graph and milestones
+
+Problem Graph 描述“还必须解决什么”，Evidence Graph 描述“当前已经验证了什么”。
+Workflow 只负责耐久任务、租约、心跳、重试与恢复；它们不会互相冒充。
+
+~~~powershell
 modelharness plan show
 modelharness plan status
 modelharness plan validate problem/decomposition.json
 modelharness plan apply problem/decomposition.json `
-  --reason "S0 完成局部问题拆解"
-```
+  --reason "根据数据审计拆分两条竞争路线"
 
-每个节点声明问题、输入证据、输出证据、方法包、workstream、验收、审核、风险和里程碑。
-合同包含节点语义、方法包、工具目录和自主策略哈希。
+modelharness evidence add result.nominal `
+  --kind result `
+  --statement "标称条件下的可复现求解结果" `
+  --artifact results/nominal.json
+modelharness evidence audit
+~~~
 
-## Evidence 与 Durable Work
+S0–S6 是跨路线的完成度投影：
 
-```powershell
-modelharness evidence add result.nominal --kind result `
-  --statement "标称求解结果" --artifact results/nominal.json
-modelharness evidence verify result.nominal
-
-modelharness task claim TASK_ID --worker solver-agent
-modelharness task heartbeat TASK_ID --worker solver-agent
-modelharness task finish TASK_ID --worker solver-agent `
-  --result '{"artifact":"results/nominal.json"}'
-```
-
-计算型任务的 acceptance 会检查 Agent 工具决策；use 时还要求当前合同下存在 verified
-run。自然语言汇报不能把任务变成 completed。
-
-## S0–S6
-
-| 里程碑 | 审计目标 |
+| Milestone | 审计目标 |
 |---|---|
-| S0 | 题意、成功标准、问题图和失效出口 |
-| S1 | 模型结构、假设、可辨识性和工具判断 |
-| S2 | 数据血缘、清洗、估计和防泄漏 |
-| S3 | 求解器、toy、已知解、残差和数值审核 |
-| S4 | 留出、UQ、基线、敏感性和稳健性 |
-| S5 | 条件式决策、复跑和结果锁定 |
-| S6 | Profile 交付、重渲染和逐项证据复核 |
+| S0 | 题意、成功标准、问题图与失败出口 |
+| S1 | 模型结构、假设、可辨识性与工具判断 |
+| S2 | 数据血缘、清洗、估计与防泄漏 |
+| S3 | 求解器、toy、已知解、残差与数值审核 |
+| S4 | 留出、UQ、基线、敏感性与稳健性 |
+| S5 | 条件式决策、复跑与结果锁定 |
+| S6 | Profile 交付、重渲染与逐项证据复核 |
 
-## 迁移与测试
+Agent 可以在 S4 发现问题后回到模型层，也可以在数据不足时交付“不可辨识”，不必为了
+流程完整而制造伪精确答案。
 
-- V2 → V3：[MIGRATION_V2_TO_V3.md](docs/MIGRATION_V2_TO_V3.md)
-- V3.0 → V3.1：[MIGRATION_V30_TO_V31.md](docs/MIGRATION_V30_TO_V31.md)
+## Benchmark and episode packages
 
-```powershell
-python -m pytest -q
+Benchmark Lab 分为局部能力 L1、组合建模 L2 和端到端 L3，并单独覆盖安全与退化问题。
+评分不以论文流畅度替代数值正确性、证据闭合率和重复运行可靠性。
+
+~~~powershell
+# 项目通用评估
+python -m modelharness.evaluation --project <project>
+
+# 隐藏或机械 rubric
+python -m modelharness.benchmarking `
+  benchmarks/fixtures/l1_numeric.json `
+  --project <project> `
+  --json report.json
+
+# 归档可重放 Episode
+python -m modelharness.episode `
+  --project <project> `
+  --out episodes/run-001 `
+  --benchmark-id l1-numeric `
+  --model <model> `
+  --seed 2026
+~~~
+
+Episode Package 包含题目、配置、环境、动作轨迹、失败归因、工具日志、Evidence、审核、
+结果、论文与评分，用于固定模型后的 Harness 消融和 `pass^k` 统计。详情见
+[Benchmark Lab](benchmarks/README.md)。
+
+## Layout
+
+~~~text
+modelharness/   核心引擎：图、调度、工具、工作流、证据、策略、恢复与 CLI
+templates/      新建数学建模项目时复制的 Agent 合同、Profile 与方法包
+benchmarks/     L1/L2/L3 评测规范、可执行 rubric 与回归 fixtures
+docs/           架构、失败模型、工具链和版本迁移
+tests/          单元、集成、退化、恢复与 4.0 不变量测试
+legacy_v1/      只读历史实现
+~~~
+
+4.0 延续 3.1 的 Problem Graph 和自主 Toolchain，不引入必须遵守的固定角色编排，也不把
+Proposal 变成普通研究的审批流水线。五本账只通过 State Capsule 按需派生，不再制造一套
+平行的权威数据库。
+
+## Development
+
+~~~powershell
 python -m compileall -q modelharness
-```
+python -m pytest -q
+git diff --check
+~~~
+
+- 3.0 架构：[ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md)
+- 3.1 工具链：[TOOLCHAIN_V31.md](docs/TOOLCHAIN_V31.md)
+- 4.0 架构：[ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
+- 失败模型：[FAILURE_MODEL.md](docs/FAILURE_MODEL.md)
+- 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
+- 安全策略：[SECURITY.md](SECURITY.md)
+
+## Related work
+
+README 的叙事结构参考了
+[Danus](https://github.com/frenzymath/Danus) 对数学推理系统“如何工作、权威边界、目录、
+快速启动、设计不变量”的组织方式。Danus 聚焦带 Fact-Graph Memory 的数学证明；
+Modeling Harness 面向包含数据、估计、优化、仿真、不确定性与决策的开放数学建模，并
+采用更薄的治理层，让 Agent 在项目内保持更大的研究自由。
 
 项目采用 [MIT License](LICENSE)。

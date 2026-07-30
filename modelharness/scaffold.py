@@ -9,7 +9,7 @@ from .toolchain_registry import ToolRegistry
 from .util import now
 
 DIRS = [
-    ".harness/stamps", ".harness/archive", ".harness/tool_plans",
+    ".harness/stamps", ".harness/archive", ".harness/proposals", ".harness/tool_plans",
     ".harness/tool_decisions", ".harness/tool_runs",
     "problem/data_raw", "data/processed", "docs/candidates", "src",
     "checks", "results", "reviews", "predictions", "paper",
@@ -42,14 +42,14 @@ def create(destination: Path, title: str) -> Path:
     atomic_write_json(destination / ".harness" / "problem_graph.json", graph)
     seed.unlink()
     atomic_write_json(destination / "modeling-project.json", {
-        "schema": 3,
+        "schema": 4,
         "title": title.strip(),
         "created_at": now(),
-        "harness": "modeling-harness/3.1",
+        "harness": "modeling-harness/4.0",
         "status": "active",
     })
     atomic_write_json(destination / ".harness" / "evidence.json", {
-        "schema": 3, "revision": 0, "nodes": {},
+        "schema": 4, "revision": 0, "nodes": {},
     })
     # Kept for V1/V2 readers. V3 task truth lives in workflow.sqlite3.
     atomic_write_json(destination / ".harness" / "tasks.json", {

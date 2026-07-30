@@ -1,12 +1,12 @@
 """Shared mechanical check and task-acceptance execution."""
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 from typing import Any
 
 from .contracts import safe_relative
+from .runtime_state import outcome
 from .storage import read_json
 from .util import sha256
 
@@ -22,20 +22,19 @@ def normalize_check(
         if not isinstance(argv, list) or not argv or not all(
             isinstance(x, str) and x for x in argv
         ):
-            raise ValueError("check.argv 必须是非空字符串数组")
+            raise ValueError("check.argv must be a non-empty string array")
         timeout = int(value.get("timeout", default_timeout))
         if timeout <= 0:
-            raise ValueError("check.timeout 必须为正数")
+            raise ValueError("check.timeout must be positive")
         expected = value.get("expected_artifacts", [])
         if not isinstance(expected, list) or not all(
             isinstance(x, str) and x for x in expected
         ):
-            raise ValueError("check.expected_artifacts 必须是字符串数组")
+            raise ValueError("check.expected_artifacts must be a string array")
         return argv, False, timeout, expected
-    # V2 compatibility only. New contracts must use argv arrays.
     if isinstance(value, str) and value.strip():
         return value, True, default_timeout, []
-    raise ValueError(f"非法检查命令: {value!r}")
+    raise ValueError(f"invalid check command: {value!r}")
 
 
 def run_check(root: Path, value: Any, *, default_timeout: int = 1800) -> dict:
@@ -61,6 +60,9 @@ def run_check(root: Path, value: Any, *, default_timeout: int = 1800) -> dict:
             "stderr_tail": (proc.stderr or "")[-4000:],
             "expected_artifacts": [],
         }
+        state = outcome(
+            "completed", "pass" if proc.returncode == 0 else "fail"
+        )
     except subprocess.TimeoutExpired as exc:
         record = {
             "argv": argv,
@@ -71,6 +73,7 @@ def run_check(root: Path, value: Any, *, default_timeout: int = 1800) -> dict:
             "stderr_tail": "timeout",
             "expected_artifacts": [],
         }
+        state = outcome("error", "inconclusive")
     missing = []
     for relative in expected:
         path = safe_relative(root, relative)
@@ -82,11 +85,12 @@ def run_check(root: Path, value: Any, *, default_timeout: int = 1800) -> dict:
         record["expected_artifacts"].append(item)
         if not item["exists"]:
             missing.append(relative)
-    record["ok"] = record["returncode"] == 0 and not missing
-    if missing:
+    if missing and state["execution_status"] == "completed":
+        state = outcome("completed", "fail", freshness="missing")
         record["stderr_tail"] = (
             record["stderr_tail"] + f"\nmissing artifacts: {missing}"
         ).strip()
+    record.update(state)
     return record
 
 
@@ -104,50 +108,69 @@ def _json_path(value: Any, dotted: str) -> tuple[bool, Any]:
     return True, current
 
 
+def _record(kind: str, passed: bool, **fields) -> dict:
+    freshness = fields.pop("freshness", "valid")
+    return {
+        "kind": kind,
+        **fields,
+        **outcome("completed", "pass" if passed else "fail", freshness=freshness),
+    }
+
+
 def evaluate_acceptance(
     root: Path, acceptance: list[Any], result: dict | None = None
 ) -> dict:
-    """Evaluate durable-task acceptance without trusting the worker summary."""
+    """Evaluate acceptance without trusting a worker's summary.
+
+    An empty acceptance list is explicitly NOT_RUN, never PASS.
+    """
     root = root.resolve()
     records: list[dict] = []
     for raw in acceptance:
         if isinstance(raw, str):
             prefixes = ("产物存在:", "artifact exists:", "artifact_exists:")
-            match = next((x for x in prefixes if raw.lower().startswith(x.lower())), None)
+            match = next(
+                (x for x in prefixes if raw.lower().startswith(x.lower())),
+                None,
+            )
             if match:
                 relative = raw[len(match):].strip()
                 path = safe_relative(root, relative)
-                records.append({
-                    "kind": "artifact_exists",
-                    "path": relative,
-                    "ok": path.is_file(),
-                    "sha256": sha256(path) if path.is_file() else None,
-                })
+                exists = path.is_file()
+                records.append(_record(
+                    "artifact_exists",
+                    exists,
+                    path=relative,
+                    sha256=sha256(path) if exists else None,
+                    freshness="valid" if exists else "missing",
+                ))
             else:
                 records.append({
                     "kind": "legacy_note",
                     "value": raw,
-                    "ok": False,
-                    "error": "不可执行的旧式验收说明",
+                    "error": "legacy note is not executable acceptance",
+                    **outcome("not_run", "inconclusive"),
                 })
             continue
         if not isinstance(raw, dict):
             records.append({
                 "kind": "invalid",
-                "ok": False,
-                "error": f"非法验收项: {raw!r}",
+                "error": f"invalid acceptance item: {raw!r}",
+                **outcome("not_run", "inconclusive"),
             })
             continue
         kind = raw.get("kind")
         if kind == "artifact_exists":
             relative = str(raw.get("path", ""))
             path = safe_relative(root, relative)
-            records.append({
-                "kind": kind,
-                "path": relative,
-                "ok": path.is_file(),
-                "sha256": sha256(path) if path.is_file() else None,
-            })
+            exists = path.is_file()
+            records.append(_record(
+                kind,
+                exists,
+                path=relative,
+                sha256=sha256(path) if exists else None,
+                freshness="valid" if exists else "missing",
+            ))
         elif kind == "json_fields":
             relative = str(raw.get("path", ""))
             fields = raw.get("fields", [])
@@ -157,27 +180,28 @@ def evaluate_acceptance(
                 field for field in fields
                 if not isinstance(field, str) or not _json_path(data, field)[0]
             ]
-            records.append({
-                "kind": kind,
-                "path": relative,
-                "fields": fields,
-                "missing": missing,
-                "ok": path.is_file() and not missing,
-            })
+            records.append(_record(
+                kind,
+                path.is_file() and not missing,
+                path=relative,
+                fields=fields,
+                missing=missing,
+                freshness="valid" if path.is_file() else "missing",
+            ))
         elif kind == "evidence_exists":
             node_id = str(raw.get("id", ""))
             allowed = raw.get("statuses", ["candidate", "verified"])
             graph = read_json(
-                root / ".harness" / "evidence.json",
-                {"nodes": {}},
+                root / ".harness" / "evidence.json", {"nodes": {}}
             )
             node = graph.get("nodes", {}).get(node_id)
-            records.append({
-                "kind": kind,
-                "id": node_id,
-                "status": node.get("status") if isinstance(node, dict) else None,
-                "ok": isinstance(node, dict) and node.get("status") in allowed,
-            })
+            passed = isinstance(node, dict) and node.get("status") in allowed
+            records.append(_record(
+                kind,
+                passed,
+                id=node_id,
+                status=node.get("status") if isinstance(node, dict) else None,
+            ))
         elif kind == "result_fields":
             fields = raw.get("fields", [])
             missing = [
@@ -185,25 +209,24 @@ def evaluate_acceptance(
                 if not isinstance(field, str)
                 or not _json_path(result or {}, field)[0]
             ]
-            records.append({
-                "kind": kind,
-                "fields": fields,
-                "missing": missing,
-                "ok": not missing,
-            })
+            records.append(_record(
+                kind, not missing, fields=fields, missing=missing
+            ))
         elif kind == "check":
-            check = raw.get("check")
-            record = run_check(root, check)
+            record = run_check(root, raw.get("check"))
             record["kind"] = kind
             records.append(record)
         else:
             records.append({
                 "kind": kind or "invalid",
-                "ok": False,
-                "error": "未知验收类型",
+                "error": "unknown acceptance type",
+                **outcome("not_run", "inconclusive"),
             })
-    return {
-        "ok": all(item.get("ok") is True for item in records),
-        "records": records,
-    }
-
+    if not records:
+        return outcome("not_run", "unassessed", records=[])
+    passed = all(item.get("ok") is True for item in records)
+    return outcome(
+        "completed",
+        "pass" if passed else "fail",
+        records=records,
+    )

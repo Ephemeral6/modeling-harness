@@ -242,7 +242,7 @@ class AdaptiveScheduler:
             "missing_verified_evidence": missing,
             "tasks": planned or [
                 x for x in tasks
-                if x.get("status") in {"pending", "claimed", "running"}
+                if x.get("status") in {"pending", "claimed", "running", "recovery_pending"}
             ],
             "recovered_leases": recovered,
             "instruction": instruction,
@@ -256,4 +256,8 @@ class AdaptiveScheduler:
             "frontier": [x["id"] for x in frontier],
             "missing": missing,
         })
+        from .supervisor import StateCapsule
+        capsule = StateCapsule(self.project).build()
+        packet["state_hash"] = capsule["state_hash"]
+        packet["state_capsule"] = capsule
         return packet

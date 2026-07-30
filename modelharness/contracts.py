@@ -10,7 +10,9 @@ EVIDENCE_KINDS = {
     "problem", "data", "assumption", "claim", "model", "code",
     "experiment", "result", "decision", "limitation", "narrative",
 }
-EVIDENCE_STATUSES = {"candidate", "verified", "rejected", "revoked"}
+EVIDENCE_STATUSES = {
+    "candidate", "verified", "rejected", "revoked", "invalidated",
+}
 ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_.:-]{0,127}$")
 
 
@@ -74,7 +76,7 @@ def validate_review(data: Any, path: Path) -> dict:
 
 def validate_evidence_graph(data: Any) -> dict:
     require(isinstance(data, dict), "evidence.json 必须是对象")
-    require(data.get("schema", 2) in {2, 3}, "evidence.schema 必须为 2 或 3")
+    require(data.get("schema", 2) in {2, 3, 4}, "evidence.schema 必须为 2、3 或 4")
     require(isinstance(data.get("nodes"), dict), "evidence.nodes 必须是对象")
     nodes = data["nodes"]
     for node_id, node in nodes.items():

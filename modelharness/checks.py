@@ -39,5 +39,15 @@ def evaluate_acceptance(
                 str(item.get("node_id", "")),
                 str(item.get("contract_hash", "")),
             ))
-    record["ok"] = all(item.get("ok") is True for item in record["records"])
+    passed = bool(record["records"]) and all(
+        item.get("ok") is True for item in record["records"]
+    )
+    record.update({
+        "execution_status": "completed" if record["records"] else "not_run",
+        "verdict": (
+            "pass" if passed else "fail"
+        ) if record["records"] else "unassessed",
+        "authority": "machine",
+        "ok": passed,
+    })
     return record

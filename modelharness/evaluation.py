@@ -52,7 +52,7 @@ def score_project(project: Path) -> dict:
     retried = [task for task in tasks if int(task.get("attempt", 0)) > 1]
     evidence_counts = {
         status: sum(1 for node in nodes.values() if node["status"] == status)
-        for status in ("candidate", "verified", "rejected", "revoked")
+        for status in ("candidate", "verified", "rejected", "revoked", "invalidated")
     }
     prefix = stages.valid_prefix()
     integration_errors = audit_integration(project) if problem.exists else []
@@ -67,6 +67,7 @@ def score_project(project: Path) -> dict:
         "skip": 0,
         "verified_runs": 0,
         "failed_runs": 0,
+        "recovery_pending_runs": 0,
         "decision_errors": [],
         "catalog_errors": tool_catalog_errors,
     }
@@ -102,6 +103,10 @@ def score_project(project: Path) -> dict:
             1 for run in runs
             if run.get("verification", {}).get("status") == "failed"
         )
+        tool_report["recovery_pending_runs"] = sum(
+            1 for run in runs
+            if run.get("execution_status") == "recovery_pending"
+        )
         tool_report["decision_rate"] = _rate(
             tool_report["decisions_recorded"],
             tool_report["decisions_required"],
@@ -113,7 +118,7 @@ def score_project(project: Path) -> dict:
         and not tool_catalog_errors
     )
     return {
-        "schema": 2,
+        "schema": 3,
         "project": str(project),
         "problem_graph": {
             "available": problem.exists,

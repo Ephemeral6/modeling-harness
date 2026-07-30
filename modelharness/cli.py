@@ -353,10 +353,9 @@ def main() -> int:
                 emit(graph.verify(args.id))
             elif args.action == "revoke":
                 affected = graph.revoke(args.id, args.reason)
-                removed = StageService(project).invalidate_for_evidence(
-                    affected, f"evidence revoke: {args.id}"
-                )
-                emit({"revoked": affected, "invalidated": removed})
+                emit({
+                    "revoked": affected, "cascade": graph.last_cascade,
+                })
             else:
                 errors = graph.audit()
                 emit({"ok": not errors, "errors": errors})

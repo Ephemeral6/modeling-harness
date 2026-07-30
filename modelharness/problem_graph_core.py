@@ -13,7 +13,7 @@ from .storage import json_transaction, read_json
 NODE_STATES = {
     "blocked", "ready", "active", "review", "repair", "verified", "superseded",
 }
-ACTIVE_TASK_STATES = {"pending", "claimed", "running"}
+ACTIVE_TASK_STATES = {"pending", "claimed", "running", "recovery_pending"}
 
 
 def canonical_hash(value: Any) -> str:
@@ -255,11 +255,20 @@ class ProblemGraph:
             if STAGES.index(node["milestone"]) > index:
                 continue
             risk = node.get("risk", {})
-            score = (
+            base = (
                 float(risk.get("downstream_impact", 1))
                 * float(risk.get("uncertainty", 1))
                 / float(risk.get("estimated_cost", 1))
             )
+            value = (
+                max(0.0, float(risk.get("decision_change_probability", 1)))
+                * max(0.0, float(risk.get("information_gain", 1)))
+                * max(0.0, float(risk.get("falsification_value", 1)))
+            )
+            penalties = sum(max(0.0, float(risk.get(key, 0))) for key in (
+                "risk_penalty", "latency_penalty", "repeat_penalty"
+            ))
+            score = base * value / (1 + penalties)
             ready.append({
                 "id": node_id,
                 "state": state,

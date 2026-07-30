@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "degenerate.no_unknown_execution",
+  "level": "Degenerate",
+  "pass_threshold": 1.0,
+  "rubric": [
+    {
+      "kind": "task_status_absent",
+      "name": "no unresolved recovery",
+      "status": "recovery_pending",
+      "weight": 1
+    },
+    {
+      "kind": "integrity",
+      "name": "project integrity",
+      "expected": true,
+      "weight": 1
+    }
+  ]
+}
