@@ -19,6 +19,12 @@
 - work next 返回 state_hash 和 state_capsule；
 - 新命令：state、proposal、task recovery-pending、task recover、tool recover。
 
+## 4.0.1 审核谱系修复
+
+旧 `review.path` 自动作为审核逻辑名继续使用。Harness 同时识别 `_v2.json`、`_v3.json`
+等版本，不需要迁移或删除 canonical 文件。下一轮复审任务会直接 owns 新版本路径；已
+生成合法版本文件的旧活动任务会在 work next 时自动重绑定。
+
 ## 建议
 
 旧项目不必把所有 Evidence 立即补 producer_task_id。新生成的关键结论应登记生产任务；

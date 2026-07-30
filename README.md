@@ -1,7 +1,7 @@
 # Modeling Harness: Evidence-Gated Mathematical Modeling Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.0.0-1f6feb" alt="Modeling Harness 4.0.0">
+  <img src="https://img.shields.io/badge/version-4.0.1-1f6feb" alt="Modeling Harness 4.0.1">
   <img src="https://img.shields.io/badge/Python-%3E%3D3.10-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
 </p>
@@ -223,6 +223,11 @@ paper claim         current → stale
 生成者可以自检、运行测试、登记 candidate 并根据反馈修复；生成者不能把自己产生的语义
 结论提升为 verified。Schema、哈希、残差等确定性义务可以由独立程序批准，模型适用性、
 假设合理性和结论边界则需要隔离上下文的审核。
+
+审核文件采用 append-only 谱系。Problem Graph 保留稳定的逻辑审核名，复审实际写入
+`_v2.json`、`_v3.json` 等不可变版本；Harness 自动选择与当前合同及工件哈希匹配的
+最新记录。旧 REJECT 无需覆盖、归档或删除，因此跨 Agent 的 Windows ACL 不再成为
+研究阻断。
 
 ### 不明执行恢复
 

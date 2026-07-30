@@ -10,7 +10,8 @@ from .problem_graph_core import (
     node_contract_hash,
     validate_problem_graph,
 )
-from .storage import json_transaction, read_json
+from .review_store import resolve_review
+from .storage import json_transaction
 from .util import sha256
 
 
@@ -48,18 +49,20 @@ class ProblemGraph(_ProblemGraph):
             )
             for output in node["outputs"]
         }
+        contract = self.contract_hash(node_id)
         for review_spec in node.get("reviews", []):
-            path = self.root / review_spec["path"]
-            if not path.is_file():
-                continue
-            review = read_json(path)
-            if str(review.get("verdict", "")).upper() != "REJECT":
-                continue
-            reviewed_hashes = review.get("artifact_hashes", {})
-            # A rejection applies only to the exact artifacts it reviewed.
-            if not reviewed_hashes or all(
-                current_hashes.get(relative) == digest
-                for relative, digest in reviewed_hashes.items()
+            resolution = resolve_review(
+                self.root,
+                review_spec["path"],
+                contract_hash=contract,
+                artifact_hashes=current_hashes,
+            )
+            if (
+                resolution
+                and resolution.get("record")
+                and str(
+                    resolution["record"].get("verdict", "")
+                ).upper() == "REJECT"
             ):
                 return "repair"
         if outputs and all(x is not None for x in outputs):

@@ -41,6 +41,11 @@ Resource / Opportunity 五本派生账；不得把它们另存为新的权威数
 5. 生成者不能批准自己的结论。生产任务与审核任务必须不同；登记身份后，producer
    与 reviewer 的 worker 也必须不同。
 
+审核文件只追加、不覆盖。Problem Graph 的 review.path 是逻辑名称；审核者必须写入
+当前审核任务 owns 指定的路径。已有旧审核时，新路径为 `_v2.json`、`_v3.json` 等
+不可变版本。不得覆盖、删除或归档旧 REJECT，不得因此请求用户授权；Harness 根据当前
+合同和工件哈希自动解析有效版本。
+
 除上述不变量、项目路径边界和用户明确权限外，不新增限制。
 
 ## 建模工作规则
@@ -77,6 +82,8 @@ modelharness task recover TASK_ID --outcome safe_to_retry --note "<对账证据>
 ~~~
 
 完成任务、运行、审核、证据验证或 Gate 后再次运行 work next。
+若复审任务的 owns 是版本化文件，直接写该路径。旧项目中 reviewer 已生成合法
+`_vN.json` 时，work next 会自动把仍指向 canonical 的活动任务重绑定到该版本。
 
 ## Delivery Profile
 

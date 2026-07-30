@@ -9,6 +9,7 @@ from .integration import audit_integration
 from .method_packs import MethodPackRegistry
 from .problem_graph import ProblemGraph, canonical_hash
 from .profiles import ProfileService
+from .review_store import review_lineage_signature
 from .stages import StageService
 from .storage import read_json
 from .util import sha256
@@ -28,8 +29,9 @@ def _artifact_signature(root: Path, node: dict) -> str:
 def _review_signature(root: Path, node: dict) -> str:
     values = {}
     for review in node.get("reviews", []):
-        path = root / review["path"]
-        values[review["path"]] = sha256(path) if path.is_file() else None
+        values[review["path"]] = review_lineage_signature(
+            root, review["path"]
+        )
     return canonical_hash(values)
 
 

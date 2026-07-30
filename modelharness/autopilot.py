@@ -8,6 +8,7 @@ from .contracts import validate_review
 from .evidence import EvidenceGraph
 from .playbooks import PLAYBOOKS
 from .problem_graph import ProblemGraph
+from .review_store import latest_review_path
 from .stages import StageService
 from .storage import read_json
 from .workflow import WorkflowEngine
@@ -56,7 +57,10 @@ def legacy_next_packet(project: Path) -> dict:
     ]
     reviews = []
     for relative in spec["reviews"]:
-        path = project / relative
+        path = (
+            latest_review_path(project, relative)
+            or project / relative
+        )
         verdict = None
         error = None
         if path.is_file():

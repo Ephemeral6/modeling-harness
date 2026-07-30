@@ -17,7 +17,7 @@ class EvidenceGraph(_EvidenceGraph):
         if not node.get("obligation_hash"):
             return records, errors
         for relative in node.get("reviews", []):
-            path = self.root / relative
+            path = self._review_path(node_id, node, relative)
             if not path.is_file():
                 continue
             try:

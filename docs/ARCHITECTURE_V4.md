@@ -59,6 +59,20 @@ paper claim: current → stale（由 narrative audit 拦截）
 
 历史记录不删除。重算从最小受影响节点开始。
 
+## Append-only Review Lineage
+
+Problem Graph 的 `review.path` 是逻辑审核槽位，不是跨 Agent 共享覆盖的物理文件。首次审核
+可写逻辑路径；之后写同目录 `_v2.json`、`_v3.json` 等不可变版本。解析器按版本倒序，
+选择同时匹配当前 `contract_hash` 和当前全部工件哈希的审核。
+
+这避免两个问题：
+
+- Windows 跨 Agent ACL 不再要求后一位 reviewer 替换前一位创建的文件；
+- REJECT、APPROVE 和修订历史都保留，可被 Episode 与哈希绑定完整回放。
+
+旧活动任务若仍 owns canonical 路径，但 reviewer 已生成带相同 task_id 的合法 `_vN`
+文件，Scheduler 会自动重绑定任务输出；该操作不需要用户授权。
+
 ## Proposal Policy
 
 裁决只有 ALLOW、ALLOW_WITH_OBLIGATIONS、REVISE、ESCALATE_TO_USER、DENY。

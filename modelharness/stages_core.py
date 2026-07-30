@@ -10,6 +10,7 @@ from .evidence import EvidenceGraph
 from .method_packs import MethodPackRegistry
 from .problem_graph import ProblemGraph
 from .profiles import ProfileService
+from .review_store import latest_review_path, relative_review_path
 from .storage import file_lock, read_json
 from .util import now, sha256, write_json
 
@@ -157,7 +158,10 @@ class StageService:
                 errors.append(f"证据未绑定当前问题合同: {node_id}")
         reviews = []
         for relative in spec["reviews"]:
-            path = self.project / relative
+            path = (
+                latest_review_path(self.project, relative)
+                or self.project / relative
+            )
             if not path.is_file():
                 errors.append(f"独立审核缺失: {relative}")
                 continue
@@ -168,7 +172,10 @@ class StageService:
             except ValueError as exc:
                 errors.append(str(exc))
                 continue
-            reviews.append({"path": relative, "sha256": sha256(path)})
+            reviews.append({
+                "path": relative_review_path(self.project, path),
+                "sha256": sha256(path),
+            })
         checks = [run_check(self.project, raw) for raw in spec["checks"]]
         for item in checks:
             if not item["ok"]:

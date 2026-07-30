@@ -103,12 +103,20 @@ class EvidenceGraph:
             validate_evidence_graph(data)
         return record
 
+    def _review_path(
+        self, node_id: str, node: dict, relative: str
+    ) -> Path:
+        return safe_relative(self.root, relative)
+
     def _review_records(
         self, node_id: str, node: dict
     ) -> tuple[list[dict], list[str]]:
         records, errors = [], []
         for relative in node.get("reviews", []):
-            path = safe_relative(self.root, relative)
+            path = self._review_path(node_id, node, relative)
+            actual = (
+                path.resolve().relative_to(self.root.resolve()).as_posix()
+            )
             if not path.is_file():
                 errors.append(f"independent review missing: {relative}")
                 continue
@@ -129,7 +137,7 @@ class EvidenceGraph:
                 if contract != node["obligation_hash"]:
                     errors.append(f"review contract mismatch: {relative}")
             records.append({
-                "path": relative,
+                "path": actual,
                 "sha256": sha256(path),
                 "reviewer": review.get("reviewer"),
                 "task_id": review.get("task_id"),

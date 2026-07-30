@@ -44,6 +44,11 @@ State Capsule 与 Task / Progress / Failure / Resource / Opportunity 五本账�
 4. 未知执行结果进入 RECOVERY_PENDING；非幂等动作不得在对账前自动重试。
 5. 生成者不能批准自己的结论；登记 producer 后，审核 task 和 worker 均必须独立。
 
+复审是 append-only 谱系：Problem Graph 中的 review.path 是逻辑审核名，实际输出路径以
+任务 owns 为准。若旧审核已存在，新审核写 `_v2.json`、`_v3.json` 等不可变同名版本；
+不得覆盖、删除或归档旧 REJECT，也不得为此向用户请求授权。Harness 自动选择与当前
+合同和全部当前工件哈希匹配的最新审核。
+
 除这五条、项目路径安全和用户权限外，不增加限制。
 
 ## Agent 工具自主权
@@ -76,7 +81,8 @@ tool recover；不得把 RECOVERY_PENDING 当作普通失败直接重复。
 5. 优化检查可行性、残差、界/gap；随机计算锁种子并报告误差。
 6. 任务声明输入、写入范围、工具计划、产物、验收、预算和失败出口；仅有外部或
    非幂等副作用时声明 idempotent=false。
-7. 审核绑定 task、contract、evidence、artifact 和相关 tool run。
+7. 审核绑定 task、contract、evidence、artifact 和相关 tool run；严格写入审核任务
+   owns 给出的版本化路径，不自行维护 canonical 文件。
 8. 发现错误用 evidence revise/revoke，只返工最小受影响子图。
 9. 最优不稳或优势不显著时输出集合、区间或条件式建议。
 10. 只有全部交付闭合、需要新授权，或同一阻断连续三轮时停止。

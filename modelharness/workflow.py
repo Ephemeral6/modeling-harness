@@ -336,6 +336,78 @@ class WorkflowEngine:
             )
         return finished
 
+    def rebind_review_output(
+        self, task_id: str, output_path: str
+    ) -> dict:
+        """Move a live legacy review task to an append-only output path."""
+        target = normalize_owner(output_path)
+        with self.connect() as con:
+            con.execute("BEGIN IMMEDIATE")
+            row = con.execute(
+                "SELECT * FROM tasks WHERE id=?", (task_id,)
+            ).fetchone()
+            if row is None:
+                con.execute("ROLLBACK")
+                raise ValueError("review task does not exist")
+            task = self._decode(row)
+            if task.get("task_type") != "independent_review":
+                con.execute("ROLLBACK")
+                raise ValueError("only independent-review tasks can be rebound")
+            if task.get("status") not in self.ACTIVE_STATES:
+                con.execute("ROLLBACK")
+                raise ValueError("only live review tasks can be rebound")
+            old_owners = task.get("owns", [])
+            if len(old_owners) != 1:
+                con.execute("ROLLBACK")
+                raise ValueError("review task must own exactly one output")
+            active = con.execute(
+                "SELECT id,owns FROM tasks WHERE id<>? AND status IN "
+                "('pending','claimed','running','recovery_pending')",
+                (task_id,),
+            ).fetchall()
+            conflicts = [
+                item["id"] for item in active
+                if any(
+                    owners_overlap(target, scope)
+                    for scope in json.loads(item["owns"])
+                )
+            ]
+            if conflicts:
+                con.execute("ROLLBACK")
+                raise ValueError(f"write scope conflicts: {conflicts}")
+            acceptance = task.get("acceptance", [])
+            replaced = False
+            for item in acceptance:
+                if (
+                    isinstance(item, dict)
+                    and item.get("kind") == "artifact_exists"
+                    and normalize_owner(str(item.get("path", "")))
+                    in old_owners
+                ):
+                    item["path"] = output_path
+                    replaced = True
+            if not replaced:
+                acceptance.append({
+                    "kind": "artifact_exists", "path": output_path,
+                })
+            con.execute(
+                """UPDATE tasks SET owns=?,acceptance=?,updated_at=?
+                   WHERE id=?""",
+                (
+                    json.dumps([target]),
+                    json.dumps(acceptance),
+                    now(),
+                    task_id,
+                ),
+            )
+            con.execute("COMMIT")
+        self.event("task.review_output_rebound", {
+            "task_id": task_id,
+            "old_output": old_owners[0],
+            "new_output": target,
+        })
+        return self.get_task(task_id)
+
     def mark_recovery_pending(
         self,
         task_id: str,

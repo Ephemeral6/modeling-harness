@@ -58,7 +58,7 @@ class EvidenceGraph(_EvidenceGraph):
                     "owns this evidence artifact"
                 )
         for relative in node.get("reviews", []):
-            path = self.root / relative
+            path = self._review_path(node_id, node, relative)
             if not path.is_file():
                 continue
             try:

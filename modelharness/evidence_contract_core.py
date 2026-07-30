@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from .contracts import validate_review
 from .evidence_core import KINDS, STATUSES, EvidenceGraph as _EvidenceGraph
+from .review_store import resolve_review
 from .storage import read_json
+from .util import sha256
 
 
 class EvidenceGraph(_EvidenceGraph):
@@ -62,12 +64,30 @@ class EvidenceGraph(_EvidenceGraph):
             reason=reason,
         )
 
+    def _review_path(
+        self, node_id: str, node: dict, relative: str
+    ):
+        contract = node.get("obligation_hash")
+        path = self.root / node["artifact"]
+        expected = {
+            node["artifact"]: sha256(path) if path.is_file() else None
+        }
+        resolution = resolve_review(
+            self.root,
+            relative,
+            contract_hash=contract,
+            artifact_hashes=expected,
+        )
+        if resolution:
+            return self.root / resolution["path"]
+        return super()._review_path(node_id, node, relative)
+
     def _review_records(self, node_id: str, node: dict):
         records, errors = super()._review_records(node_id, node)
         if not node.get("obligation_hash"):
             return records, errors
         for relative in node.get("reviews", []):
-            path = self.root / relative
+            path = self._review_path(node_id, node, relative)
             if not path.is_file():
                 continue
             try:

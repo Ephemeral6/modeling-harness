@@ -1,13 +1,15 @@
 """Adaptive scheduler with autonomous tool plans and stale-review rejection."""
 from __future__ import annotations
 
-from .contracts import validate_review
+from .review_store import (
+    next_review_path,
+    resolve_review,
+)
 from .scheduler_core import (
     AdaptiveScheduler as _AdaptiveScheduler,
     _artifact_signature,
     _review_signature,
 )
-from .storage import read_json
 from .toolchain import ToolchainService, validate_tool_policy
 from .util import sha256
 
@@ -97,54 +99,139 @@ class AdaptiveScheduler(_AdaptiveScheduler):
             created.append(task)
         return created
 
-    def _review_tasks(self, item: dict) -> list[dict]:
-        node_id, node = item["id"], item["node"]
-        contract = item["contract_hash"]
-        artifact_signature = _artifact_signature(self.project, node)
-        current_hashes = {
+    def _artifact_hashes(self, node: dict) -> dict[str, str | None]:
+        return {
             output["artifact"]: (
                 sha256(self.project / output["artifact"])
                 if (self.project / output["artifact"]).is_file() else None
             )
             for output in node["outputs"]
         }
+
+    def _migrate_legacy_review_tasks(self) -> list[str]:
+        """Adopt versioned drafts created for old canonical review tasks."""
+        tasks = self.workflow.list_tasks()
+        occupied = [
+            scope for task in tasks for scope in task.get("owns", [])
+        ]
+        rebound = []
+        for task in tasks:
+            if (
+                task.get("task_type") != "independent_review"
+                or task.get("status") not in self.workflow.ACTIVE_STATES
+                or len(task.get("owns", [])) != 1
+            ):
+                continue
+            node_id = task.get("work_item_id")
+            node = self.graph.nodes.get(node_id)
+            if not node:
+                continue
+            contract = self.graph.contract_hash(node_id)
+            current_hashes = self._artifact_hashes(node)
+            for review in node.get("reviews", []):
+                logical = review["path"]
+                prefix = f"review:{node_id}:{logical}:"
+                if not str(task.get("idempotency_key", "")).startswith(prefix):
+                    continue
+                resolution = resolve_review(
+                    self.project,
+                    logical,
+                    contract_hash=contract,
+                    artifact_hashes=current_hashes,
+                )
+                target = None
+                if (
+                    resolution
+                    and resolution.get("record")
+                    and resolution["record"].get("task_id") == task["id"]
+                    and resolution["path"].casefold()
+                    != task["owns"][0].casefold()
+                ):
+                    target = resolution["path"]
+                elif (
+                    task.get("status") == "pending"
+                    and (self.project / logical).is_file()
+                    and task["owns"][0].casefold() == logical.casefold()
+                ):
+                    target = next_review_path(
+                        self.project, logical, occupied=occupied
+                    )
+                if target:
+                    migrated = self.workflow.rebind_review_output(
+                        task["id"], target
+                    )
+                    occupied.append(target)
+                    rebound.append(migrated["id"])
+                break
+        return rebound
+
+    def next_packet(self) -> dict:
+        self._migrate_legacy_review_tasks()
+        return super().next_packet()
+
+    def _review_tasks(self, item: dict) -> list[dict]:
+        node_id, node = item["id"], item["node"]
+        contract = item["contract_hash"]
+        artifact_signature = _artifact_signature(self.project, node)
+        current_hashes = self._artifact_hashes(node)
+        tasks = self.workflow.list_tasks(work_item_id=node_id)
+        occupied = [
+            scope for task in self.workflow.list_tasks()
+            for scope in task.get("owns", [])
+        ]
         created = []
         for review in node.get("reviews", []):
-            path = self.project / review["path"]
-            approved = False
-            if path.is_file():
-                try:
-                    record = validate_review(read_json(path), path)
-                    reviewed = record.get("artifact_hashes", {})
-                    approved = (
-                        record["verdict"].upper() == "APPROVE"
-                        and record.get("contract_hash") == contract
-                        and all(
-                            reviewed.get(relative) == digest
-                            for relative, digest in current_hashes.items()
-                        )
-                    )
-                except ValueError:
-                    approved = False
-            if approved:
+            logical = review["path"]
+            resolution = resolve_review(
+                self.project,
+                logical,
+                contract_hash=contract,
+                artifact_hashes=current_hashes,
+            )
+            if (
+                resolution
+                and resolution.get("record")
+                and resolution["record"]["verdict"].upper() == "APPROVE"
+            ):
                 continue
+            key_prefix = (
+                f"review:{node_id}:{logical}:{artifact_signature}"
+            )
+            active = [
+                task for task in tasks
+                if task.get("status") in self.workflow.ACTIVE_STATES
+                and (
+                    task.get("idempotency_key") == key_prefix
+                    or str(task.get("idempotency_key", "")).startswith(
+                        key_prefix + ":"
+                    )
+                )
+            ]
+            if active:
+                created.append(active[-1])
+                continue
+            output_path = next_review_path(
+                self.project, logical, occupied=occupied
+            )
             try:
                 task = self.workflow.ensure_task(
-                    f"review:{node_id}:{review['path']}:{artifact_signature}",
+                    f"{key_prefix}:{output_path}",
                     node["milestone"],
                     review.get("role", "independent-reviewer"),
                     (
                         f"冷启动审核局部问题 {node_id}：{node['question']}。"
                         f"只读取正式输入、产物、tool run manifest 和检查；"
                         f"输出审核必须绑定 contract_hash={contract}、task_id "
-                        f"和全部当前产物哈希。"
+                        f"和全部当前产物哈希。写入不可变审核文件 "
+                        f"{output_path}；不得覆盖或归档旧审核，也不需要为复审"
+                        f"请求额外授权。"
                     ),
-                    [review["path"]],
+                    [output_path],
                     inputs=self._input_artifacts(node) + [
                         x["artifact"] for x in node["outputs"]
                     ],
                     acceptance=[{
-                        "kind": "artifact_exists", "path": review["path"],
+                        "kind": "artifact_exists", "path": output_path,
                     }],
                     budget={"max_attempts": 3},
                     work_item_id=node_id,
@@ -162,4 +249,5 @@ class AdaptiveScheduler(_AdaptiveScheduler):
                     "error": str(exc),
                 }
             created.append(task)
+            occupied.append(output_path)
         return created
