@@ -1,0 +1,10 @@
+{
+  "name": "general",
+  "version": "1.0.0",
+  "renderer": "evidence_report",
+  "max_parallel_agents": 3,
+  "mandatory_outputs": ["problem", "model", "result", "decision", "limitation"],
+  "human_checkpoints": [],
+  "report_sections": ["问题", "模型", "验证", "决策", "边界"],
+  "quality_dimensions": ["correctness", "reproducibility", "calibration"]
+}

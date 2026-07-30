@@ -1,47 +1,53 @@
-# Modeling Harness 执行宪法
+# Modeling Harness 3.0 执行宪法
 
-本项目由 Codex 主控协调。任何智能体都可以提出假设、方案和候选结论，但只有
-`modelharness evidence verify` 能把节点提升为 verified。论文和最终决策只能引用
-verified 节点。
+本项目以 Problem Graph 中的局部问题为求解单元，以 S0–S6 为整体审计里程碑。
+任何智能体都可以提出候选，但只有合同绑定的机械检查、冷启动审核和
+`modelharness evidence verify` 能把节点提升为 verified。
+
+## 四层状态
+
+- `.harness/problem_graph.json`：待回答义务和依赖；
+- `.harness/evidence.json`：候选、验证、拒绝和撤销的结论；
+- `.harness/workflow.sqlite3`：任务、租约、预算和验收；
+- `.harness/stamps/`：里程碑闭合投影。
+
+不得用任务完成代替证据验证，也不得用印章存在代替印章校验。
 
 ## 不可违反的规则
 
-1. `problem/data_raw/` 只读；所有清洗结果写入 `data/processed/`。
-2. 主控负责拆解、调度和整合，不得把“自己认为正确”当成验证。
-3. 建模者、编码者和审核者必须分离；审核者不得读取生成者的思维过程，只看题面、
-   产物、检查结果和证据图。
-4. 先做量纲/Fermi 检查和 toy known-answer test，再做全规模计算。
-5. 数值结论必须来自 `results/` 中的机器生成产物；不得在论文里凭记忆手填。
-6. 发现上游错误时执行 `evidence revoke`，依赖结论自动撤销，并从对应阶段
-   `invalidate`，禁止只改最终文字。
-7. 若稳健集合为空、优势不显著或模型失效，必须诚实报告集合、区间或条件式建议，
-   不得强行给唯一最优解。
+1. `problem/data_raw/` 只读；所有变换写入 `data/processed/`。
+2. 原始题意只写 `problem/statement.md`，不得混入解题思路。
+3. 主控负责问题拆解、关键前沿、预算、接口和最终整合。
+4. 生成者、实现者和审核者分离；生成者只登记 candidate。
+5. 先做量纲、Fermi、反例、toy 和已知解，再跑正式规模。
+6. 数值结论必须来自机器产物，关键结果不得凭记忆写入论文。
+7. 任务完成必须通过 acceptance；自然语言汇报不是完成依据。
+8. 审核绑定 task ID、contract hash、evidence IDs 和 artifact hashes。
+9. 上游错误使用 `evidence revise/revoke`，沿图撤销下游。
+10. 最优不稳、优势不显著或稳健集为空时，改报集合、区间或条件式建议。
 
-## 默认角色
+## 工作循环
 
-- Main Orchestrator：任务图、预算、阶段推进、冲突裁决。
-- Problem Architect：题意形式化、成功标准、失效模式。
-- Literature Scout：只提供方法地图和可核验来源，不替代建模。
-- Competing Modelers A/B/C：独立提出结构不同的候选模型。
-- Referee：盲评模型，审查必要性、可辨识性和可验证性。
-- Data Auditor：来源、单位、缺失、泄漏、时间切分、处理血缘。
-- Solver Engineer：可复现实现、检查点、确定性种子和性能预算。
-- Numerical Auditor：不变量、toy、独立实现对拍、收敛与误差。
-- Red Team：反例、基线、敏感性、外推、结论强度。
-- Decision Analyst：把分布和稳健性变成可行动建议。
-- Narrative Writer：按问题—困难—机制—证据—决策—边界成文。
-- Paper Verifier：逐项核对论文中的结论、数字和限定语。
-
-角色提示词位于 `prompts/roles/`。只有任务确实可并行且文件写入范围互不重叠时，
-才创建 subagent。
-
-
-## Autopilot 持续执行
-
-本项目不是“一阶段一轮对话”。主控必须在每个工作单元后运行：
+运行：
 
 ```powershell
-python -m modelharness.autopilot next --project .
+modelharness work next --project .
 ```
 
-按照返回的阶段、phase、缺失证据、并行角色和文件所有权继续工作。gate 通过后立即再次调用并进入下一阶段，不能把 S0–S5 的完成当作回合终点。只有 S6 完成、需要用户新授权，或同一阻断连续三轮无法解决时才停止。
+按返回的 `frontier`、`priority`、`contract_hash` 和 `tasks` 推进。完成任何任务、
+审核、验证或 Gate 后再次运行，不能把单个阶段或 Agent 完成当作终点。
+
+## Problem Graph 修订
+
+问题图只在题意、数据语义、模型接口或交付义务真正变化时修订。先产出外部 proposal，
+运行 `plan validate`，经冷审后用 `plan apply --reason` 应用。系统会淘汰旧合同任务、
+撤销受影响证据，并只失效必要里程碑。
+
+## Delivery Profile
+
+- `cumcm`：逐问数值结果、算法过程、误差和复现；
+- `mcm_icm`：摘要、机制解释、敏感性和决策叙事；
+- `real_world`：利益函数、数据治理、决策包和监控计划；
+- `general`：通用证据报告。
+
+Profile 只能改变交付义务和呈现，不能改变已验证数学事实。

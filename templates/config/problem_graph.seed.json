@@ -1,0 +1,334 @@
+{
+  "schema": 1,
+  "revision": 0,
+  "nodes": {
+    "s0.problem_definition": {
+      "question": "题目真正要求回答什么，成功、失败和不回答的边界是什么？",
+      "task_type": "problem_framing",
+      "milestone": "s0",
+      "depends_on": [],
+      "input_evidence": [],
+      "method_pack": "problem-framing",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "problem.statement",
+          "kind": "problem",
+          "statement": "经附件核对的完整题意",
+          "artifact": "problem/statement.md"
+        },
+        {
+          "evidence_id": "problem.success",
+          "kind": "problem",
+          "statement": "决策问题、指标、基线、硬约束与失效出口",
+          "artifact": "docs/success_criteria.md"
+        }
+      ],
+      "acceptance": {},
+      "workstreams": [
+        {
+          "id": "architect",
+          "role": "problem-architect",
+          "description": "形式化题意、子问题、成功标准与失败出口",
+          "owns": ["docs/success_criteria.md"],
+          "outputs": ["problem.statement", "problem.success"],
+          "budget": {"max_attempts": 3}
+        }
+      ],
+      "reviews": [],
+      "risk": {
+        "downstream_impact": 5,
+        "uncertainty": 4,
+        "estimated_cost": 1
+      }
+    },
+    "s1.model_formulation": {
+      "question": "哪种最简模型结构能够回答决策问题并被数据证伪？",
+      "task_type": "model_formulation",
+      "milestone": "s1",
+      "depends_on": ["s0.problem_definition"],
+      "input_evidence": ["problem.statement", "problem.success"],
+      "method_pack": "model-competition",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "model.spec",
+          "kind": "model",
+          "statement": "正式模型、变量、方程、算法与验证映射",
+          "artifact": "docs/model_spec.md"
+        },
+        {
+          "evidence_id": "model.assumptions",
+          "kind": "assumption",
+          "statement": "可证伪假设、边界与回退模型",
+          "artifact": "docs/assumptions.md"
+        }
+      ],
+      "acceptance": {},
+      "workstreams": [
+        {
+          "id": "competition",
+          "role": "modeling-team",
+          "description": "提出结构不同的候选并用可辨识性和最小实验裁决",
+          "owns": [
+            "docs/candidates",
+            "docs/model_spec.md",
+            "docs/assumptions.md"
+          ],
+          "outputs": ["model.spec", "model.assumptions"],
+          "budget": {"max_attempts": 3}
+        }
+      ],
+      "reviews": [
+        {"role": "referee", "path": "reviews/s1_referee.json"},
+        {"role": "red-team", "path": "reviews/s1_redteam.json"}
+      ],
+      "risk": {
+        "downstream_impact": 5,
+        "uncertainty": 5,
+        "estimated_cost": 3
+      }
+    },
+    "s2.data_estimation": {
+      "question": "数据如何生成、删失和污染，关键参数能否可靠估计？",
+      "task_type": "data_estimation",
+      "milestone": "s2",
+      "depends_on": ["s1.model_formulation"],
+      "input_evidence": ["problem.statement", "model.spec", "model.assumptions"],
+      "method_pack": "data-estimation",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "data.ledger",
+          "kind": "data",
+          "statement": "数据来源、单位、变换和切分血缘",
+          "artifact": "data/ledger.md"
+        },
+        {
+          "evidence_id": "result.parameters",
+          "kind": "result",
+          "statement": "参数估计、诊断、误差和可辨识性",
+          "artifact": "results/parameters.json"
+        }
+      ],
+      "acceptance": {},
+      "workstreams": [
+        {
+          "id": "pipeline",
+          "role": "estimation-team",
+          "description": "建立可复现数据管线并完成真值回收和参数估计",
+          "owns": [
+            "data/ledger.md",
+            "data/processed",
+            "src/data_prep.py",
+            "src/estimate.py",
+            "results/parameters.json"
+          ],
+          "outputs": ["data.ledger", "result.parameters"],
+          "budget": {"max_attempts": 3}
+        }
+      ],
+      "reviews": [
+        {"role": "data-auditor", "path": "reviews/s2_data_audit.json"}
+      ],
+      "risk": {
+        "downstream_impact": 5,
+        "uncertainty": 5,
+        "estimated_cost": 4
+      }
+    },
+    "s3.solver_validation": {
+      "question": "求解器是否在已知解、极限情形和正式规模上给出可信结果？",
+      "task_type": "solver_engineering",
+      "milestone": "s3",
+      "depends_on": ["s2.data_estimation"],
+      "input_evidence": ["model.spec", "result.parameters"],
+      "method_pack": "solver-validation",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "code.solver",
+          "kind": "code",
+          "statement": "可复现的唯一正式求值器",
+          "artifact": "src/solver.py"
+        },
+        {
+          "evidence_id": "experiment.toy",
+          "kind": "experiment",
+          "statement": "已知解、极限或独立实现对拍",
+          "artifact": "results/toy.json"
+        },
+        {
+          "evidence_id": "result.nominal",
+          "kind": "result",
+          "statement": "正式规模的标称机器结果",
+          "artifact": "results/nominal.json"
+        }
+      ],
+      "acceptance": {},
+      "workstreams": [
+        {
+          "id": "solver",
+          "role": "solver-team",
+          "description": "按 toy-first 阶梯实现、对拍并运行正式求解器",
+          "owns": [
+            "src/solver.py",
+            "checks/l2_toy.py",
+            "results/toy.json",
+            "results/nominal.json"
+          ],
+          "outputs": ["code.solver", "experiment.toy", "result.nominal"],
+          "budget": {"max_attempts": 3}
+        }
+      ],
+      "reviews": [
+        {"role": "numerics-auditor", "path": "reviews/s3_numerics.json"}
+      ],
+      "risk": {
+        "downstream_impact": 5,
+        "uncertainty": 4,
+        "estimated_cost": 4
+      }
+    },
+    "s4.uncertainty_robustness": {
+      "question": "结论对数据误差、结构假设、随机性和分布偏移是否稳定？",
+      "task_type": "uncertainty_robustness",
+      "milestone": "s4",
+      "depends_on": ["s3.solver_validation"],
+      "input_evidence": ["code.solver", "result.nominal", "result.parameters"],
+      "method_pack": "uncertainty-robustness",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "result.uq",
+          "kind": "result",
+          "statement": "区分参数不确定性与内禀随机性的 UQ 结果",
+          "artifact": "results/uq.json"
+        },
+        {
+          "evidence_id": "result.robustness",
+          "kind": "result",
+          "statement": "基线、敏感性、反事实和失效域",
+          "artifact": "results/sensitivity.json"
+        }
+      ],
+      "acceptance": {},
+      "workstreams": [
+        {
+          "id": "robustness",
+          "role": "robustness-team",
+          "description": "执行留出验证、UQ、强基线与翻转边界扫描",
+          "owns": [
+            "src/uq.py",
+            "src/baselines.py",
+            "src/sensitivity.py",
+            "results/uq.json",
+            "results/sensitivity.json"
+          ],
+          "outputs": ["result.uq", "result.robustness"],
+          "budget": {"max_attempts": 3}
+        }
+      ],
+      "reviews": [
+        {"role": "red-team", "path": "reviews/s4_redteam.json"}
+      ],
+      "risk": {
+        "downstream_impact": 5,
+        "uncertainty": 4,
+        "estimated_cost": 5
+      }
+    },
+    "s5.decision": {
+      "question": "在什么条件下应采取什么行动，何时只能给集合或区间？",
+      "task_type": "decision_analysis",
+      "milestone": "s5",
+      "depends_on": ["s4.uncertainty_robustness"],
+      "input_evidence": ["result.nominal", "result.uq", "result.robustness"],
+      "method_pack": "decision-analysis",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "decision.answer",
+          "kind": "decision",
+          "statement": "条件式行动建议、收益、风险和失效触发器",
+          "artifact": "docs/decision_answer.md"
+        },
+        {
+          "evidence_id": "decision.lock",
+          "kind": "decision",
+          "statement": "锁定的机器可读决策结果",
+          "artifact": "predictions/registered.json"
+        }
+      ],
+      "acceptance": {},
+      "workstreams": [
+        {
+          "id": "decision",
+          "role": "decision-analyst",
+          "description": "将分布、基线与稳健集合转化为条件式决策",
+          "owns": [
+            "docs/decision_answer.md",
+            "predictions/registered.json",
+            "predictions/registered.sha256"
+          ],
+          "outputs": ["decision.answer", "decision.lock"],
+          "budget": {"max_attempts": 3}
+        }
+      ],
+      "reviews": [],
+      "risk": {
+        "downstream_impact": 5,
+        "uncertainty": 3,
+        "estimated_cost": 2
+      }
+    },
+    "s6.delivery": {
+      "question": "如何只用已验证证据交付，并确保关键数字和限定语不被改写？",
+      "task_type": "evidence_delivery",
+      "milestone": "s6",
+      "depends_on": ["s5.decision"],
+      "input_evidence": [
+        "problem.statement",
+        "model.spec",
+        "result.nominal",
+        "result.uq",
+        "result.robustness",
+        "decision.answer",
+        "decision.lock"
+      ],
+      "method_pack": "evidence-writing",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "narrative.paper",
+          "kind": "narrative",
+          "statement": "按交付 Profile 生成并经证据复核的最终文档",
+          "artifact": "paper/draft.md"
+        }
+      ],
+      "acceptance": {},
+      "workstreams": [
+        {
+          "id": "delivery",
+          "role": "delivery-team",
+          "description": "从 verified evidence 生成交付物与图表",
+          "owns": [
+            "paper/draft.md",
+            "paper/figures",
+            "results/report_claims.json"
+          ],
+          "outputs": ["narrative.paper"],
+          "budget": {"max_attempts": 3}
+        }
+      ],
+      "reviews": [
+        {"role": "paper-verifier", "path": "reviews/s6_paper_audit.json"}
+      ],
+      "risk": {
+        "downstream_impact": 3,
+        "uncertainty": 2,
+        "estimated_cost": 2
+      }
+    }
+  }
+}

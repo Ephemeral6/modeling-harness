@@ -1,0 +1,14 @@
+{
+  "name": "data-estimation",
+  "version": "1.0.0",
+  "description": "数据血缘、删失语义、参数估计和可辨识性协议。",
+  "task_types": ["data_estimation", "statistical_estimation", "forecasting"],
+  "protocol": [
+    "锁定原始数据和训练验证切分",
+    "审计单位、缺失、删失、泄漏和处理血缘",
+    "先做合成真值回收再拟合真实数据",
+    "与简单估计基线比较并报告不可辨识方向"
+  ],
+  "required_tests": ["真值回收", "简单基线", "留出验证"],
+  "fallbacks": ["点估计失败时改报区间、集合或额外数据需求"]
+}

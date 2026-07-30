@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -34,9 +33,13 @@ def test_gate_chain_rejects_forgery_and_tamper(tmp_path: Path):
     forged.write_text('{"stage":"s0"}', encoding="utf-8")
     assert StageService(root).current() == "s0"
     forged.unlink()
-    StageService(root).gate("s0")
+    stamp = StageService(root).gate("s0")
+    assert stamp["schema"] == 3
+    assert stamp["problem_closure_sha256"]
     assert StageService(root).current() == "s1"
-    (root / "problem" / "statement.md").write_text("tampered", encoding="utf-8")
+    (root / "problem" / "statement.md").write_text(
+        "tampered", encoding="utf-8"
+    )
     assert StageService(root).current() == "s0"
     assert StageService(root).validate_stamp("s0")
 
@@ -44,7 +47,9 @@ def test_gate_chain_rejects_forgery_and_tamper(tmp_path: Path):
 def test_concurrent_evidence_updates_do_not_lose_nodes(tmp_path: Path):
     root = create(tmp_path / "case", "demo")
     for index in range(8):
-        (root / "results" / f"{index}.txt").write_text(str(index), encoding="utf-8")
+        (root / "results" / f"{index}.txt").write_text(
+            str(index), encoding="utf-8"
+        )
 
     def add(index: int):
         EvidenceGraph(root).add(
@@ -65,7 +70,9 @@ def test_corrupt_state_fails_closed(tmp_path: Path):
         EvidenceGraph(root).audit()
 
 
-def test_intake_is_unique_and_transactional_enough_for_retries(tmp_path: Path):
+def test_intake_is_unique_and_transactional_enough_for_retries(
+    tmp_path: Path,
+):
     harness = tmp_path / "harness"
     harness.mkdir()
     source = tmp_path / "题面.txt"
@@ -79,6 +86,7 @@ def test_intake_is_unique_and_transactional_enough_for_retries(tmp_path: Path):
         stored = project / manifest["files"][0]["stored_as"]
         assert stored.is_file()
         assert manifest["files"][0]["sha256"]
+        assert (project / ".harness" / "problem_graph.json").is_file()
     current = read_json(harness / "projects" / ".current.json")
     assert Path(second["project"]).name in current["project"]
 
@@ -87,7 +95,11 @@ def test_task_ownership_lease_and_recovery(tmp_path: Path):
     root = create(tmp_path / "case", "demo")
     engine = WorkflowEngine(root)
     task = engine.ensure_task(
-        "s3:solver", "s3", "solver", "solve", ["src", "results/nominal.json"]
+        "s3:solver",
+        "s3",
+        "solver",
+        "solve",
+        ["src", "results/nominal.json"],
     )
     with pytest.raises(ValueError):
         engine.ensure_task(
@@ -96,18 +108,22 @@ def test_task_ownership_lease_and_recovery(tmp_path: Path):
     claimed = engine.claim(task["id"], "worker-1", lease_seconds=30)
     assert claimed["attempt"] == 1
     with sqlite3.connect(engine.path) as con:
-        con.execute("UPDATE tasks SET lease_until=0 WHERE id=?", (task["id"],))
+        con.execute(
+            "UPDATE tasks SET lease_until=0 WHERE id=?", (task["id"],)
+        )
     assert engine.reconcile(max_attempts=3) == [task["id"]]
     assert engine.get_task(task["id"])["status"] == "pending"
 
 
-def test_autopilot_creates_durable_parallel_tasks(tmp_path: Path):
+def test_autopilot_creates_contract_bound_frontier_tasks(tmp_path: Path):
     root = create(tmp_path / "case", "demo")
     packet = next_packet(root)
     assert packet["stage"] == "s0"
-    assert packet["phase"] == "build_evidence"
+    assert packet["phase"] == "work"
+    assert packet["frontier"][0]["id"] == "s0.problem_definition"
     tasks = WorkflowEngine(root).list_tasks("s0")
-    assert {item["role"] for item in tasks} == {"problem-architect", "data-scout"}
-    # Repeated ticks are idempotent.
+    assert {item["role"] for item in tasks} == {"problem-architect"}
+    assert tasks[0]["work_item_id"] == "s0.problem_definition"
+    assert tasks[0]["contract_hash"] == packet["frontier"][0]["contract_hash"]
     next_packet(root)
-    assert len(WorkflowEngine(root).list_tasks("s0")) == 2
+    assert len(WorkflowEngine(root).list_tasks("s0")) == 1

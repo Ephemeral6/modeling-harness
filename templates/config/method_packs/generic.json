@@ -1,0 +1,14 @@
+{
+  "name": "generic",
+  "version": "1.0.0",
+  "description": "未分类局部问题的保守研究协议。",
+  "task_types": ["*"],
+  "protocol": [
+    "精确定义输入、输出和验收标准",
+    "提出至少一个简单基线",
+    "先运行最小可证伪实验",
+    "由独立审核决定是否形成 verified evidence"
+  ],
+  "required_tests": ["最小可证伪实验"],
+  "fallbacks": ["无法验证时保持 candidate 并标记阻断"]
+}

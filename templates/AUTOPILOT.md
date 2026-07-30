@@ -1,27 +1,20 @@
-# 项目 Autopilot 协议
+# 项目内 Autopilot
 
-主控在每个工作单元后运行：
+每个工作单元后运行：
 
 ```powershell
-python -m modelharness.autopilot next --project .
+modelharness work next --project .
 ```
 
-返回包定义当前 `stage`、`phase`、缺失 verified 证据、独立审核者以及建议的
-`parallel_agent_plan`。主控执行后再次调用，直到 S6 完成。
-
-## 循环
+主控按关键前沿推进：
 
 ```text
-定位当前状态 → 拆分 → 并行执行 → 检查产物 → 独立审核
-     → gate → 下一阶段
-        ↑
-     修复/撤销
+问题合同 → 候选 → 最小区分实验 → 实现 → 冷审 → verified → 整合
 ```
 
-Subagent 必须拥有互不重叠的写入范围，并返回产物路径与验证结果。主控负责整合，
-不能把自然语言汇报视为完成。审核者冷启动，只读取题面、规格、代码、结果和检查。
+当 `phase=work` 时领取局部研究任务；`phase=review` 时创建冷启动审核；
+`phase=repair` 时按 findings 修订同一 evidence ID；`phase=gate` 时签发当前里程碑并
+立即继续；`phase=blocked` 时检查缺失输入、依赖环、写入冲突或连续失败。
 
-一次失败、一次 REJECT、一个阶段完成或一个 subagent 完成都不是停止条件。仅在以下
-情况停止：S6 完成；需要用户提供不可替代的输入/授权；同一阻断连续三轮无法解决；
-下一步属于未授权的高风险外部操作。
+不得在 S0–S5、单个任务完成、一次 REJECT 或一次测试失败时停止。
 

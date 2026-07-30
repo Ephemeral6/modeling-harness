@@ -1,48 +1,57 @@
+"""Profile-aware evidence delivery facade."""
 from __future__ import annotations
 
-import re
-from pathlib import Path
-
 from .evidence import EvidenceGraph
-from .storage import read_json
+from .narrative_core import CLAIM_RE
+from .narrative_core import audit_paper as _audit_paper
+from .narrative_core import build_brief as _build_brief
+from .problem_graph import ProblemGraph
+from .profiles import ProfileService
+from .storage import atomic_write_json
 
-CLAIM_RE = re.compile(r"\[\[([A-Za-z][A-Za-z0-9_.:-]{0,127})\]\]")
 
-
-def build_brief(root: Path) -> Path:
-    graph = EvidenceGraph(root)
-    outline = read_json(root / "config" / "narrative.json", {"sections": []})
-    lines = [
-        "# 论文叙事证据包", "",
-        "> 只允许使用下列 verified 证据。关键结论保留 `[[节点ID]]`。", "",
-    ]
-    for section in outline.get("sections", []):
-        lines += [f"## {section['title']}", "", section["question"], ""]
-        kinds = set(section.get("evidence_kinds", []))
-        nodes = graph.verified(kinds or None)
-        lines.extend(
-            f"- [[{item['id']}]] {item['statement']}（`{item['artifact']}`）"
-            for item in nodes
-        )
-        lines.append("")
-    output = root / "paper" / "narrative_brief.md"
-    output.write_text("\n".join(lines), encoding="utf-8")
+def build_brief(root):
+    output = _build_brief(root)
+    profile = ProfileService(root).active
+    graph = ProblemGraph(root)
+    evidence = EvidenceGraph(root).nodes
+    delivery_nodes = [
+        {
+            "work_item_id": node_id,
+            "question": node["question"],
+            "outputs": [
+                {
+                    **item,
+                    "status": evidence.get(
+                        item["evidence_id"], {}
+                    ).get("status"),
+                }
+                for item in node["outputs"]
+            ],
+        }
+        for node_id, node in graph.nodes.items()
+        if node["milestone"] == "s6" and not node.get("superseded", False)
+    ] if graph.exists else []
+    atomic_write_json(root / "paper" / "delivery_manifest.json", {
+        "schema": 1,
+        "profile": profile["name"],
+        "renderer": profile["renderer"],
+        "report_sections": profile.get("report_sections", []),
+        "quality_dimensions": profile.get("quality_dimensions", []),
+        "delivery_nodes": delivery_nodes,
+    })
     return output
 
 
-def audit_paper(root: Path, paper: str = "paper/draft.md") -> list[str]:
-    graph = EvidenceGraph(root)
-    path = (root / paper).resolve()
-    if not path.is_relative_to(root.resolve()) or not path.is_file():
-        return [f"论文不存在或越界: {paper}"]
-    text = path.read_text(encoding="utf-8")
-    refs = CLAIM_RE.findall(text)
-    errors = [] if refs else ["正文没有任何 [[证据节点ID]] 引用"]
-    nodes = graph.nodes
-    for node_id in refs:
-        if node_id not in nodes:
-            errors.append(f"引用未知节点: {node_id}")
-        elif nodes[node_id]["status"] != "verified":
-            errors.append(f"引用未验证节点: {node_id}")
-    errors.extend(graph.audit())
+def audit_paper(root, paper="paper/draft.md"):
+    errors = _audit_paper(root, paper)
+    graph = ProblemGraph(root)
+    if graph.exists:
+        evidence = EvidenceGraph(root).nodes
+        for evidence_id, contract, enforce in graph.milestone_outputs("s6"):
+            record = evidence.get(evidence_id)
+            if not record or record.get("status") != "verified":
+                errors.append(f"交付 Profile 缺少 verified 证据: {evidence_id}")
+            elif enforce and record.get("obligation_hash") != contract:
+                errors.append(f"交付证据合同已陈旧: {evidence_id}")
     return sorted(set(errors))

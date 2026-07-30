@@ -1,0 +1,14 @@
+{
+  "name": "decision-analysis",
+  "version": "1.0.0",
+  "description": "将结果分布转化为可行动且不过度外推的决策。",
+  "task_types": ["decision_analysis", "multiobjective_decision"],
+  "protocol": [
+    "先声明行动、目标和风险容忍度",
+    "比较不行动与领域强基线",
+    "报告收益分布、稳定范围和触发器",
+    "区分期望最优、普遍最优和稳健集合"
+  ],
+  "required_tests": ["基线收益", "结论稳定性", "失效触发器"],
+  "fallbacks": ["优势不显著时拒绝唯一最优结论"]
+}

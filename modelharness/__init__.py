@@ -1,3 +1,3 @@
-"""Modeling Harness: resilient evidence-gated orchestration."""
+"""Modeling Harness: problem-graph-driven evidence-gated orchestration."""
 
-__version__ = "2.0.0"
+__version__ = "3.0.0"

@@ -1,0 +1,14 @@
+{
+  "name": "uncertainty-robustness",
+  "version": "1.0.0",
+  "description": "留出验证、不确定性传播、强基线和失效域搜索。",
+  "task_types": ["uncertainty_robustness", "sensitivity_analysis"],
+  "protocol": [
+    "区分参数不确定性、结构不确定性与内禀随机性",
+    "使用独立检验批比较强基线",
+    "沿不可辨识方向和分布偏移搜索结论翻转边界",
+    "最优不稳定时改报集合、区间或条件式建议"
+  ],
+  "required_tests": ["强基线", "留出验证", "翻转边界"],
+  "fallbacks": ["稳健集为空时诚实报告方向、区间和新增数据需求"]
+}

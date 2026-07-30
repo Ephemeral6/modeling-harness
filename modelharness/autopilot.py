@@ -7,6 +7,7 @@ from pathlib import Path
 from .contracts import validate_review
 from .evidence import EvidenceGraph
 from .playbooks import PLAYBOOKS
+from .problem_graph import ProblemGraph
 from .stages import StageService
 from .storage import read_json
 from .workflow import WorkflowEngine
@@ -29,7 +30,8 @@ def resolve_project(root: Path, explicit: Path | None = None) -> Path:
     return project
 
 
-def next_packet(project: Path) -> dict:
+def legacy_next_packet(project: Path) -> dict:
+    """V2 stage/role scheduler retained for projects without Problem Graph."""
     project = project.resolve()
     stages = StageService(project)
     stage = stages.current()
@@ -38,7 +40,10 @@ def next_packet(project: Path) -> dict:
     if stage is None:
         engine.event("workflow.completed", {"project": str(project)})
         return {
-            "continue": False, "terminal": "completed", "stage": None,
+            "continue": False,
+            "terminal": "completed",
+            "stage": None,
+            "scheduler": "legacy_v2",
             "recovered_leases": recovered,
             "instruction": "S0–S6 印章链有效。运行最终完整性审计并交付。",
         }
@@ -56,14 +61,20 @@ def next_packet(project: Path) -> dict:
         error = None
         if path.is_file():
             try:
-                verdict = validate_review(read_json(path), path)["verdict"].upper()
+                verdict = validate_review(
+                    read_json(path), path
+                )["verdict"].upper()
             except ValueError as exc:
                 error = str(exc)
         reviews.append({
-            "path": relative, "exists": path.is_file(),
-            "verdict": verdict, "error": error,
+            "path": relative,
+            "exists": path.is_file(),
+            "verdict": verdict,
+            "error": error,
         })
-    rejected = [x for x in reviews if x["verdict"] == "REJECT" or x["error"]]
+    rejected = [
+        x for x in reviews if x["verdict"] == "REJECT" or x["error"]
+    ]
     absent = [x for x in reviews if not x["exists"]]
     if missing:
         phase = "build_evidence"
@@ -78,9 +89,16 @@ def next_packet(project: Path) -> dict:
         for role, description, owns in PLAYBOOKS[stage]["workers"]:
             try:
                 task = engine.ensure_task(
-                    f"{stage}:{role}", stage, role, description, owns,
+                    f"{stage}:{role}",
+                    stage,
+                    role,
+                    description,
+                    owns,
                     inputs=["problem/statement.md", "modeling-project.json"],
-                    acceptance=[f"产物存在: {item}" for item in owns],
+                    acceptance=[
+                        {"kind": "artifact_exists", "path": item}
+                        for item in owns
+                    ],
                     budget={"max_attempts": 3},
                 )
             except ValueError as exc:
@@ -88,33 +106,61 @@ def next_packet(project: Path) -> dict:
             planned.append(task)
     active = engine.list_tasks(stage)
     instructions = {
-        "build_evidence": "claim pending 任务并创建对应 subagent；完成后验证实际产物。",
-        "repair": "依据审核 finding 撤销受影响证据和下游印章，创建修复任务并冷启动复审。",
-        "review": f"创建无状态 {PLAYBOOKS[stage]['reviewer']}，只提供正式输入和产物。",
-        "gate": f"运行 `modelharness gate {stage}`，成功后立即再次运行 autopilot next。",
+        "build_evidence": (
+            "claim pending 任务并创建对应 subagent；完成后验证实际产物。"
+        ),
+        "repair": (
+            "依据审核 finding 撤销受影响证据和下游印章，"
+            "创建修复任务并冷启动复审。"
+        ),
+        "review": (
+            f"创建无状态 {PLAYBOOKS[stage]['reviewer']}，"
+            "只提供正式输入和产物。"
+        ),
+        "gate": (
+            f"运行 `modelharness gate {stage}`，"
+            "成功后立即再次运行 autopilot next。"
+        ),
     }
     packet = {
-        "continue": True, "terminal": None, "project": str(project),
-        "stage": stage, "valid_stage_prefix": stages.valid_prefix(),
-        "phase": phase, "objective": PLAYBOOKS[stage]["objective"],
-        "missing_verified_evidence": missing, "reviews": reviews,
+        "continue": True,
+        "terminal": None,
+        "project": str(project),
+        "scheduler": "legacy_v2",
+        "stage": stage,
+        "valid_stage_prefix": stages.valid_prefix(),
+        "phase": phase,
+        "objective": PLAYBOOKS[stage]["objective"],
+        "missing_verified_evidence": missing,
+        "reviews": reviews,
         "independent_reviewer": PLAYBOOKS[stage]["reviewer"],
-        "tasks": active or planned, "recovered_leases": recovered,
+        "tasks": active or planned,
+        "recovered_leases": recovered,
         "instruction": instructions[phase],
         "stop_policy": (
             "仅 S6 完成、需要新授权/用户输入，或同一阻断连续三轮时停止。"
-            "阶段完成、单次失败或 subagent 完成不是停止条件。"
         ),
     }
     engine.event("workflow.tick", {
-        "stage": stage, "phase": phase,
-        "missing": missing, "recovered": recovered,
+        "stage": stage,
+        "phase": phase,
+        "missing": missing,
+        "recovered": recovered,
     })
     return packet
 
 
+def next_packet(project: Path) -> dict:
+    project = project.resolve()
+    if ProblemGraph(project).exists:
+        # Lazy import avoids a scheduler/stage import cycle for V2 projects.
+        from .scheduler import AdaptiveScheduler
+        return AdaptiveScheduler(project).next_packet()
+    return legacy_next_packet(project)
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="鲁棒 S0–S6 工作流控制器")
+    parser = argparse.ArgumentParser(description="双层问题图与里程碑工作流控制器")
     sub = parser.add_subparsers(dest="command", required=True)
     nxt = sub.add_parser("next")
     nxt.add_argument("--project", type=Path)

@@ -1,104 +1,164 @@
-# Modeling Harness 2.0
+# Modeling Harness 3.0
 
-面向真实数学建模任务的、可恢复的多智能体执行框架。用户在 Codex 中上传题目与附件
-并说“直接开始”，系统自动创建隔离项目，持续推进 S0–S6，协调 subagent，验证证据，
-处理返工，并从可信证据生成论文。
+面向国赛、美赛和真实数学建模任务的、可恢复、证据门禁驱动的多智能体执行框架。
+3.0 保留 2.0 的可靠性内核，并把实际求解单元从固定阶段角色升级为 Problem Graph
+中的可独立证伪局部问题。
 
-## 2.0 架构
+## 架构
 
 ```text
 Codex Conversation / CLI
           ↓
-Unified Command Interface
+Problem Graph ── local obligations / dependencies / contract hashes
           ↓
-Autonomous Workflow Engine ── SQLite task lease / heartbeat / retry
+Critical Frontier Scheduler ── impact × uncertainty / cost
           ↓
-Stage Service ── chained, self-validating S0–S6 stamps
+Workflow Engine ── SQLite lease / heartbeat / acceptance / retry
           ↓
-Evidence Kernel ── typed DAG / atomic transaction / cascade revoke
+Evidence Kernel ── typed DAG / checks / cold review / cascade revoke
           ↓
-Filesystem + Process Adapters ── atomic JSON / locks / checkpoints
+S0–S6 Milestone Service ── chained, self-validating stamps
+          ↓
+Delivery Profiles ── CUMCM / MCM-ICM / Real World / General
 ```
 
-核心不变量：
+四个权威状态源：
 
-- 所有 JSON 状态使用临时文件、`fsync` 和原子替换；
-- Evidence 读改写有跨进程锁和 revision；
-- Subagent 任务保存在 SQLite，支持 claim、lease、heartbeat、失败恢复；
-- 父目录和子目录被视为冲突写入范围；
-- Gate 印章覆盖配置、上游印章、证据和审核哈希；
-- 伪造、陈旧或上游失效的印章不能推动 Autopilot；
-- 状态损坏时 fail closed，不把缺失/损坏解释成空状态；
-- 撤销证据时保守失效下游阶段，旧印章归档而非直接删除。
+- `.harness/problem_graph.json`：还必须解决什么；
+- `.harness/evidence.json`：已经验证了什么；
+- `.harness/workflow.sqlite3`：谁在做什么；
+- `.harness/stamps/sN.json`：哪些里程碑已经闭合。
 
-详细设计见 [ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md)。
+详细设计见 [ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md)。
 
-## 对话式使用
+## 核心原则
+
+- 整题是编排边界，局部问题是求解单元；
+- Problem Graph 状态由 Evidence 和 Workflow 推导，不复制真相；
+- 生成者只能登记 candidate，不能自我认证；
+- 任务完成必须通过机器验收，不相信自然语言汇报；
+- 审核绑定合同哈希、证据范围和产物哈希；
+- 先做反例、toy、已知解和基线，再做正式规模计算；
+- 错误证据沿依赖图撤销，只失效最早受影响的里程碑；
+- 最优不稳时必须改报集合、区间或条件式建议；
+- 交付 Profile 改变呈现义务，不改变数学事实。
+
+## 快速开始
 
 ```powershell
-git clone https://github.com/Ephemeral6/modeling-harness.git
-cd modeling-harness
 python -m pip install -e .
-```
 
-在 Codex Desktop 中打开仓库，上传题面 PDF、Word、Excel、CSV 等文件，然后说：
+modelharness intake --title "真实题目" --prompt "完整解决" `
+  --file 题面.pdf --file 数据.xlsx
 
-> 使用这个 Harness 完整解决该题。全程不使用 Claude，直接开始。
-
-根目录 `AGENTS.md` 会要求 Codex 自动 Intake，并持续调用：
-
-```powershell
-modelharness autopilot next
-```
-
-直到 S6 完成或遇到真正需要用户输入/授权的阻断。
-
-## 统一 CLI
-
-```powershell
-modelharness intake --title "真实题目" --prompt "完整解决" --file 题面.pdf --file 数据.xlsx
 modelharness status
-modelharness doctor
-modelharness autopilot next
+modelharness plan show
+modelharness work next
+```
 
+主控在每个局部工作单元、审核或 Gate 后继续运行：
+
+```powershell
+modelharness autopilot next
+```
+
+直到问题图根义务、S0–S6 印章链和交付 Profile 审计全部闭合。
+
+## Problem Graph
+
+```powershell
+modelharness plan show
+modelharness plan status
+modelharness plan validate problem/decomposition.json
+modelharness plan apply problem/decomposition.json `
+  --reason "S0 完成局部问题拆解"
+```
+
+每个问题节点声明问题、输入证据、输出证据、方法包、workstream、验收、审核、
+风险和里程碑。系统自动生成 contract hash，并绑定任务、证据和审核。
+
+## 方法包
+
+```powershell
+modelharness pack list
+modelharness pack audit
+modelharness pack lock
+```
+
+内置方法包覆盖问题形式化、候选模型竞争、数据与估计、求解器验证、UQ 与稳健性、
+决策分析和证据成文。所有方法包在项目初始化时快照并锁定。
+
+## 交付 Profile
+
+```powershell
+modelharness profile list
+modelharness profile use cumcm
+modelharness profile use mcm_icm
+modelharness profile use real_world
+```
+
+- `cumcm`：按子问锁定数值结果与算法过程；
+- `mcm_icm`：强化摘要、机制、叙事和决策含义；
+- `real_world`：增加决策包、监控计划和人工授权点；
+- `general`：通用证据报告。
+
+## Evidence
+
+```powershell
 modelharness evidence add result.nominal --kind result `
   --statement "标称求解结果" --artifact results/nominal.json
+
 modelharness evidence verify result.nominal
 
+modelharness evidence revise result.nominal `
+  --reason "审核发现边界条件错误"
+
+modelharness evidence revoke result.nominal --reason "上游数据口径变化"
+```
+
+V3 问题图声明过的 evidence ID 会自动绑定当前合同与审核要求。
+
+## Durable Work
+
+```powershell
 modelharness task list
 modelharness task claim TASK_ID --worker solver-agent
 modelharness task heartbeat TASK_ID --worker solver-agent
-modelharness task finish TASK_ID --worker solver-agent --result '{"artifact":"results/x.json"}'
-
-modelharness gate s0
-modelharness invalidate s2 --reason "数据口径变化"
-modelharness narrative build
-modelharness narrative audit
+modelharness task finish TASK_ID --worker solver-agent `
+  --result '{"artifact":"results/nominal.json"}'
+modelharness task retry TASK_ID
 ```
 
-旧的模块入口 `python -m modelharness.conversation` 与
-`python -m modelharness.autopilot next` 仍可使用，但推荐统一 CLI。
+`finish` 会执行任务合同中的 artifact、JSON 字段、证据登记和机械检查，失败会持久化为
+failed，不能伪装为 completed。
 
-## S0–S6
+## S0–S6 里程碑
 
-| 阶段 | 目标 |
+| 里程碑 | 整体审计目标 |
 |---|---|
-| S0 | 题意、决策问题、数据清单、成功标准和失效出口 |
-| S1 | 多候选竞争、正式模型、假设与验证映射 |
-| S2 | 数据血缘、清洗、估计与数据审核 |
-| S3 | 求解器、toy、已知解与数值审核 |
+| S0 | 题意、根问题、成功标准、问题图和失效出口 |
+| S1 | 模型结构、假设、可辨识性与验证映射 |
+| S2 | 数据血缘、清洗、估计和数据审核 |
+| S3 | 求解器、toy、已知解和数值审核 |
 | S4 | 留出验证、UQ、基线、敏感性和稳健性 |
 | S5 | 条件式决策、复跑和结果锁定 |
-| S6 | 证据驱动成文与逐句论文复核 |
+| S6 | Profile 交付与逐项证据复核 |
 
-## 开发与测试
+里程碑不是固定工作队列。Autopilot 在当前里程碑内根据 Problem Graph 选择关键前沿。
+
+## V2 兼容
+
+没有 Problem Graph 的旧项目继续运行静态 V2 Playbook。迁移说明见
+[MIGRATION_V2_TO_V3.md](docs/MIGRATION_V2_TO_V3.md)。
+
+## 测试
 
 ```powershell
 python -m pytest -q
 python -m compileall -q modelharness
 ```
 
-测试覆盖并发 Evidence 更新、半写 JSON、伪造/陈旧印章、附件重试、写入范围冲突、
-worker lease 过期恢复、Autopilot 幂等任务生成和验证失败持久化。
+测试覆盖并发 Evidence、损坏状态、门禁防伪、Intake 回滚、任务租约、机器验收、
+Problem Graph 环检测、合同签名、方法包防篡改、Profile 失效和 V2 兼容。
 
 项目采用 [MIT License](LICENSE)。

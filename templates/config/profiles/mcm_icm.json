@@ -1,0 +1,27 @@
+{
+  "name": "mcm_icm",
+  "version": "1.0.0",
+  "renderer": "decision_narrative_paper",
+  "max_parallel_agents": 3,
+  "mandatory_outputs": [
+    "executive_summary",
+    "model_rationale",
+    "sensitivity",
+    "policy_implications"
+  ],
+  "human_checkpoints": [],
+  "report_sections": [
+    "Summary Sheet",
+    "Problem Reframing",
+    "Model Mechanism",
+    "Evidence",
+    "Decision",
+    "Limitations"
+  ],
+  "quality_dimensions": [
+    "conceptual_clarity",
+    "model_justification",
+    "communication",
+    "robustness"
+  ]
+}

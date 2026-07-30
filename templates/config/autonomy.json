@@ -1,5 +1,7 @@
 {
-  "mode": "autonomous_until_s6",
+  "mode": "critical_frontier_until_delivery",
+  "scheduler": "problem_graph",
+  "priority": "downstream_impact * uncertainty / estimated_cost",
   "max_parallel_agents": 3,
   "review_repair_loops": 3,
   "same_blocker_stop_after": 3,
@@ -8,9 +10,11 @@
   "rules": {
     "advance_after_gate": true,
     "cold_start_reviewers": true,
+    "contract_bound_evidence": true,
+    "machine_task_acceptance": true,
     "disjoint_file_ownership": true,
     "resume_from_checkpoints": true,
-    "stop_after_stage": false
+    "stop_after_stage": false,
+    "prefer_falsification_first": true
   }
 }
-
