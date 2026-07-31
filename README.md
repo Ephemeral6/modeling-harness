@@ -6,7 +6,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
 </p>
 
-Modeling Harness 是面向国赛、美赛与真实项目的数学建模 Agent 运行框架。它让模型自由
+Modeling Harness 是面向国赛、美赛与真实项目的数学建模 Agent 运行框架，开箱即用地
+支持 **Codex** 与 **Claude Code** 双底座：clone 下来打开任一引擎、把题目丢进对话即可
+跑到完整交付，且所有中间产物落盘可回溯。它让模型自由
 拆题、选模、分支、回退并自主调用计算工具，同时用 Problem Graph、可复现执行和
 Evidence Graph 保证：最终交付中的每个重要结论，都能追溯到当前版本的工件和验证。
 
@@ -70,7 +72,38 @@ invalidated，并只从最小受影响节点重新计算。
 
 ## Quickstart
 
-### 1. 安装核心 Harness
+### 方式 A：对话式零配置（推荐）
+
+~~~powershell
+git clone https://github.com/Ephemeral6/modeling-harness.git
+~~~
+
+然后用 **Codex** 或 **Claude Code** 打开仓库目录，把题面和附件直接丢进对话：
+
+> 使用 Modeling Harness 完整解决该题，允许 Agent 自主选择本地计算工具，直接开始。
+
+不需要手动安装、建目录、复制附件或粘贴提示词。会话契约会驱动 Agent 自动完成：
+
+1. **自举**：探测 `modelharness` CLI，缺失则 `pip install -e .`（核心零依赖，秒级）；
+2. **接题**：`intake` 建立隔离项目——上传附件复制进 `problem/data_raw/` 并锁定
+   SHA-256；对话里粘贴的题面同样物化为
+   `problem/data_raw/001__pasted_statement.md` 进 manifest，与附件同等保留；
+3. **推进**：选 Profile → `doctor` → 持续 `work next`，直到论文、代码、结果、
+   审计包全部交付。
+
+两个引擎共用同一份契约，行为一致：
+
+| 引擎 | 会话入口 | 说明 |
+|---|---|---|
+| Codex（Desktop / CLI） | `AGENTS.md` | 历史默认底座 |
+| Claude Code（CLI / Desktop） | `CLAUDE.md` | 薄 shim，引导回同一份 `AGENTS.md` 契约 |
+
+引擎选择写入 `modeling-project.json` 的 `engine` 字段（`intake` / `new` 支持
+`--engine {codex,claude-code,auto}`，默认按已安装 CLI 自动检测）；
+`modelharness doctor` 会报告两个引擎的本机可用性。详见
+[CONVERSATION_START.md](CONVERSATION_START.md)。
+
+### 方式 B：手动 CLI
 
 ~~~powershell
 git clone https://github.com/Ephemeral6/modeling-harness.git
@@ -79,19 +112,13 @@ python -m pip install -e .
 modelharness --version
 ~~~
 
-Harness 同时支持 Codex 与 Claude Code 作为 Agent 底座：Codex 读根目录
-`AGENTS.md`，Claude Code 读 `CLAUDE.md`（其内容引导回同一份契约）。`intake` /
-`new` 支持 `--engine {codex,claude-code,auto}`（默认 auto 按已安装 CLI 检测），
-选择结果写入 `modeling-project.json` 的 `engine` 字段，`doctor` 会报告两个引擎的
-本机可用性。
-
 核心运行时只依赖 Python 标准库。计算库按题目和环境 Profile 选择安装，例如：
 
 ~~~powershell
 python -m pip install -e ".[cumcm]"
 ~~~
 
-### 2. 从题目和附件建立隔离项目
+从题目和附件建立隔离项目：
 
 ~~~powershell
 modelharness intake `
@@ -124,6 +151,23 @@ modelharness work next
 Modeling Harness 是 Agent 的研究运行层，不绑定特定模型供应商，也不会仅靠
 `modelharness intake` 在后台凭空生成答案。负责求解的 Codex、Claude Code 或其他
 Agent 需要在项目根目录持续读取 `work next`、生成工件并提交验证。
+
+## 全落盘与断点回溯
+
+会话上下文被视为一次性缓存，磁盘才是记忆。你可以在任何时刻关闭 Codex 或
+Claude Code，重开后 Agent 只凭磁盘状态完全重建现场，不依赖对话历史：
+
+- **题面与附件**：`problem/data_raw/` 只读保留原件（含对话粘贴文本），
+  `intake_manifest.json` 锁定哈希与来源；
+- **数值与结果**：全部来自 `results/*.json`、`data/processed/` 的机器产物文件，
+  附生成脚本；进入论文的每个数字必须能指出磁盘出处，说不出即不得使用；
+- **判断与死因**：假设取舍、失败原因、被放弃的路线在产生的同一个工作单元内
+  追加进 `docs/notebook.md` 与 `docs/decisions.log`（append-only，禁止改写历史）；
+- **权威状态**：Problem Graph、Evidence Graph、任务与租约（SQLite）、tool run
+  的输入输出哈希、S0–S6 印章全部落盘于 `.harness/`。
+
+恢复方式：重开引擎后说“继续”，Agent 会读取 `projects/.current.json` 指向的项目，
+运行 `doctor` + `state` + `work next`，从关键前沿接着推进；已验证的证据不会被重做。
 
 ## Agent loop
 
