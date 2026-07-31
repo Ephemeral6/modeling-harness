@@ -36,7 +36,7 @@ def safe_attachment_name(name: str) -> str:
 
 
 def intake(harness_root: Path, title: str, prompt: str, files: list[Path],
-           project_dir: Path | None = None) -> dict:
+           project_dir: Path | None = None, engine: str = "auto") -> dict:
     harness_root = harness_root.resolve()
     projects = harness_root / "projects"
     projects.mkdir(parents=True, exist_ok=True)
@@ -58,9 +58,23 @@ def intake(harness_root: Path, title: str, prompt: str, files: list[Path],
                 counter += 1
         staging = projects / f".intake-{uuid.uuid4().hex}"
         try:
-            root = create(staging, title)
+            root = create(staging, title, engine=engine)
             inbox = root / "problem" / "data_raw"
             manifest, text_candidates = [], []
+            if not sources:
+                # 用户把题面直接粘贴在对话里、没有附件：原文物化为 data_raw
+                # 中的只读原始文件并锁定哈希，与上传附件享受同等保留待遇。
+                pasted = inbox / "001__pasted_statement.md"
+                pasted.write_text(prompt.strip() + "\n", encoding="utf-8")
+                manifest.append({
+                    "index": 1, "original_name": "pasted_statement.md",
+                    "stored_as": pasted.relative_to(root).as_posix(),
+                    "bytes": pasted.stat().st_size, "sha256": sha256(pasted),
+                    "mime": "text/markdown",
+                    "origin": "conversation_paste",
+                    "received_at": now(),
+                })
+                text_candidates.append(pasted)
             for index, (source, name) in enumerate(zip(sources, names), start=1):
                 target = inbox / f"{index:03d}__{name}"
                 shutil.copy2(source, target, follow_symlinks=False)

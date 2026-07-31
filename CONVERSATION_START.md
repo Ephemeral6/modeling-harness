@@ -1,8 +1,11 @@
 # 对话式开题
 
+本仓库同时支持两个 Agent 底座：**Codex**（读 `AGENTS.md`）与 **Claude Code**
+（读 `CLAUDE.md`，其内容引导回 `AGENTS.md`）。契约与流程对两个引擎完全一致。
+
 ## 用户操作
 
-1. Clone 仓库并在 Codex Desktop 中打开。
+1. Clone 仓库并在 Codex Desktop 或 Claude Code 中打开。
 2. 在同一条消息上传题面、数据、图片和参考材料。
 3. 输入：
 
@@ -10,9 +13,9 @@
 
 不需要手工建目录、复制附件、安装所有可选工具或粘贴启动提示词。
 
-## Codex 自动执行
+## Agent 自动执行（Codex / Claude Code 通用）
 
-根目录 `AGENTS.md` 要求 Codex：
+根目录会话契约（`AGENTS.md`；Claude Code 经 `CLAUDE.md` 进入）要求 Agent：
 
 - 执行 Intake，创建隔离项目并锁定原始附件哈希；
 - 选择交付 Profile，生成初始 Problem Graph；
@@ -32,7 +35,8 @@ modelharness intake `
   --title "真实题目测试" `
   --prompt "完整解决，Agent 自主选择本地计算工具" `
   --file "C:\path\题面.pdf" `
-  --file "C:\path\附件.xlsx"
+  --file "C:\path\附件.xlsx" `
+  --engine auto   # 也可显式指定 codex 或 claude-code
 
 modelharness profile use cumcm
 modelharness doctor

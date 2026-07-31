@@ -1,11 +1,27 @@
 # Modeling Harness 4.0 对话入口
 
-当用户在本仓库上传数学建模题目、数据或参考材料并要求开始时，直接 Intake。不要要求
+本契约对 Codex 与 Claude Code 两个底座同等生效（Claude Code 经 `CLAUDE.md`
+进入本文件）。当用户在本仓库上传数学建模题目、数据或参考材料并要求开始时，直接 Intake。不要要求
 用户手动创建目录、复制附件、运行命令或重复提示词。
+
+## 冷启动 Bootstrap
+
+本仓库应做到“clone 下来直接丢题目就能跑”。会话开始时先探测环境：
+
+1. 运行 `modelharness --version`；失败则在仓库根目录执行
+   `python -m pip install -e .`（核心零依赖，秒级完成）后重试。
+2. Profile 对应的科学计算栈是可选 extras（如 `pip install -e ".[cumcm]"`）；
+   若当前环境已有等价包则直接用，缺包且需要联网安装时按权限规则请求授权，
+   并优先选择不依赖缺失包的方法路线。
+3. Bootstrap 结果（安装了什么、跳过了什么）写入项目 `docs/decisions.log`。
 
 ## 自动接题
 
-1. 收集本轮附件绝对路径和用户原始要求。
+1. 收集本轮附件绝对路径和用户原始要求。若用户把题面直接粘贴在对话里而没有
+   附件，把原文一字不改作为 `--prompt` 传入即可：intake 会把它物化为
+   `problem/data_raw/001__pasted_statement.md`（哈希锁定、进 manifest，
+   `origin=conversation_paste`），并同步生成 `problem/statement.md`。
+   粘贴文本与上传附件享受同等的磁盘保留待遇。
 2. 执行 modelharness intake 创建隔离项目。
 3. 读取项目 AGENTS.md、intake manifest、题面和全部附件。
 4. 根据任务选择 cumcm、mcm_icm、real_world 或 general Profile。
@@ -87,5 +103,16 @@ tool recover；不得把 RECOVERY_PENDING 当作普通失败直接重复。
 9. 最优不稳或优势不显著时输出集合、区间或条件式建议。
 10. 只有全部交付闭合、需要新授权，或同一阻断连续三轮时停止。
 
-projects/.current.json 只指向最近项目。用户说“继续”或“进展”时恢复该项目，先运行
-doctor、tool doctor、state 和 work next。
+## 会话可弃性（全落盘纪律）
+
+会话上下文是一次性的：用户随时可能关闭引擎，重开后必须能只凭磁盘完全重建现场。
+因此：
+
+1. 任何影响后续决策的中间产物——判断、数字、失败原因、被放弃的路线——在产生的
+   同一个工作单元内落盘：数值进 `results/*.json` 或 `data/processed/`，判断与死因
+   追加进 `docs/notebook.md` 与 `docs/decisions.log`，结论登记进 Evidence Graph。
+2. 禁止让任何数据只存在于对话上下文里再“稍后一起写盘”；先落盘，再继续。
+3. 进入论文或答案的每个数字必须能指出其磁盘出处文件；说不出出处的数字不得使用。
+4. 用户说“继续”或“进展”时恢复 projects/.current.json 指向的项目：先运行
+   doctor、tool doctor、state 和 work next，从磁盘状态而非记忆恢复工作，
+   不重做已有验证证据的工作。

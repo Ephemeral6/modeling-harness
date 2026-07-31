@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from .engines import resolve as resolve_engine
 from .method_packs import MethodPackRegistry
 from .storage import atomic_write_json, read_json
 from .toolchain_registry import ToolRegistry
@@ -18,8 +19,9 @@ DIRS = [
 ]
 
 
-def create(destination: Path, title: str) -> Path:
+def create(destination: Path, title: str, engine: str = "auto") -> Path:
     destination = destination.resolve()
+    engine = resolve_engine(engine)
     if not title.strip():
         raise ValueError("项目标题不能为空")
     if destination.exists() and any(destination.iterdir()):
@@ -46,6 +48,7 @@ def create(destination: Path, title: str) -> Path:
         "title": title.strip(),
         "created_at": now(),
         "harness": "modeling-harness/4.0",
+        "engine": engine,
         "status": "active",
     })
     atomic_write_json(destination / ".harness" / "evidence.json", {

@@ -79,6 +79,12 @@ python -m pip install -e .
 modelharness --version
 ~~~
 
+Harness 同时支持 Codex 与 Claude Code 作为 Agent 底座：Codex 读根目录
+`AGENTS.md`，Claude Code 读 `CLAUDE.md`（其内容引导回同一份契约）。`intake` /
+`new` 支持 `--engine {codex,claude-code,auto}`（默认 auto 按已安装 CLI 检测），
+选择结果写入 `modeling-project.json` 的 `engine` 字段，`doctor` 会报告两个引擎的
+本机可用性。
+
 核心运行时只依赖 Python 标准库。计算库按题目和环境 Profile 选择安装，例如：
 
 ~~~powershell

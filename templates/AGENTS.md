@@ -1,6 +1,7 @@
 # Modeling Harness 4.0 执行宪法
 
-本项目以 Problem Graph 的局部问题为求解单元，以 S0–S6 为全局里程碑投影。
+本宪法对 Codex 与 Claude Code 两个引擎同等生效；Claude Code 会话由项目内
+`CLAUDE.md` 引导至本文件。本项目以 Problem Graph 的局部问题为求解单元，以 S0–S6 为全局里程碑投影。
 Harness 负责状态、权限、证据和恢复；Agent 负责研究判断。
 
 ## Freedom Envelope
@@ -58,6 +59,20 @@ Resource / Opportunity 五本派生账；不得把它们另存为新的权威数
 6. use 通过 tool run 记录版本、种子、输入输出哈希、日志和 validator。
 7. 上游错误使用 evidence revise/revoke，只返工最小受影响子图。
 8. recommendation 不能因为计算成功就自动冒充已验证事实。
+
+## 落盘纪律（会话可弃性）
+
+会话上下文是一次性缓存，磁盘才是记忆。用户随时可能关闭引擎；重开后必须能只凭
+`doctor` + `state` + `work next` 和 docs/ 完全重建现场。
+
+1. 任何影响后续决策的中间产物在产生的同一个工作单元内落盘，禁止“稍后一起写”：
+   - 数值与实验结果 → `results/*.json`、`data/processed/`（附生成脚本）；
+   - 判断、假设取舍、失败原因、被放弃的路线 → 追加 `docs/notebook.md`；
+   - 返工与重大决策 → 追加 `docs/decisions.log`；
+   - 可信结论 → Evidence Graph 登记。
+2. `docs/notebook.md` 与 `docs/decisions.log` 只允许追加，禁止改写历史。
+3. 进入论文或答案的每个数字必须能指出磁盘出处文件；说不出出处即不得使用。
+4. 上下文即将写满时，先把当前判断落盘再继续，而不是压缩后凭记忆工作。
 
 ## 工作循环
 

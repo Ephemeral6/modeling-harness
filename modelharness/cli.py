@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .autopilot import next_packet, resolve_project
 from .contracts import STAGES
+from .engines import VALID as ENGINE_CHOICES, detect as detect_engines
 from .evidence import EvidenceGraph
 from .intake import intake
 from .integration import audit_integration
@@ -50,12 +51,14 @@ def build_parser() -> argparse.ArgumentParser:
     new = sub.add_parser("new", help="创建空白建模项目")
     new.add_argument("path", type=Path)
     new.add_argument("--title", required=True)
+    new.add_argument("--engine", choices=ENGINE_CHOICES, default="auto")
 
     take = sub.add_parser("intake", help="从对话附件创建隔离项目")
     take.add_argument("--title", required=True)
     take.add_argument("--prompt", required=True)
     take.add_argument("--file", action="append", default=[])
     take.add_argument("--root", type=Path, default=Path.cwd())
+    take.add_argument("--engine", choices=ENGINE_CHOICES, default="auto")
 
     for name, help_text in (
         ("status", "汇总问题图、阶段、证据、任务和完整性"),
@@ -205,9 +208,14 @@ def doctor(project: Path) -> dict:
         *integration_errors,
         *[item for values in stamp_errors.values() for item in values],
     ]
+    meta = read_json(project / "modeling-project.json")
     return {
         "ok": not all_errors,
         "project": str(project),
+        "engine": (
+            meta.get("engine", "codex") if isinstance(meta, dict) else "codex"
+        ),
+        "engines_detected": detect_engines(),
         "profile": (
             ProfileService(project).active["name"] if problem.exists else None
         ),
@@ -241,12 +249,13 @@ def main() -> int:
     args = build_parser().parse_args()
     try:
         if args.command == "new":
-            print(create(args.path, args.title))
+            print(create(args.path, args.title, engine=args.engine))
             return 0
         if args.command == "intake":
             emit(intake(
                 args.root, args.title, args.prompt,
                 [Path(x) for x in args.file],
+                engine=args.engine,
             ))
             return 0
         if args.command == "plan" and args.action == "validate":
