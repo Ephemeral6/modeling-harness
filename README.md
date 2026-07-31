@@ -72,7 +72,7 @@ invalidated，并只从最小受影响节点重新计算。
 
 ## Quickstart
 
-### 方式 A：对话式零配置（推荐）
+### 对话式零配置
 
 ~~~powershell
 git clone https://github.com/Ephemeral6/modeling-harness.git
@@ -103,42 +103,10 @@ git clone https://github.com/Ephemeral6/modeling-harness.git
 `modelharness doctor` 会报告两个引擎的本机可用性。详见
 [CONVERSATION_START.md](CONVERSATION_START.md)。
 
-### 方式 B：手动 CLI
+### 交付 Profile
 
-~~~powershell
-git clone https://github.com/Ephemeral6/modeling-harness.git
-Set-Location modeling-harness
-python -m pip install -e .
-modelharness --version
-~~~
-
-核心运行时只依赖 Python 标准库。计算库按题目和环境 Profile 选择安装，例如：
-
-~~~powershell
-python -m pip install -e ".[cumcm]"
-~~~
-
-从题目和附件建立隔离项目：
-
-~~~powershell
-modelharness intake `
-  --title "2026 数学建模任务" `
-  --prompt "完整求解，交付论文、代码、结果与可复现说明" `
-  --file "题面.pdf" `
-  --file "数据.xlsx"
-~~~
-
-命令会返回新项目路径。进入该目录，让支持终端与文件工具的 Agent 读取项目内
-`AGENTS.md`，然后执行：
-
-~~~powershell
-modelharness profile use cumcm
-modelharness doctor
-modelharness tool doctor
-modelharness state
-modelharness work next
-~~~
-
+核心运行时只依赖 Python 标准库；计算库按 Profile 作为可选 extras 安装
+（如 `pip install -e ".[cumcm]"`），由 Agent 在接题后根据环境探测自主处理。
 可选 Profile：
 
 | Profile | 重点 |
