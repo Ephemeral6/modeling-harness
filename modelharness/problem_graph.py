@@ -53,6 +53,9 @@ class ProblemGraph(_ProblemGraph):
             contract[
                 "tool_environment_profiles_sha256"
             ] = canonical_hash(profiles)
+        claim_bindings = self.root / "config" / "claim_bindings.json"
+        if node.get("milestone") == "s5" and claim_bindings.is_file():
+            contract["claim_bindings_sha256"] = sha256(claim_bindings)
         return canonical_hash(contract)
 
     def replace(self, proposal: dict, reason: str) -> dict:

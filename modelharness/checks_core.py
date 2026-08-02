@@ -108,6 +108,58 @@ def _json_path(value: Any, dotted: str) -> tuple[bool, Any]:
     return True, current
 
 
+def _apply_op(
+    operator: str, actual: Any, expected: Any, tolerance: float = 0
+) -> bool:
+    """Apply runtime JSON assertions via the toolchain numeric operator."""
+    if operator == "nonempty":
+        try:
+            return actual is not None and len(actual) > 0
+        except TypeError:
+            return bool(actual)
+    # Lazy import avoids checks -> executor -> checks import cycles.
+    from .toolchain_execution_core import _operator
+
+    numeric_ops = {
+        "eq": "==",
+        "ne": "!=",
+        "ge": ">=",
+        "gt": ">",
+        "le": "<=",
+        "lt": "<",
+        "close_to": "==",
+    }
+    if operator == "between":
+        if (
+            not isinstance(expected, (list, tuple))
+            or len(expected) != 2
+        ):
+            return False
+        try:
+            return _operator(
+                float(actual), ">=", float(expected[0]), tolerance
+            ) and _operator(
+                float(actual), "<=", float(expected[1]), tolerance
+            )
+        except (TypeError, ValueError):
+            return False
+    if operator not in numeric_ops:
+        return False
+    try:
+        return _operator(
+            float(actual),
+            numeric_ops[operator],
+            float(expected),
+            tolerance,
+        )
+    except (TypeError, ValueError):
+        if operator == "eq":
+            return actual == expected
+        if operator == "ne":
+            return actual != expected
+        return False
+
+
 def _record(kind: str, passed: bool, **fields) -> dict:
     freshness = fields.pop("freshness", "valid")
     return {
@@ -186,6 +238,28 @@ def evaluate_acceptance(
                 path=relative,
                 fields=fields,
                 missing=missing,
+                freshness="valid" if path.is_file() else "missing",
+            ))
+        elif kind == "json_assert":
+            relative = str(raw.get("path", ""))
+            path = safe_relative(root, relative)
+            data = read_json(path) if path.is_file() else None
+            field = str(raw.get("field", ""))
+            exists, actual = _json_path(data, field)
+            operator = str(raw.get("op", "eq"))
+            passed = exists and _apply_op(
+                operator,
+                actual,
+                raw.get("value"),
+                float(raw.get("tolerance", 0)),
+            )
+            records.append(_record(
+                kind,
+                passed,
+                path=relative,
+                field=field,
+                actual=actual,
+                op=operator,
                 freshness="valid" if path.is_file() else "missing",
             ))
         elif kind == "evidence_exists":

@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 from typing import Any
 
+from .checks_core import _apply_op
 from .evaluation import score_project
 from .storage import read_json
 from .util import project_root
@@ -43,12 +44,10 @@ def _score_item(root: Path, item: dict, evaluation: dict) -> dict:
         path = root / str(item.get("path", ""))
         data = read_json(path) if path.is_file() else None
         exists, actual = _json_path(data, str(item.get("field", "")))
-        target = float(item["target"])
         tolerance = float(item.get("tolerance", 0))
-        try:
-            passed = exists and abs(float(actual) - target) <= tolerance
-        except (TypeError, ValueError):
-            passed = False
+        passed = exists and _apply_op(
+            "close_to", actual, item.get("target"), tolerance
+        )
     elif kind == "integrity":
         actual = evaluation.get("integrity", {}).get("ok")
         passed = actual is bool(item.get("expected", True))

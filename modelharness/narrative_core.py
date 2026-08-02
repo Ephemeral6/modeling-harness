@@ -45,6 +45,10 @@ def audit_paper(root: Path, paper: str = "paper/draft.md") -> list[str]:
         elif nodes[node_id]["status"] != "verified":
             errors.append(f"引用未验证节点: {node_id}")
     errors.extend(graph.audit())
+    if (root / "config" / "claim_bindings.json").is_file():
+        from .claims import audit_claims
+
+        errors.extend(audit_claims(root, paper))
     return sorted(set(errors))
 
 
@@ -52,7 +56,12 @@ def audit_final(root: Path, path: str = "paper/final.md") -> list[str]:
     from .sanitize import sanitize_report
 
     report = sanitize_report(root, path)
-    return sorted({
+    errors = {
         f"成稿交付违规: {item['kind']}"
         for item in report["violations"]
-    })
+    }
+    if (root / "config" / "claim_bindings.json").is_file():
+        from .claims import audit_claims
+
+        errors.update(audit_claims(root, path))
+    return sorted(errors)
