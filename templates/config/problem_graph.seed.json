@@ -102,7 +102,8 @@
           "owns": [
             "docs/candidates",
             "docs/model_spec.md",
-            "docs/assumptions.md"
+            "docs/assumptions.md",
+            "docs/assumptions.json"
           ],
           "outputs": ["model.spec", "model.assumptions"],
           "budget": {"max_attempts": 3}
@@ -173,6 +174,11 @@
       "depends_on": ["s2.data_estimation"],
       "input_evidence": ["model.spec", "result.parameters"],
       "method_pack": "solver-validation",
+      "method_pack_options": [
+        "solver-validation",
+        "mathematical-optimization"
+      ],
+      "method_pack_selection_note": "优化、路径与调度问题应覆盖为 mathematical-optimization；一般数值求解保留 solver-validation。",
       "enforce_contract": true,
       "outputs": [
         {
@@ -204,7 +210,8 @@
             "src/solver.py",
             "checks/l2_toy.py",
             "results/toy.json",
-            "results/nominal.json"
+            "results/nominal.json",
+            "results/research_diagnostics.json"
           ],
           "outputs": ["code.solver", "experiment.toy", "result.nominal"],
           "budget": {"max_attempts": 3}
@@ -249,6 +256,8 @@
           "description": "执行留出验证、UQ、强基线与翻转边界扫描",
           "owns": [
             "src/uq.py",
+            "results/research_diagnostics.json",
+            "results/scenario_sets.json",
             "src/baselines.py",
             "src/sensitivity.py",
             "results/uq.json",

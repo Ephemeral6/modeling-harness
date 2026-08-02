@@ -46,9 +46,10 @@ def audit_paper(root: Path, paper: str = "paper/draft.md") -> list[str]:
             errors.append(f"引用未验证节点: {node_id}")
     errors.extend(graph.audit())
     if (root / "config" / "claim_bindings.json").is_file():
-        from .claims import audit_claims
+        from .claims import audit_claims, audit_holdout
 
         errors.extend(audit_claims(root, paper))
+        errors.extend(audit_holdout(root))
     return sorted(set(errors))
 
 
@@ -61,7 +62,8 @@ def audit_final(root: Path, path: str = "paper/final.md") -> list[str]:
         for item in report["violations"]
     }
     if (root / "config" / "claim_bindings.json").is_file():
-        from .claims import audit_claims
+        from .claims import audit_claims, audit_holdout
 
         errors.update(audit_claims(root, path))
+        errors.update(audit_holdout(root))
     return sorted(errors)

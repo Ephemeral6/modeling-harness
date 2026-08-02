@@ -202,6 +202,20 @@ def sanitize_report(
                 "kind": "format_spec_unbound",
                 "path": format_spec,
             })
+    scenario_sets = read_json(root / "results" / "scenario_sets.json", {})
+    if (
+        isinstance(scenario_sets, dict)
+        and scenario_sets.get("selection_bias_acknowledged") is True
+    ):
+        qualifiers = (
+            "选择偏差", "非无偏", "偏乐观", "selection bias",
+            "not unbiased",
+        )
+        if not any(value.casefold() in text.casefold() for value in qualifiers):
+            violations.append({
+                "kind": "selection_bias_qualification_missing",
+                "path": path,
+            })
     report = {
         "schema": 1,
         "path": path,

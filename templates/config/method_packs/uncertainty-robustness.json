@@ -1,15 +1,33 @@
 {
   "name": "uncertainty-robustness",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "区分参数、随机和结构不确定性并定位结论翻转边界。",
   "task_types": ["uncertainty_robustness"],
   "protocol": [
     "区分参数误差、内禀随机性、结构选择和分布偏移",
     "锁定随机种子、采样方案、基线与评价指标",
     "运行灵敏度、反事实、留出、压力和翻转边界扫描",
-    "不稳结论改报区间、集合或条件式结果"
+    "不稳结论改报区间、集合或条件式结果",
+    "screen、selection、report、stress 四集分离，report 不参与策略选择"
   ],
-  "required_tests": ["重复种子", "强基线", "翻转边界", "覆盖率或校准"],
+  "required_tests": [
+    "重复种子",
+    "强基线",
+    {
+      "name": "翻转边界",
+      "acceptance": {
+        "kind": "opportunity_scan",
+        "detector": "rank_flip"
+      }
+    },
+    {
+      "name": "selection/report 分离",
+      "acceptance": {
+        "kind": "holdout_separation"
+      }
+    },
+    "覆盖率或校准"
+  ],
   "fallbacks": ["计算预算不足时采用分层抽样并报告蒙特卡洛误差"],
   "tool_policy": {
     "decision_required": true,

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from . import cli as legacy_cli
+from .opportunities import render_assumptions
 from .proposals import ProposalService
 from .requirements import audit_requirements, extract_sources
 from .supervisor import StateCapsule
@@ -153,6 +154,17 @@ def _requirements(values: list[str]) -> int:
     return int(bool(errors))
 
 
+def _assumptions(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness assumptions")
+    sub = parser.add_subparsers(dest="action", required=True)
+    render = sub.add_parser("render")
+    render.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    output = render_assumptions(_root(args.project))
+    _emit({"ok": True, "path": output.relative_to(_root(args.project)).as_posix()})
+    return 0
+
+
 def main() -> int:
     try:
         if len(sys.argv) >= 2 and sys.argv[1] == "tool":
@@ -163,6 +175,8 @@ def main() -> int:
             return _proposal(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "requirements":
             return _requirements(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "assumptions":
+            return _assumptions(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:

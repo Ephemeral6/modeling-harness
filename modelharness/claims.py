@@ -249,3 +249,141 @@ def audit_claims(root: Path, paper: str = "paper/final.md") -> list[str]:
         ):
             errors.append(f"display_drift: {claim_id}")
     return sorted(set(errors))
+
+
+def _contains_value(value: Any, target: Any) -> bool:
+    if value == target:
+        return True
+    if isinstance(value, dict):
+        return any(_contains_value(item, target) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_value(item, target) for item in value)
+    return False
+
+
+def _source_runs(root: Path, claim_id: str, binding: dict) -> list[dict]:
+    source = binding.get("source", {})
+    explicit = [
+        binding.get("tool_run_id"),
+        binding.get("source_run_id"),
+        source.get("tool_run_id") if isinstance(source, dict) else None,
+        source.get("run_id") if isinstance(source, dict) else None,
+    ]
+    manifests = root / ".harness" / "tool_runs"
+    records: list[dict] = []
+    for run_id in explicit:
+        if not run_id:
+            continue
+        record = read_json(manifests / f"{run_id}.json")
+        if isinstance(record, dict):
+            records.append(record)
+    if records or not manifests.is_dir():
+        return records
+    artifact = source.get("artifact") if isinstance(source, dict) else None
+    for path in sorted(manifests.glob("*.json")):
+        record = read_json(path, {})
+        if not isinstance(record, dict):
+            continue
+        if artifact and any(
+            isinstance(output, dict) and output.get("path") == artifact
+            for output in record.get("outputs", [])
+        ):
+            records.append(record)
+        elif claim_id in record.get("claim_ids", []):
+            records.append(record)
+    return records
+
+
+def audit_holdout(root: Path) -> list[str]:
+    """Audit screen/selection/report/stress separation and report provenance."""
+    root = root.resolve()
+    bindings_doc = read_json(root / "config" / "claim_bindings.json", {})
+    bindings = (
+        bindings_doc.get("claims", {})
+        if isinstance(bindings_doc, dict) else {}
+    )
+    report_claims = {
+        claim_id: binding
+        for claim_id, binding in bindings.items()
+        if isinstance(binding, dict)
+        and binding.get("scenario_set") == "report"
+    } if isinstance(bindings, dict) else {}
+    scenario_path = root / "results" / "scenario_sets.json"
+    if not scenario_path.is_file():
+        return (
+            ["holdout: report claim 缺失 results/scenario_sets.json"]
+            if report_claims else []
+        )
+    data = read_json(scenario_path)
+    if not isinstance(data, dict) or data.get("schema") != 1:
+        return ["holdout: scenario_sets schema 非法"]
+    sets = data.get("sets", {})
+    if not isinstance(sets, dict):
+        return ["holdout: scenario_sets.sets 非法"]
+    acknowledged = data.get("selection_bias_acknowledged") is True
+    required = {"screen", "selection", "report", "stress"}
+    errors: list[str] = []
+    if not acknowledged and not required <= set(sets):
+        errors.append("scenario_sha256: 四集划分不完整")
+    hashes = [
+        item.get("scenario_sha256")
+        for name, item in sets.items()
+        if name in required and isinstance(item, dict)
+    ]
+    if (
+        not acknowledged
+        and (
+            any(not isinstance(value, str) or not value for value in hashes)
+            or len(hashes) != len(set(hashes))
+        )
+    ):
+        errors.append("scenario_sha256: screen/selection/report/stress 必须两两不同")
+
+    report = sets.get("report", {})
+    report_hash = (
+        report.get("scenario_sha256") if isinstance(report, dict) else None
+    )
+    usages = data.get("usage", [])
+    report_ranking = any(
+        isinstance(item, dict)
+        and item.get("set") == "report"
+        and item.get("purpose") == "policy_ranking"
+        for item in usages
+    ) if isinstance(usages, list) else False
+    if report_ranking and not acknowledged:
+        errors.append("report set 不得用于 policy_ranking")
+    if not acknowledged and (
+        not isinstance(report, dict)
+        or report.get("sealed") is not True
+        or report.get("unsealed_at") is not None
+    ):
+        errors.append("report set 在终评前必须 sealed 且 unsealed_at 为空")
+
+    for claim_id, binding in report_claims.items():
+        runs = _source_runs(root, claim_id, binding)
+        if not report_hash or not any(
+            _contains_value(run.get("inputs", []), report_hash)
+            and (
+                not isinstance(run.get("verification"), dict)
+                or run["verification"].get("status") == "verified"
+            )
+            for run in runs
+        ):
+            errors.append(
+                f"{claim_id}: source tool run 未引用 report scenario_sha256"
+            )
+        if acknowledged and binding.get("unbiased_final") is True:
+            errors.append(
+                f"{claim_id}: selection_bias_acknowledged 时不得标记 unbiased_final"
+            )
+
+    if acknowledged:
+        final = root / "paper" / "final.md"
+        text = final.read_text(encoding="utf-8") if final.is_file() else ""
+        qualifiers = (
+            "选择偏差", "非无偏", "偏乐观", "selection bias",
+            "not unbiased",
+        )
+        if not any(value.casefold() in text.casefold() for value in qualifiers):
+            errors.append("selection_bias_acknowledged 缺少成稿限定语")
+    return sorted(set(errors))

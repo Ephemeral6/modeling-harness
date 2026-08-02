@@ -34,6 +34,15 @@ def validate_profile(data: Any, path: Path | None = None) -> dict:
         not isinstance(format_spec, str) or not format_spec
     ):
         raise ValueError(f"delivery profile.format_spec 非法{where}")
+    threshold = data.get("robustness_degradation_threshold")
+    if threshold is not None and (
+        not isinstance(threshold, (int, float))
+        or isinstance(threshold, bool)
+        or threshold <= 0
+    ):
+        raise ValueError(
+            f"delivery profile.robustness_degradation_threshold 非法{where}"
+        )
     return data
 
 

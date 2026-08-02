@@ -179,6 +179,12 @@ def _condition_active(root: Path, condition: Any) -> bool:
         )
     if condition == "requirements_present":
         return (root / "problem" / "requirements.json").is_file()
+    if condition == "scenario_sets_present":
+        return (root / "results" / "scenario_sets.json").is_file()
+    if condition == "assumptions_present":
+        return (root / "docs" / "assumptions.json").is_file()
+    if condition == "research_diagnostics_present":
+        return (root / "results" / "research_diagnostics.json").is_file()
     return False
 
 
@@ -300,6 +306,59 @@ def evaluate_acceptance(
                 not errors,
                 errors=errors,
                 path="problem/requirements.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "opportunity_scan":
+            from .opportunities import (
+                detect_infeasibility,
+                detect_optimality_gap,
+                detect_rank_flip,
+                detect_unmaterialized_branches,
+            )
+
+            detector = str(raw.get("detector", ""))
+            diag_path = root / "results" / "research_diagnostics.json"
+            assumptions_path = root / "docs" / "assumptions.json"
+            diag = read_json(diag_path, {})
+            evidence = read_json(
+                root / ".harness" / "evidence.json", {}
+            )
+            detectors = {
+                "optimality_gap": lambda: detect_optimality_gap(
+                    evidence or {}, diag or {}
+                ),
+                "rank_flip": lambda: detect_rank_flip(diag or {}),
+                "infeasibility": lambda: detect_infeasibility(diag or {}),
+                "assumption_branches": lambda: (
+                    detect_unmaterialized_branches(
+                        read_json(assumptions_path, {})
+                    )
+                ),
+            }
+            required_path = (
+                assumptions_path
+                if detector == "assumption_branches"
+                else diag_path
+            )
+            passed = detector in detectors and required_path.is_file()
+            opportunities = detectors[detector]() if passed else []
+            records.append(_record(
+                kind,
+                passed,
+                detector=detector,
+                path=required_path.relative_to(root).as_posix(),
+                opportunities=opportunities,
+                freshness="valid" if passed else "missing",
+            ))
+        elif kind == "holdout_separation":
+            from .claims import audit_holdout
+
+            errors = audit_holdout(root)
+            records.append(_record(
+                kind,
+                not errors,
+                errors=errors,
+                path="results/scenario_sets.json",
                 freshness="valid" if not errors else "stale",
             ))
         elif kind == "evidence_exists":

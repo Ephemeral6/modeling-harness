@@ -20,6 +20,7 @@
   "min_figures": 3,
   "min_external_references": 3,
   "format_spec": "problem/format_spec.md",
+  "robustness_degradation_threshold": null,
   "required_sections": [
     "摘要",
     "问题重述",

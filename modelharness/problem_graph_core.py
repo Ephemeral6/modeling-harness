@@ -35,7 +35,7 @@ def node_contract(node: dict) -> dict:
         for key in (
             "question", "task_type", "depends_on", "input_evidence",
             "outputs", "acceptance", "method_pack", "workstreams", "reviews",
-            "requirement_ids",
+            "requirement_ids", "method_pack_options",
         )
     }
 
@@ -136,6 +136,19 @@ def validate_problem_graph(data: Any) -> dict:
                 for item in requirement_ids
             ),
             f"问题节点 requirement_ids 必须是合法 ID 数组: {node_id}",
+        )
+        method_pack_options = node.get("method_pack_options", [])
+        require(
+            isinstance(method_pack_options, list)
+            and all(
+                isinstance(item, str) and item
+                for item in method_pack_options
+            )
+            and (
+                not method_pack_options
+                or node.get("method_pack") in method_pack_options
+            ),
+            f"问题节点 method_pack_options 必须是字符串数组: {node_id}",
         )
         risk = node.get("risk", {})
         require(isinstance(risk, dict), f"问题节点 risk 必须是对象: {node_id}")
