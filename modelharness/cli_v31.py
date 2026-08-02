@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import cli as legacy_cli
 from .proposals import ProposalService
+from .requirements import extract_sources
 from .supervisor import StateCapsule
 from .tool_cli_ext import main as tool_main
 from .toolchain_registry import ToolRegistry
@@ -134,6 +135,17 @@ def _proposal(values: list[str]) -> int:
     return 0
 
 
+def _requirements(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness requirements")
+    sub = parser.add_subparsers(dest="action", required=True)
+    extract = sub.add_parser("extract")
+    extract.add_argument("--passes", type=int, default=2)
+    extract.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    _emit(extract_sources(_root(args.project), passes=args.passes))
+    return 0
+
+
 def main() -> int:
     try:
         if len(sys.argv) >= 2 and sys.argv[1] == "tool":
@@ -142,6 +154,8 @@ def main() -> int:
             return _state(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "proposal":
             return _proposal(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "requirements":
+            return _requirements(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:
