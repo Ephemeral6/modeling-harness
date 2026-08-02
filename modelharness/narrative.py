@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from .evidence import EvidenceGraph
 from .narrative_core import CLAIM_RE
+from .narrative_core import audit_final as _audit_final
 from .narrative_core import audit_paper as _audit_paper
 from .narrative_core import build_brief as _build_brief
 from .problem_graph import ProblemGraph
@@ -49,9 +50,15 @@ def audit_paper(root, paper="paper/draft.md"):
     if graph.exists:
         evidence = EvidenceGraph(root).nodes
         for evidence_id, contract, enforce in graph.milestone_outputs("s6"):
+            if evidence_id == "narrative.worksheet":
+                continue
             record = evidence.get(evidence_id)
             if not record or record.get("status") != "verified":
                 errors.append(f"交付 Profile 缺少 verified 证据: {evidence_id}")
             elif enforce and record.get("obligation_hash") != contract:
                 errors.append(f"交付证据合同已陈旧: {evidence_id}")
     return sorted(set(errors))
+
+
+def audit_final(root, paper="paper/final.md"):
+    return _audit_final(root, paper)

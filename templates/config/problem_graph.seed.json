@@ -300,10 +300,16 @@
       "enforce_contract": true,
       "outputs": [
         {
+          "evidence_id": "narrative.worksheet",
+          "kind": "narrative",
+          "statement": "保留内部证据标记的论文工作稿",
+          "artifact": "paper/draft.md"
+        },
+        {
           "evidence_id": "narrative.paper",
           "kind": "narrative",
           "statement": "按交付 Profile 生成并经证据复核的最终文档",
-          "artifact": "paper/draft.md"
+          "artifact": "paper/final.md"
         }
       ],
       "acceptance": {},
@@ -314,10 +320,13 @@
           "description": "从 verified evidence 生成交付物与图表",
           "owns": [
             "paper/draft.md",
+            "paper/final.md",
+            "paper/claim_map.json",
             "paper/figures",
+            "results/delivery_check.json",
             "results/report_claims.json"
           ],
-          "outputs": ["narrative.paper"],
+          "outputs": ["narrative.worksheet", "narrative.paper"],
           "budget": {"max_attempts": 3}
         }
       ],

@@ -46,3 +46,13 @@ def audit_paper(root: Path, paper: str = "paper/draft.md") -> list[str]:
             errors.append(f"引用未验证节点: {node_id}")
     errors.extend(graph.audit())
     return sorted(set(errors))
+
+
+def audit_final(root: Path, path: str = "paper/final.md") -> list[str]:
+    from .sanitize import sanitize_report
+
+    report = sanitize_report(root, path)
+    return sorted({
+        f"成稿交付违规: {item['kind']}"
+        for item in report["violations"]
+    })

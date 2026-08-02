@@ -6,5 +6,9 @@
   "mandatory_outputs": ["problem", "model", "result", "decision", "limitation"],
   "human_checkpoints": [],
   "report_sections": ["问题", "模型", "验证", "决策", "边界"],
-  "quality_dimensions": ["correctness", "reproducibility", "calibration"]
+  "quality_dimensions": ["correctness", "reproducibility", "calibration"],
+  "min_figures": 0,
+  "min_external_references": 0,
+  "format_spec": null,
+  "required_sections": ["问题", "模型", "验证", "决策", "边界"]
 }

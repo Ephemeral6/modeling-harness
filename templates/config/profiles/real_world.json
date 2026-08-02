@@ -28,5 +28,16 @@
     "operational_feasibility",
     "data_governance",
     "monitorability"
+  ],
+  "min_figures": 0,
+  "min_external_references": 0,
+  "format_spec": null,
+  "required_sections": [
+    "Decision Context",
+    "Data Contract",
+    "Model",
+    "Validation",
+    "Action",
+    "Monitoring"
   ]
 }
