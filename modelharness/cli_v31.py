@@ -182,7 +182,7 @@ def main() -> int:
             if result is not None:
                 return result
         if len(sys.argv) == 2 and sys.argv[1] == "--version":
-            print("modelharness 4.0.1")
+            print("modelharness 4.1.0")
             return 0
         legacy_cli.doctor = _doctor_with_tools
         return legacy_cli.main()

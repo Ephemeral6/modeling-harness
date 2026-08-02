@@ -308,6 +308,58 @@ def evaluate_acceptance(
                 path="problem/requirements.json",
                 freshness="valid" if not errors else "stale",
             ))
+        elif kind == "profile_mandatory_outputs":
+            profile = read_json(
+                root / "config" / "delivery_profile.json", {}
+            )
+            required = (
+                profile.get("mandatory_outputs", [])
+                if isinstance(profile, dict) else []
+            )
+            graph = read_json(
+                root / ".harness" / "evidence.json", {"nodes": {}}
+            )
+            nodes = (
+                graph.get("nodes", {})
+                if isinstance(graph, dict) else {}
+            )
+
+            def normalized(value: Any) -> str:
+                return str(value).strip().casefold().replace("-", "_")
+
+            def matches(output: str, node_id: str, node: Any) -> bool:
+                if not isinstance(node, dict):
+                    return False
+                aliases = {
+                    normalized(node_id),
+                    normalized(node_id.rsplit(".", 1)[-1]),
+                    normalized(node.get("kind", "")),
+                    normalized(node.get("profile_output", "")),
+                }
+                profile_outputs = node.get("profile_outputs", [])
+                if isinstance(profile_outputs, list):
+                    aliases.update(normalized(item) for item in profile_outputs)
+                return (
+                    normalized(output) in aliases
+                    and node.get("status") == "verified"
+                    and node.get("freshness", "valid") == "valid"
+                )
+
+            missing = [
+                output for output in required
+                if not any(
+                    matches(str(output), node_id, node)
+                    for node_id, node in nodes.items()
+                )
+            ]
+            records.append(_record(
+                kind,
+                isinstance(required, list) and not missing,
+                required=required,
+                missing=missing,
+                path="config/delivery_profile.json",
+                freshness="valid" if not missing else "missing",
+            ))
         elif kind == "opportunity_scan":
             from .opportunities import (
                 detect_infeasibility,

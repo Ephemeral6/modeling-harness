@@ -152,7 +152,13 @@ def validate_problem_graph(data: Any) -> dict:
         )
         risk = node.get("risk", {})
         require(isinstance(risk, dict), f"问题节点 risk 必须是对象: {node_id}")
-        for field in ("downstream_impact", "uncertainty", "estimated_cost"):
+        for field in (
+            "downstream_impact",
+            "uncertainty",
+            "estimated_cost",
+            "improvement_value",
+            "coverage_value",
+        ):
             value = risk.get(field, 1)
             require(
                 isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -301,6 +307,8 @@ class ProblemGraph:
                 max(0.0, float(risk.get("decision_change_probability", 1)))
                 * max(0.0, float(risk.get("information_gain", 1)))
                 * max(0.0, float(risk.get("falsification_value", 1)))
+                * max(0.0, float(risk.get("improvement_value", 1)))
+                * max(0.0, float(risk.get("coverage_value", 1)))
             )
             penalties = sum(max(0.0, float(risk.get(key, 0))) for key in (
                 "risk_penalty", "latency_penalty", "repeat_penalty"

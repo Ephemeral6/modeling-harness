@@ -50,7 +50,7 @@ State Capsule 与 Task / Progress / Failure / Resource / Opportunity 五本账�
 按需派生，不是新的权威数据库。不得用任务完成替代证据验证，不得用工具成功退出替代
 数学验证，也不得用印章存在替代印章校验。
 
-## 五条硬不变量
+## 九条硬不变量
 
 1. NOT_RUN 永远不等于 PASS；execution_status、verdict、authority、freshness 正交。
 2. verified 绑定当前工件、输入、审核和验证策略哈希；变化后标记 stale、missing 或
@@ -59,13 +59,18 @@ State Capsule 与 Task / Progress / Failure / Resource / Opportunity 五本账�
    论文 claim；历史记录不删除。
 4. 未知执行结果进入 RECOVERY_PENDING；非幂等动作不得在对账前自动重试。
 5. 生成者不能批准自己的结论；登记 producer 后，审核 task 和 worker 均必须独立。
+6. mandatory requirement 未闭合时，S6 不能宣告完整交付。
+7. 正式数字未绑定权威字段，或推导式与源字段不一致时，不能发布。
+8. 存在随机选择过程时，头条性能数字若不来自独立 report set，不能标为无偏终评。
+9. 成稿中存在内部证据标记、临时路径或未解析模板时，不能通过交付。
 
 复审是 append-only 谱系：Problem Graph 中的 review.path 是逻辑审核名，实际输出路径以
 任务 owns 为准。若旧审核已存在，新审核写 `_v2.json`、`_v3.json` 等不可变同名版本；
 不得覆盖、删除或归档旧 REJECT，也不得为此向用户请求授权。Harness 自动选择与当前
 合同和全部当前工件哈希匹配的最新审核。
 
-除这五条、项目路径安全和用户权限外，不增加限制。
+除这九条、项目路径安全和用户权限外，不增加限制。G6–G9 只约束交付闭合；
+搜索边界、假设分支和潜在改进进入 Opportunity Ledger，不直接触发 FAIL。
 
 ## Agent 工具自主权
 

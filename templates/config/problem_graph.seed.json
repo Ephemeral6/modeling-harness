@@ -356,6 +356,9 @@
           "when": "requirements_present"
         },
         {
+          "kind": "profile_mandatory_outputs"
+        },
+        {
           "kind": "check",
           "check": {
             "argv": ["python", "checks/check_delivery.py"],
