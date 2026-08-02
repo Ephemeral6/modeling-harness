@@ -63,6 +63,35 @@ def _reference_entries(text: str) -> list[str]:
     return _REFERENCE_ENTRY_RE.findall(text[match.end():])
 
 
+def _inject_deferred(root: Path, text: str) -> str:
+    data = read_json(root / "results" / "opportunity_outcomes.json", {})
+    outcomes = data.get("outcomes", []) if isinstance(data, dict) else []
+    pending = [
+        item for item in outcomes
+        if isinstance(item, dict)
+        and item.get("action") in {"deferred", "budget_qualified_stop"}
+        and item.get("opportunity_id")
+        and item["opportunity_id"] not in text
+    ]
+    if not pending:
+        return text
+    reasons = {
+        "budget_exhausted": "预算已耗尽",
+        "dominated_by_bound": "已由界支配",
+        "out_of_scope_by_user": "超出用户授权范围",
+        "problem_forced": "边界由题面强制",
+        "resolved_interior": "扩展后已回到内部解",
+    }
+    lines = ["", "### 未闭合改进机会（自动注入）", ""]
+    for item in pending:
+        reason = reasons.get(item.get("reason_code"), str(item.get("reason_code")))
+        lines.append(
+            f"- {item['opportunity_id']}：{reason}；"
+            f"处置={item['action']}，结论受此限制。"
+        )
+    return text.rstrip() + "\n" + "\n".join(lines) + "\n"
+
+
 def render_final(
     root: Path,
     draft: str = "paper/draft.md",
@@ -74,7 +103,9 @@ def render_final(
     target = safe_relative(root, out)
     if not source.is_file():
         raise ValueError(f"工作稿不存在: {draft}")
-    text = source.read_text(encoding="utf-8")
+    text = _inject_deferred(
+        root, source.read_text(encoding="utf-8")
+    )
     parts: list[str] = []
     claims: list[dict] = []
     cursor = 0
