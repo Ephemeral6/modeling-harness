@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "searches": {
+    "Q3.policy_search": {
+      "objective": "expected_loss",
+      "sense": "min",
+      "dimensions": {
+        "interval_days": {
+          "source": "artificial_search_bound",
+          "domain": [27, 28, 29, 30],
+          "domain_available": [1, 60],
+          "selected": 30,
+          "boundary": "upper"
+        }
+      },
+      "top_k": [{"point": {"interval_days": 30}, "objective": 1165.2}]
+    }
+  },
+  "assumptions": {},
+  "opportunities": []
+}

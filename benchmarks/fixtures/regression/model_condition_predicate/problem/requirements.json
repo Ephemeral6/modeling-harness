@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "requirements": {
+    "Q3.multi_litter_mortality": {
+      "type": "model_condition",
+      "mandatory": true,
+      "question": "多羔胎死亡率不得低于正常胎",
+      "expected": {
+        "kind": "predicate",
+        "artifact": "results/mortality_model.json",
+        "pointer": "/rates_by_litter_size",
+        "predicate": "monotone_nondecreasing(x)"
+      },
+      "claim_ids": ["claim.mortality"],
+      "status": "satisfied"
+    }
+  }
+}

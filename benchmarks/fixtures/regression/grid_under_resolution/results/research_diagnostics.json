@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "searches": {
+    "Q3.policy_search": {
+      "objective": "expected_loss",
+      "sense": "min",
+      "dimensions": {
+        "lactation_days": {
+          "source": "problem_bound",
+          "domain": [35, 40, 45],
+          "domain_available": [35, 45],
+          "selected": 35,
+          "boundary": "lower"
+        }
+      },
+      "wording": "哺乳期 35 天为最优选择"
+    }
+  }
+}

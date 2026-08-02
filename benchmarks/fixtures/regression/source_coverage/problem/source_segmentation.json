@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "artifact": "problem/data_raw/001__statement.md",
+      "sha256": "stale-placeholder",
+      "segments": [
+        {
+          "id": "s0001",
+          "span": [0, 15],
+          "text_sha256": "stale-placeholder",
+          "markers": ["请", "估算"],
+          "disposition": "requirement",
+          "requirement_ids": ["Q1.output"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "outcomes": [
+    {
+      "opportunity_id": "opp-boundary",
+      "detected_at": "2026-08-02T00:00:00Z",
+      "action": "deferred",
+      "reason_code": "budget_exhausted",
+      "evidence_id": null,
+      "realized_delta": null
+    }
+  ]
+}

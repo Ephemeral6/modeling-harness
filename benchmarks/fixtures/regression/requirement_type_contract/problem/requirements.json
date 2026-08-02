@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "requirements": {
+    "Q1.population": {
+      "type": "answer",
+      "mandatory": true,
+      "question": "基础羊群配置",
+      "expected": {"kind": "tuple", "fields": ["rams", "ewes"]},
+      "claim_ids": ["claim.population"],
+      "status": "satisfied"
+    },
+    "Q1.output_range": {
+      "type": "answer",
+      "mandatory": true,
+      "question": "112 栏基线下的年化出栏范围",
+      "expected": {
+        "kind": "interval",
+        "fields": ["lower", "upper"],
+        "conditioned_on": "Q1.population",
+        "predicate": "lower <= upper"
+      },
+      "claim_ids": ["claim.output_range"],
+      "status": "satisfied"
+    }
+  }
+}

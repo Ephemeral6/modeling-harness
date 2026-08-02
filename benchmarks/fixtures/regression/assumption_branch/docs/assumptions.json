@@ -1,0 +1,18 @@
+{
+  "cross_batch_pooling": {
+    "statement": "不同批次、相同阶段是否允许合栏",
+    "forced_by_source": false,
+    "source_segment_ids": ["s0028"],
+    "affected_requirements": ["Q1.population", "Q2.annual_output"],
+    "affected_claims": ["Q2.annual_output"],
+    "direction_of_bias": "conservative",
+    "estimated_impact": "high",
+    "cost_acceptable": true,
+    "dominance_proof": null,
+    "alternative_branches": [
+      {"id": "same_stage_pooling", "materialized": false, "results": null},
+      {"id": "seven_day_window", "materialized": false, "results": null}
+    ],
+    "resolution": "unresolved"
+  }
+}
