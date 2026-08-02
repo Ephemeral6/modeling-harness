@@ -8,7 +8,7 @@ from pathlib import Path
 
 from . import cli as legacy_cli
 from .proposals import ProposalService
-from .requirements import extract_sources
+from .requirements import audit_requirements, extract_sources
 from .supervisor import StateCapsule
 from .tool_cli_ext import main as tool_main
 from .toolchain_registry import ToolRegistry
@@ -141,9 +141,16 @@ def _requirements(values: list[str]) -> int:
     extract = sub.add_parser("extract")
     extract.add_argument("--passes", type=int, default=2)
     extract.add_argument("--project", type=Path)
+    audit = sub.add_parser("audit")
+    audit.add_argument("--project", type=Path)
     args = parser.parse_args(values)
-    _emit(extract_sources(_root(args.project), passes=args.passes))
-    return 0
+    root = _root(args.project)
+    if args.action == "extract":
+        _emit(extract_sources(root, passes=args.passes))
+        return 0
+    errors = audit_requirements(root)
+    _emit({"ok": not errors, "errors": errors})
+    return int(bool(errors))
 
 
 def main() -> int:

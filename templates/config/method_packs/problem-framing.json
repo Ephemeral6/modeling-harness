@@ -9,7 +9,18 @@
     "明确不回答边界、缺失信息、可接受近似和失败出口",
     "把整题拆成依赖清楚、可局部证伪的问题节点"
   ],
-  "required_tests": ["附件覆盖检查", "单位与符号检查", "子问到证据映射"],
+  "required_tests": [
+    "附件覆盖检查",
+    "单位与符号检查",
+    {
+      "name": "子问到证据映射",
+      "acceptance": {
+        "kind": "requirement_coverage",
+        "phase": "extraction",
+        "when": "source_present"
+      }
+    }
+  ],
   "fallbacks": ["信息不足时明确条件化问题，不暗造数据"],
   "tool_policy": {
     "decision_required": false,

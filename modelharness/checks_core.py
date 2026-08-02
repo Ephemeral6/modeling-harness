@@ -169,6 +169,19 @@ def _record(kind: str, passed: bool, **fields) -> dict:
     }
 
 
+def _condition_active(root: Path, condition: Any) -> bool:
+    if condition in {None, "", "always"}:
+        return True
+    if condition == "source_present":
+        directory = root / "problem" / "data_raw"
+        return directory.is_dir() and any(
+            path.is_file() for path in directory.rglob("*")
+        )
+    if condition == "requirements_present":
+        return (root / "problem" / "requirements.json").is_file()
+    return False
+
+
 def evaluate_acceptance(
     root: Path, acceptance: list[Any], result: dict | None = None
 ) -> dict:
@@ -212,6 +225,15 @@ def evaluate_acceptance(
             })
             continue
         kind = raw.get("kind")
+        condition = raw.get("when")
+        if not _condition_active(root, condition):
+            records.append(_record(
+                str(kind or "conditional"),
+                True,
+                skipped=True,
+                when=condition,
+            ))
+            continue
         if kind == "artifact_exists":
             relative = str(raw.get("path", ""))
             path = safe_relative(root, relative)
@@ -261,6 +283,24 @@ def evaluate_acceptance(
                 actual=actual,
                 op=operator,
                 freshness="valid" if path.is_file() else "missing",
+            ))
+        elif kind == "requirement_coverage":
+            from .requirements import (
+                audit_requirement_extraction,
+                audit_requirements,
+            )
+
+            errors = (
+                audit_requirement_extraction(root)
+                if raw.get("phase") == "extraction"
+                else audit_requirements(root)
+            )
+            records.append(_record(
+                kind,
+                not errors,
+                errors=errors,
+                path="problem/requirements.json",
+                freshness="valid" if not errors else "stale",
             ))
         elif kind == "evidence_exists":
             node_id = str(raw.get("id", ""))

@@ -22,16 +22,45 @@
           "kind": "problem",
           "statement": "决策问题、指标、基线、硬约束与失效出口",
           "artifact": "docs/success_criteria.md"
+        },
+        {
+          "evidence_id": "problem.requirements",
+          "kind": "problem",
+          "statement": "逐条需求、类型契约、条件锚点与闭合状态",
+          "artifact": "problem/requirements.json",
+          "required_when": "source_present"
+        },
+        {
+          "evidence_id": "problem.segmentation",
+          "kind": "problem",
+          "statement": "覆盖全部题面原文的可追溯分句台账",
+          "artifact": "problem/source_segmentation.json",
+          "required_when": "source_present"
         }
       ],
-      "acceptance": {},
+      "acceptance": [
+        {
+          "kind": "requirement_coverage",
+          "phase": "extraction",
+          "when": "source_present"
+        }
+      ],
       "workstreams": [
         {
           "id": "architect",
           "role": "problem-architect",
           "description": "形式化题意、子问题、成功标准与失败出口",
-          "owns": ["docs/success_criteria.md"],
-          "outputs": ["problem.statement", "problem.success"],
+          "owns": [
+            "docs/success_criteria.md",
+            "problem/requirements.json",
+            "problem/source_segmentation.json"
+          ],
+          "outputs": [
+            "problem.statement",
+            "problem.success",
+            "problem.requirements",
+            "problem.segmentation"
+          ],
           "budget": {"max_attempts": 3}
         }
       ],
@@ -312,7 +341,19 @@
           "artifact": "paper/final.md"
         }
       ],
-      "acceptance": {},
+      "acceptance": [
+        {
+          "kind": "requirement_coverage",
+          "when": "requirements_present"
+        },
+        {
+          "kind": "check",
+          "check": {
+            "argv": ["python", "checks/check_delivery.py"],
+            "expected_artifacts": ["results/delivery_check.json"]
+          }
+        }
+      ],
       "workstreams": [
         {
           "id": "delivery",

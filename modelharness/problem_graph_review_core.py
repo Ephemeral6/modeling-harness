@@ -38,7 +38,7 @@ class ProblemGraph(_ProblemGraph):
             return "active"
         outputs = [
             evidence_nodes.get(output["evidence_id"])
-            for output in node["outputs"]
+            for output in self.active_outputs(node_id)
         ]
         if any(x and x.get("status") == "rejected" for x in outputs):
             return "repair"
@@ -47,7 +47,7 @@ class ProblemGraph(_ProblemGraph):
                 sha256(self.root / output["artifact"])
                 if (self.root / output["artifact"]).is_file() else None
             )
-            for output in node["outputs"]
+            for output in self.active_outputs(node_id)
         }
         contract = self.contract_hash(node_id)
         for review_spec in node.get("reviews", []):

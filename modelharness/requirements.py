@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from pathlib import Path
+from typing import Any
+
+from .claims import GENERATOR, json_pointer
 from .contracts import safe_relative
+from .safeeval import evaluate
 from .storage import atomic_write_json, read_json
 from .util import sha256
 
@@ -18,6 +23,15 @@ MODEL_MARKERS: tuple[str, ...] = (
 )
 
 DISPOSITIONS = {"requirement", "background", "data", "prohibition", "format"}
+REQUIREMENT_TYPES = {
+    "answer", "constraint", "model_condition", "data_input", "delivery",
+    "prohibition",
+}
+REQUIREMENT_STATUSES = {"open", "satisfied", "not_applicable"}
+EXPECTED_KINDS = {
+    "number", "interval", "tuple", "set", "schedule", "policy", "checklist",
+    "predicate",
+}
 _BREAK_RE = re.compile(r"[。！？；\n]")
 _ITEM_RE = re.compile(
     r"(?m)^[ \t]*(?:问题[ \t]*[0-9]+|[（(][0-9]+[）)]|[0-9]+\.)[ \t]*"
@@ -102,6 +116,11 @@ def extract_sources(root: Path, passes: int = 2) -> dict:
             artifact: _source_record(root, artifact)
             for artifact in presented
         }
+        segment_number = 1
+        for artifact in artifacts:
+            for segment in records[artifact]["segments"]:
+                segment["id"] = f"s{segment_number:04d}"
+                segment_number += 1
         runs.append({
             "schema": 1,
             "sources": [records[artifact] for artifact in artifacts],
@@ -137,6 +156,7 @@ def audit_segmentation(root: Path) -> list[str]:
     if not isinstance(ledger, dict) or ledger.get("schema") != 1:
         return ["source_segmentation 缺失或 schema 非法"]
     errors: list[str] = []
+    seen_segment_ids: set[str] = set()
     for source in ledger.get("sources", []):
         artifact = str(source.get("artifact", ""))
         try:
@@ -155,6 +175,11 @@ def audit_segmentation(root: Path) -> list[str]:
             source.get("segments", []),
             key=lambda item: item.get("span", [0, 0])[0],
         ):
+            segment_id = segment.get("id")
+            if segment_id in seen_segment_ids:
+                errors.append(f"segment id 重复: {segment_id}")
+            elif isinstance(segment_id, str):
+                seen_segment_ids.add(segment_id)
             span = segment.get("span")
             if (
                 not isinstance(span, list)
@@ -244,3 +269,383 @@ def extract_diff(root: Path, pass_a: dict, pass_b: dict) -> dict:
         "requirement_ids": requirement_ids,
         "dispositions": dispositions,
     }
+
+
+def monotone_nondecreasing(values: Any) -> bool:
+    try:
+        items = list(values)
+        return all(left <= right for left, right in zip(items, items[1:]))
+    except (TypeError, ValueError):
+        return False
+
+
+def monotone_nonincreasing(values: Any) -> bool:
+    try:
+        items = list(values)
+        return all(left >= right for left, right in zip(items, items[1:]))
+    except (TypeError, ValueError):
+        return False
+
+
+def within(value: Any, lower: Any, upper: Any) -> bool:
+    try:
+        return lower <= value <= upper
+    except TypeError:
+        return False
+
+
+def sums_to(values: Any, target: Any, tolerance: float = 0) -> bool:
+    try:
+        return math.isclose(
+            float(sum(values)),
+            float(target),
+            rel_tol=0,
+            abs_tol=float(tolerance),
+        )
+    except (TypeError, ValueError):
+        return False
+
+
+def covers(container: Any, required: Any) -> bool:
+    if (
+        isinstance(container, dict)
+        and isinstance(required, dict)
+        and {"lower", "upper"} <= set(container)
+        and {"lower", "upper"} <= set(required)
+    ):
+        return (
+            container["lower"] <= required["lower"]
+            and container["upper"] >= required["upper"]
+        )
+    try:
+        return set(required) <= set(container)
+    except TypeError:
+        return False
+
+
+_PREDICATE_FUNCTIONS = {
+    "monotone_nondecreasing": monotone_nondecreasing,
+    "monotone_nonincreasing": monotone_nonincreasing,
+    "within": within,
+    "sums_to": sums_to,
+    "covers": covers,
+    "len": len,
+}
+_DICT_ACCESS_RE = re.compile(
+    r"""x\[['"]([A-Za-z_][A-Za-z0-9_]*)['"]\]"""
+)
+
+
+def _predicate_value(
+    root: Path, expected: dict, claim_value: Any
+) -> tuple[bool, Any]:
+    artifact = expected.get("artifact")
+    if not artifact:
+        return True, claim_value
+    try:
+        path = safe_relative(root, str(artifact))
+    except ValueError:
+        return False, None
+    if not path.is_file():
+        return False, None
+    return json_pointer(
+        read_json(path),
+        str(expected.get("pointer", "")),
+    )
+
+
+def _evaluate_predicate(expression: str, value: Any) -> bool:
+    names: dict[str, Any] = {"x": value}
+    if isinstance(value, dict):
+        names.update({
+            key: item
+            for key, item in value.items()
+            if isinstance(key, str) and key.isidentifier()
+        })
+
+    def replace(match: re.Match) -> str:
+        key = match.group(1)
+        name = f"x_{key}"
+        names[name] = value.get(key) if isinstance(value, dict) else None
+        return name
+
+    normalized = _DICT_ACCESS_RE.sub(replace, expression)
+    # Keep safeeval's AST whitelist narrow while supporting the documented
+    # conjunction form as a sequence of independently safe comparisons.
+    clauses = re.split(r"\s+and\s+", normalized.strip())
+    return bool(clauses) and all(
+        bool(evaluate(clause, names, functions=_PREDICATE_FUNCTIONS))
+        for clause in clauses
+    )
+
+
+def _kind_matches(kind: str, value: Any, fields: list[str]) -> bool:
+    number = (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
+    if kind == "number":
+        return number
+    if kind in {"interval", "tuple"}:
+        return (
+            isinstance(value, dict)
+            and all(field in value for field in fields)
+        )
+    if kind == "set":
+        return isinstance(value, (list, tuple, set, dict))
+    if kind == "schedule":
+        return isinstance(value, (list, dict))
+    if kind in {"policy", "checklist"}:
+        return isinstance(value, dict)
+    if kind == "predicate":
+        return isinstance(value, bool)
+    return False
+
+
+def _not_applicable_is_reviewed(root: Path, requirement: dict) -> bool:
+    if not str(requirement.get("reason", "")).strip():
+        return False
+    review = requirement.get("independent_review", requirement.get("review"))
+    if isinstance(review, dict):
+        return (
+            str(review.get("verdict", "")).upper() == "APPROVE"
+            and bool(review.get("reviewer"))
+        )
+    if isinstance(review, str) and review:
+        try:
+            data = read_json(safe_relative(root, review))
+        except (ValueError, RuntimeError):
+            return False
+        return (
+            isinstance(data, dict)
+            and str(data.get("verdict", "")).upper() == "APPROVE"
+            and bool(data.get("reviewer"))
+        )
+    return False
+
+
+def _claim_contract_errors(
+    root: Path,
+    requirement_id: str,
+    requirement: dict,
+    claim_id: str,
+    bindings: dict,
+    values: dict,
+) -> list[str]:
+    errors: list[str] = []
+    binding = bindings.get(claim_id)
+    claim = values.get(claim_id)
+    expected = requirement.get("expected", {})
+    if not isinstance(binding, dict):
+        return [f"{requirement_id} 未闭合: claim binding 缺失 {claim_id}"]
+    if requirement_id not in binding.get("requirement_ids", []):
+        errors.append(
+            f"{requirement_id} 未闭合: {claim_id} 未反向绑定 requirement"
+        )
+    if not isinstance(claim, dict) or claim.get("status") != "valid":
+        errors.append(f"{requirement_id} 未闭合: claim value 无效 {claim_id}")
+        return errors
+    kind = expected.get("kind")
+    if binding.get("value_type") != kind:
+        errors.append(
+            f"{requirement_id} kind 不匹配: expected={kind}, "
+            f"binding={binding.get('value_type')}"
+        )
+    fields = expected.get("fields", [])
+    value = claim.get("source_value")
+    if (
+        kind in EXPECTED_KINDS
+        and not _kind_matches(
+            str(kind),
+            value,
+            fields if isinstance(fields, list) else [],
+        )
+    ):
+        errors.append(f"{requirement_id} kind/fields 不匹配: {claim_id}")
+
+    conditioned_on = expected.get("conditioned_on")
+    if conditioned_on:
+        parent_claim = binding.get("conditioned_on_claim")
+        parent_requirement = None
+        all_requirements = read_json(
+            root / "problem" / "requirements.json", {}
+        ).get("requirements", {})
+        if isinstance(all_requirements, dict):
+            parent_requirement = all_requirements.get(conditioned_on)
+        allowed = (
+            parent_requirement.get("claim_ids", [])
+            if isinstance(parent_requirement, dict) else []
+        )
+        parent_binding = bindings.get(parent_claim)
+        if (
+            parent_claim not in allowed
+            or not isinstance(parent_binding, dict)
+            or not binding.get("scenario_id")
+            or binding.get("scenario_id") != parent_binding.get("scenario_id")
+        ):
+            errors.append(
+                f"{requirement_id} scenario/conditioned_on 不匹配"
+            )
+
+    predicate = expected.get("predicate")
+    if predicate:
+        found, predicate_value = _predicate_value(root, expected, value)
+        try:
+            passed = found and _evaluate_predicate(
+                str(predicate), predicate_value
+            )
+        except (ArithmeticError, SyntaxError, TypeError, ValueError):
+            passed = False
+        if not passed:
+            errors.append(f"{requirement_id} predicate 未通过: {predicate}")
+    return errors
+
+
+def audit_requirement_extraction(root: Path) -> list[str]:
+    """Audit the S0 source-segment to requirement-ledger mapping."""
+    root = root.resolve()
+    ledger = read_json(root / "problem" / "requirements.json")
+    segmentation = read_json(root / "problem" / "source_segmentation.json")
+    if not isinstance(ledger, dict) or ledger.get("schema") != 1:
+        return ["requirements extraction 缺失 problem/requirements.json"]
+    requirements = ledger.get("requirements")
+    if not isinstance(requirements, dict):
+        return ["requirements extraction 中 requirements 非对象"]
+    if not isinstance(segmentation, dict) or segmentation.get("schema") != 1:
+        return ["requirements extraction 缺失 source_segmentation"]
+    errors = audit_segmentation(root)
+    segments = _segment_index(segmentation)
+    for segment_id, segment in segments.items():
+        if segment.get("disposition") != "requirement":
+            continue
+        ids = segment.get("requirement_ids", [])
+        if not isinstance(ids, list) or not ids:
+            errors.append(f"{segment_id} requirement segment 未映射")
+            continue
+        for requirement_id in ids:
+            if requirement_id not in requirements:
+                errors.append(
+                    f"{segment_id} 映射未知 requirement: {requirement_id}"
+                )
+    for requirement_id, requirement in requirements.items():
+        source = (
+            requirement.get("source", {})
+            if isinstance(requirement, dict) else {}
+        )
+        for segment_id in source.get("segment_ids", []):
+            if segment_id not in segments:
+                errors.append(
+                    f"{requirement_id} 引用未知 source segment: {segment_id}"
+                )
+    return sorted(set(errors))
+
+
+def audit_requirements(root: Path) -> list[str]:
+    """Audit mandatory closure, claim types, scenarios, predicates, and source age."""
+    root = root.resolve()
+    ledger = read_json(root / "problem" / "requirements.json")
+    if not isinstance(ledger, dict) or ledger.get("schema") != 1:
+        return ["requirements 未闭合: problem/requirements.json 缺失或非法"]
+    requirements = ledger.get("requirements")
+    if not isinstance(requirements, dict):
+        return ["requirements 未闭合: requirements 必须是对象"]
+    binding_doc = read_json(root / "config" / "claim_bindings.json", {})
+    bindings = (
+        binding_doc.get("claims", {})
+        if isinstance(binding_doc, dict) else {}
+    )
+    value_doc = read_json(root / "results" / "claim_values.json", {})
+    values = value_doc.get("claims", {}) if isinstance(value_doc, dict) else {}
+    generated = (
+        isinstance(value_doc, dict)
+        and value_doc.get("generator") == GENERATOR
+    )
+    evidence_doc = read_json(root / ".harness" / "evidence.json")
+    evidence_nodes = (
+        evidence_doc.get("nodes", {})
+        if isinstance(evidence_doc, dict) else None
+    )
+    errors: list[str] = []
+    segmentation = read_json(
+        root / "problem" / "source_segmentation.json", {}
+    )
+    segment_index = (
+        _segment_index(segmentation)
+        if isinstance(segmentation, dict) else {}
+    )
+    if ledger.get("source_segmentation"):
+        errors.extend(audit_segmentation(root))
+    for requirement_id, requirement in requirements.items():
+        if not isinstance(requirement, dict):
+            errors.append(f"{requirement_id} 未闭合: requirement 非对象")
+            continue
+        if requirement.get("type") not in REQUIREMENT_TYPES:
+            errors.append(f"{requirement_id} type 非法")
+        status = requirement.get("status")
+        if status not in REQUIREMENT_STATUSES:
+            errors.append(f"{requirement_id} status 非法")
+        expected = requirement.get("expected")
+        if (
+            not isinstance(expected, dict)
+            or expected.get("kind") not in EXPECTED_KINDS
+        ):
+            errors.append(f"{requirement_id} expected.kind 非法")
+            expected = {}
+        source = requirement.get("source", {})
+        if isinstance(source, dict) and source.get("segment_ids"):
+            source_segments = [
+                segment_index.get(segment_id)
+                for segment_id in source.get("segment_ids", [])
+            ]
+            if any(segment is None for segment in source_segments):
+                errors.append(f"{requirement_id} source segment 缺失")
+            quote_hash = source.get("quote_sha256")
+            if quote_hash and all(
+                isinstance(segment, dict) for segment in source_segments
+            ):
+                quote = "".join(
+                    str(segment.get("text", ""))
+                    for segment in source_segments
+                )
+                if _text_hash(quote) != quote_hash:
+                    errors.append(f"{requirement_id} source quote_sha256 stale")
+        mandatory = requirement.get("mandatory") is True
+        claim_ids = requirement.get("claim_ids", [])
+        if not isinstance(claim_ids, list) or not all(
+            isinstance(item, str) for item in claim_ids
+        ):
+            errors.append(f"{requirement_id} claim_ids 非法")
+            claim_ids = []
+        if mandatory and status == "not_applicable":
+            if not _not_applicable_is_reviewed(root, requirement):
+                errors.append(
+                    f"{requirement_id} 未闭合: not_applicable 缺 reason/独立 review"
+                )
+            continue
+        if mandatory and (status != "satisfied" or not claim_ids):
+            errors.append(f"{requirement_id} 未闭合: mandatory requirement")
+        for claim_id in claim_ids:
+            if not generated:
+                errors.append(
+                    f"{requirement_id} 未闭合: claim_values 非生成工件"
+                )
+            errors.extend(_claim_contract_errors(
+                root,
+                requirement_id,
+                requirement,
+                claim_id,
+                bindings if isinstance(bindings, dict) else {},
+                values if isinstance(values, dict) else {},
+            ))
+            if evidence_nodes is not None:
+                node = evidence_nodes.get(claim_id)
+                if (
+                    not isinstance(node, dict)
+                    or node.get("status") != "verified"
+                    or node.get("freshness", "valid") != "valid"
+                ):
+                    errors.append(
+                        f"{requirement_id} 未闭合: evidence/freshness {claim_id}"
+                    )
+    return sorted(set(errors))

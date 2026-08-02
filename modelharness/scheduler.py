@@ -7,6 +7,7 @@ from .review_store import (
 )
 from .scheduler_core import (
     AdaptiveScheduler as _AdaptiveScheduler,
+    _active_outputs,
     _artifact_signature,
     _review_signature,
 )
@@ -28,13 +29,21 @@ class AdaptiveScheduler(_AdaptiveScheduler):
             stream_id = stream["id"]
             key_prefix = "repair" if item["state"] == "repair" else "build"
             suffix = repair_signature if item["state"] == "repair" else contract
+            active_outputs = self.graph.active_outputs(node_id)
             outputs = stream.get(
-                "outputs", [x["evidence_id"] for x in node["outputs"]]
+                "outputs", [x["evidence_id"] for x in active_outputs]
             )
             output_records = [
-                x for x in node["outputs"] if x["evidence_id"] in outputs
+                x for x in active_outputs if x["evidence_id"] in outputs
             ]
-            acceptance = list(stream.get("acceptance", []))
+            acceptance = list(node.get("acceptance", []))
+            acceptance.extend(stream.get("acceptance", []))
+            for required_test in pack.get("required_tests", []):
+                if (
+                    isinstance(required_test, dict)
+                    and required_test.get("acceptance") not in acceptance
+                ):
+                    acceptance.append(required_test["acceptance"])
             acceptance.extend(
                 {"kind": "artifact_exists", "path": output["artifact"]}
                 for output in output_records
@@ -105,7 +114,7 @@ class AdaptiveScheduler(_AdaptiveScheduler):
                 sha256(self.project / output["artifact"])
                 if (self.project / output["artifact"]).is_file() else None
             )
-            for output in node["outputs"]
+            for output in _active_outputs(self.project, node)
         }
 
     def _migrate_legacy_review_tasks(self) -> list[str]:
@@ -228,7 +237,8 @@ class AdaptiveScheduler(_AdaptiveScheduler):
                     ),
                     [output_path],
                     inputs=self._input_artifacts(node) + [
-                        x["artifact"] for x in node["outputs"]
+                        x["artifact"]
+                        for x in _active_outputs(self.project, node)
                     ],
                     acceptance=[{
                         "kind": "artifact_exists", "path": output_path,
