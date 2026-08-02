@@ -47,7 +47,7 @@ def create(destination: Path, title: str, engine: str = "auto") -> Path:
         "schema": 4,
         "title": title.strip(),
         "created_at": now(),
-        "harness": "modeling-harness/4.0",
+        "harness": "modeling-harness/4.1",
         "engine": engine,
         "status": "active",
     })

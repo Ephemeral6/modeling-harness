@@ -23,5 +23,17 @@
     "model_justification",
     "communication",
     "robustness"
+  ],
+  "min_figures": 0,
+  "min_external_references": 0,
+  "format_spec": null,
+  "robustness_degradation_threshold": null,
+  "required_sections": [
+    "Summary Sheet",
+    "Problem Reframing",
+    "Model Mechanism",
+    "Evidence",
+    "Decision",
+    "Limitations"
   ]
 }

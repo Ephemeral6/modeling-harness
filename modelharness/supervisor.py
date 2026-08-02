@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .evidence import EvidenceGraph
+from .opportunities import build_ledger
 from .problem_graph import ProblemGraph, canonical_hash
 from .profiles import ProfileService
 from .stages import StageService
@@ -90,6 +91,7 @@ class StateCapsule:
                     "priority": item["priority"],
                     "question": item["node"]["question"],
                 })
+        opportunity_ledger.extend(build_ledger(self.project))
         payload = {
             "profile": ProfileService(self.project).active["name"],
             "stage": stage,

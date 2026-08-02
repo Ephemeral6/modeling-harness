@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "claims": {
+    "claim.mortality": {
+      "requirement_ids": ["Q3.multi_litter_mortality"],
+      "value_type": "predicate",
+      "scenario_id": "baseline"
+    }
+  }
+}

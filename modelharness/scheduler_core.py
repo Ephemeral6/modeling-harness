@@ -16,9 +16,21 @@ from .util import sha256
 from .workflow import WorkflowEngine
 
 
+def _active_outputs(root: Path, node: dict) -> list[dict]:
+    directory = root / "problem" / "data_raw"
+    source_present = directory.is_dir() and any(
+        path.is_file() for path in directory.rglob("*")
+    )
+    return [
+        output for output in node["outputs"]
+        if output.get("required_when") != "source_present"
+        or source_present
+    ]
+
+
 def _artifact_signature(root: Path, node: dict) -> str:
     values = {}
-    for output in node["outputs"]:
+    for output in _active_outputs(root, node):
         path = root / output["artifact"]
         values[output["evidence_id"]] = (
             sha256(path) if path.is_file() else None
@@ -64,13 +76,21 @@ class AdaptiveScheduler:
             stream_id = stream["id"]
             key_prefix = "repair" if item["state"] == "repair" else "build"
             suffix = repair_signature if item["state"] == "repair" else contract
+            active_outputs = self.graph.active_outputs(node_id)
             outputs = stream.get(
-                "outputs", [x["evidence_id"] for x in node["outputs"]]
+                "outputs", [x["evidence_id"] for x in active_outputs]
             )
             output_records = [
-                x for x in node["outputs"] if x["evidence_id"] in outputs
+                x for x in active_outputs if x["evidence_id"] in outputs
             ]
-            acceptance = list(stream.get("acceptance", []))
+            acceptance = list(node.get("acceptance", []))
+            acceptance.extend(stream.get("acceptance", []))
+            for required_test in pack.get("required_tests", []):
+                if (
+                    isinstance(required_test, dict)
+                    and required_test.get("acceptance") not in acceptance
+                ):
+                    acceptance.append(required_test["acceptance"])
             acceptance.extend(
                 {"kind": "artifact_exists", "path": output["artifact"]}
                 for output in output_records
@@ -143,7 +163,8 @@ class AdaptiveScheduler:
                     ),
                     [review["path"]],
                     inputs=self._input_artifacts(node) + [
-                        x["artifact"] for x in node["outputs"]
+                        x["artifact"]
+                        for x in _active_outputs(self.project, node)
                     ],
                     acceptance=[{
                         "kind": "artifact_exists", "path": review["path"],

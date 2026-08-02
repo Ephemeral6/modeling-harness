@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "generator": "modelharness.claims.evaluate_claims",
+  "claims": {
+    "claim.mortality": {"status": "valid", "source_value": true}
+  }
+}

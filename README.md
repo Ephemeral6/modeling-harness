@@ -1,7 +1,7 @@
 # Modeling Harness: Evidence-Gated Mathematical Modeling Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.0.1-1f6feb" alt="Modeling Harness 4.0.1">
+  <img src="https://img.shields.io/badge/version-4.1.0-1f6feb" alt="Modeling Harness 4.1.0">
   <img src="https://img.shields.io/badge/Python-%3E%3D3.10-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
 </p>
@@ -19,8 +19,9 @@ Evidence Graph 保证：最终交付中的每个重要结论，都能追溯到�
 研究目标，可独立证伪的局部问题才是求解单元；S0–S6 只是全局完成度投影，不规定 Agent
 必须按顺序工作。
 
-完整设计见 [4.0 架构](docs/ARCHITECTURE_V4.md)，从 3.1 升级请看
-[迁移指南](docs/MIGRATION_V31_TO_V40.md)。
+完整设计见 [4.x 架构](docs/ARCHITECTURE_V4.md)。升级说明见
+[4.0 → 4.1](docs/MIGRATION_V40_TO_V41.md) 与
+[3.1 → 4.0](docs/MIGRATION_V31_TO_V40.md)。
 
 ## How it works
 
@@ -66,6 +67,10 @@ invalidated，并只从最小受影响节点重新计算。
 | 串行、并行、回溯、竞争路线与停止时机 | 错误证据必须沿依赖图级联失效 |
 | 声明不可辨识、无唯一解或优势不显著 | 未知执行结果必须进入 RECOVERY_PENDING |
 | 在已有权限内使用项目资源 | 已登记的 producer 不能批准自己的结论 |
+| 在预算内探索更优路线 | mandatory requirement 未闭合时，S6 不能宣告完整交付 |
+| 自主选择推导与数值路线 | 正式数字必须绑定权威字段，且推导式与源字段一致 |
+| 自主设计随机实验 | 随机选择后的头条数字必须来自独立 report set，或明确降级 |
+| 自主组织内部工作稿 | 成稿含内部标记、临时路径或未解析模板时不得交付 |
 
 普通、本地、项目内、可逆的研究不需要逐动作审批。只有联网、安装、商业许可证、外部
 写入、不可恢复操作或超出既有预算时，Policy Kernel 才要求额外授权或附加义务。
@@ -222,6 +227,14 @@ freshness        = valid | stale | missing | tampered
 因此“检查没运行”“程序报错”“数学结论失败”“人工接受风险”不会被压成同一个模糊状态。
 人工可以判定检查不适用或接受风险，但不能把机械 FAIL 偷换成机械 PASS。
 
+### Soundness 与 completeness
+
+4.1 在“已有结论是否可信”的 soundness 轴之外，增加“题面要求是否全部回答”的
+completeness 轴。`source_segmentation.json` 保证原文片段不被静默丢弃，
+`requirements.json` 建立 requirement → claim → verified evidence 的闭合链。
+未闭合 mandatory requirement 是交付 Gate；搜索边界、保守假设分支和潜在改进则进入
+Opportunity Ledger，作为预算内优化信号，不会被误写成机械 FAIL。
+
 ### 工件鲜度与级联撤销
 
 verified evidence 绑定 Problem Graph 合同、输入证据、工件、工具运行、审核和验证策略的
@@ -331,13 +344,13 @@ modelharness/   核心引擎：图、调度、工具、工作流、证据、策�
 templates/      新建数学建模项目时复制的 Agent 合同、Profile 与方法包
 benchmarks/     L1/L2/L3 评测规范、可执行 rubric 与回归 fixtures
 docs/           架构、失败模型、工具链和版本迁移
-tests/          单元、集成、退化、恢复与 4.0 不变量测试
+tests/          单元、集成、退化、恢复与 4.1 不变量测试
 legacy_v1/      只读历史实现
 ~~~
 
-4.0 延续 3.1 的 Problem Graph 和自主 Toolchain，不引入必须遵守的固定角色编排，也不把
-Proposal 变成普通研究的审批流水线。五本账只通过 State Capsule 按需派生，不再制造一套
-平行的权威数据库。
+4.1 延续 4.0 的 Problem Graph 和自主 Toolchain，不引入必须遵守的固定角色编排，也不把
+Proposal 变成普通研究的审批流水线。新增 Requirement、Claim、Holdout 与 Delivery
+四道 Gate，并把“未取得价值”登记为 Opportunity；这些视图仍不构成平行权威数据库。
 
 ## Development
 
@@ -350,6 +363,7 @@ git diff --check
 - 3.0 架构：[ARCHITECTURE_V3.md](docs/ARCHITECTURE_V3.md)
 - 3.1 工具链：[TOOLCHAIN_V31.md](docs/TOOLCHAIN_V31.md)
 - 4.0 架构：[ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
+- 4.1 迁移：[MIGRATION_V40_TO_V41.md](docs/MIGRATION_V40_TO_V41.md)
 - 失败模型：[FAILURE_MODEL.md](docs/FAILURE_MODEL.md)
 - 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 安全策略：[SECURITY.md](SECURITY.md)

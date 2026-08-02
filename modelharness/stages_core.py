@@ -4,7 +4,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from .checks import run_check
+from .checks import evaluate_acceptance, run_check
 from .contracts import STAGES, validate_review, validate_stage_config
 from .evidence import EvidenceGraph
 from .method_packs import MethodPackRegistry
@@ -82,6 +82,14 @@ class StageService:
                         errors.append(f"{stage}: {field} 已变化")
             except (ValueError, RuntimeError) as exc:
                 errors.append(f"{stage}: V3 合同审计失败: {exc}")
+            try:
+                acceptance = self._node_acceptance(
+                    stage, include_checks=False
+                )
+                if acceptance["records"] and not acceptance["ok"]:
+                    errors.append(f"{stage}: 问题节点验收已失效")
+            except (ValueError, RuntimeError) as exc:
+                errors.append(f"{stage}: 问题节点验收审计失败: {exc}")
         graph = EvidenceGraph(self.project)
         nodes = graph.nodes
         for item in stamp.get("evidence", []):
@@ -140,6 +148,35 @@ class StageService:
             for evidence_id, (contract, enforce) in result.items()
         ]
 
+    def _node_acceptance(
+        self, stage: str, *, include_checks: bool = True
+    ) -> dict:
+        graph = ProblemGraph(self.project)
+        if not graph.exists:
+            return {
+                "execution_status": "not_run",
+                "verdict": "unassessed",
+                "authority": "machine",
+                "ok": False,
+                "records": [],
+            }
+        acceptance = []
+        for node in graph.nodes.values():
+            if node.get("milestone") != stage or node.get("superseded", False):
+                continue
+            items = node.get("acceptance", [])
+            if items in ({}, None):
+                continue
+            if not isinstance(items, list):
+                raise ValueError("问题节点 acceptance 必须是数组")
+            acceptance.extend(
+                item for item in items
+                if include_checks
+                or not isinstance(item, dict)
+                or item.get("kind") != "check"
+            )
+        return evaluate_acceptance(self.project, acceptance)
+
     def gate(self, stage: str) -> dict:
         if stage != self.current():
             raise RuntimeError(
@@ -156,6 +193,14 @@ class StageService:
                 errors.append(f"缺少 verified 证据: {node_id}")
             elif enforce and node.get("obligation_hash") != contract:
                 errors.append(f"证据未绑定当前问题合同: {node_id}")
+        node_acceptance = self._node_acceptance(stage)
+        if node_acceptance["records"] and not node_acceptance["ok"]:
+            for item in node_acceptance["records"]:
+                if item.get("ok") is not True:
+                    errors.append(
+                        f"问题节点验收失败: {item.get('kind')}: "
+                        f"{item.get('errors', item.get('error', ''))}"
+                    )
         reviews = []
         for relative in spec["reviews"]:
             path = (
@@ -212,6 +257,7 @@ class StageService:
             ],
             "reviews": reviews,
             "checks": checks,
+            "node_acceptance": node_acceptance,
             **problem_meta,
         }
         with file_lock(self.project / ".harness" / "stage", timeout=30):

@@ -8,5 +8,8 @@ paper/delivery_manifest.json 和其中列出的 verified evidence。
 - real_world：决策语境、数据合同、行动、风险、监控和重做触发器；
 - general：通用证据报告。
 
-关键结论保留 [[证据ID]]，数字来自机器产物。图表必须回答明确问题。不得隐藏负结果、
-空稳健集、限制或尚未闭合的交付义务。
+先写 paper/draft.md 工作稿，关键结论保留 [[证据ID]]。再由 renderer 生成
+paper/final.md 成稿；成稿不得含内部标记、临时路径或未解析模板。
+
+成稿中的头条数字必须来自 results/claim_values.json，禁止手工抄写。数字来自机器产物，
+图表必须回答明确问题。不得隐藏负结果、空稳健集、限制或尚未闭合的交付义务。

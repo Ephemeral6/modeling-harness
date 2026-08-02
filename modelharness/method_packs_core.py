@@ -29,6 +29,17 @@ def validate_method_pack(data: Any, path: Path | None = None) -> dict:
     for field in ("required_tests", "fallbacks"):
         if not isinstance(data.get(field, []), list):
             raise ValueError(f"method pack.{field} 必须是数组{where}")
+    for item in data.get("required_tests", []):
+        if isinstance(item, str) and item:
+            continue
+        if (
+            isinstance(item, dict)
+            and isinstance(item.get("name"), str)
+            and item["name"]
+            and isinstance(item.get("acceptance"), dict)
+        ):
+            continue
+        raise ValueError(f"method pack.required_tests 非法{where}")
     tool_policy = data.get("tool_policy")
     if tool_policy is not None:
         if not isinstance(tool_policy, dict):

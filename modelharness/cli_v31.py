@@ -7,7 +7,9 @@ import sys
 from pathlib import Path
 
 from . import cli as legacy_cli
+from .opportunities import render_assumptions
 from .proposals import ProposalService
+from .requirements import audit_requirements, extract_sources
 from .supervisor import StateCapsule
 from .tool_cli_ext import main as tool_main
 from .toolchain_registry import ToolRegistry
@@ -134,6 +136,35 @@ def _proposal(values: list[str]) -> int:
     return 0
 
 
+def _requirements(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness requirements")
+    sub = parser.add_subparsers(dest="action", required=True)
+    extract = sub.add_parser("extract")
+    extract.add_argument("--passes", type=int, default=2)
+    extract.add_argument("--project", type=Path)
+    audit = sub.add_parser("audit")
+    audit.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    root = _root(args.project)
+    if args.action == "extract":
+        _emit(extract_sources(root, passes=args.passes))
+        return 0
+    errors = audit_requirements(root)
+    _emit({"ok": not errors, "errors": errors})
+    return int(bool(errors))
+
+
+def _assumptions(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness assumptions")
+    sub = parser.add_subparsers(dest="action", required=True)
+    render = sub.add_parser("render")
+    render.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    output = render_assumptions(_root(args.project))
+    _emit({"ok": True, "path": output.relative_to(_root(args.project)).as_posix()})
+    return 0
+
+
 def main() -> int:
     try:
         if len(sys.argv) >= 2 and sys.argv[1] == "tool":
@@ -142,12 +173,16 @@ def main() -> int:
             return _state(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "proposal":
             return _proposal(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "requirements":
+            return _requirements(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "assumptions":
+            return _assumptions(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:
                 return result
         if len(sys.argv) == 2 and sys.argv[1] == "--version":
-            print("modelharness 4.0.1")
+            print("modelharness 4.1.0")
             return 0
         legacy_cli.doctor = _doctor_with_tools
         return legacy_cli.main()

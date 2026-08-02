@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "claims": {
+    "claim.population": {
+      "requirement_ids": ["Q1.population"],
+      "value_type": "tuple",
+      "scenario_id": "baseline"
+    },
+    "claim.output_range": {
+      "requirement_ids": ["Q1.output_range"],
+      "value_type": "number",
+      "conditioned_on_claim": "claim.population",
+      "scenario_id": "constraint_1500"
+    }
+  }
+}

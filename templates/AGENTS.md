@@ -1,4 +1,4 @@
-# Modeling Harness 4.0 执行宪法
+# Modeling Harness 4.1 执行宪法
 
 本宪法对 Codex 与 Claude Code 两个引擎同等生效；Claude Code 会话由项目内
 `CLAUDE.md` 引导至本文件。本项目以 Problem Graph 的局部问题为求解单元，以 S0–S6 为全局里程碑投影。
@@ -29,7 +29,7 @@ Agent 可自主决定：
 modelharness state 按需生成 State Capsule 和 Task / Progress / Failure /
 Resource / Opportunity 五本派生账；不得把它们另存为新的权威数据库。
 
-## 五条硬不变量
+## 九条硬不变量
 
 1. NOT_RUN 永远不等于 PASS。执行状态、裁决、裁决来源和鲜度正交记录：
    execution_status × verdict × authority × freshness。
@@ -41,13 +41,18 @@ Resource / Opportunity 五本派生账；不得把它们另存为新的权威数
    recovered_success | confirmed_failed | safe_to_retry | human_required。
 5. 生成者不能批准自己的结论。生产任务与审核任务必须不同；登记身份后，producer
    与 reviewer 的 worker 也必须不同。
+6. mandatory requirement 未闭合时，S6 不能宣告完整交付。
+7. 正式数字未绑定权威字段，或推导式与源字段不一致时，不能发布。
+8. 存在随机选择过程时，头条性能数字若不来自独立 report set，不能标为无偏终评。
+9. 成稿中存在内部证据标记、临时路径或未解析模板时，不能通过交付。
 
 审核文件只追加、不覆盖。Problem Graph 的 review.path 是逻辑名称；审核者必须写入
 当前审核任务 owns 指定的路径。已有旧审核时，新路径为 `_v2.json`、`_v3.json` 等
 不可变版本。不得覆盖、删除或归档旧 REJECT，不得因此请求用户授权；Harness 根据当前
 合同和工件哈希自动解析有效版本。
 
-除上述不变量、项目路径边界和用户明确权限外，不新增限制。
+除上述不变量、项目路径边界和用户明确权限外，不新增限制。G6–G9 约束交付闭合，
+不把搜索边界、保守假设或潜在改进机会升级为硬失败。
 
 ## 建模工作规则
 

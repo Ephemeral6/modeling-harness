@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "sets": {
+    "screen": {"n": 12, "scenario_sha256": "hash-A"},
+    "selection": {"n": 120, "scenario_sha256": "same-hash"},
+    "report": {
+      "n": 120,
+      "scenario_sha256": "same-hash",
+      "sealed": false
+    },
+    "stress": {"n": 150, "scenario_sha256": "hash-D"}
+  },
+  "usage": [
+    {"set": "selection", "purpose": "policy_ranking", "at": "run-1"},
+    {"set": "report", "purpose": "policy_ranking", "at": "run-1"},
+    {"set": "report", "purpose": "headline_estimate", "at": "run-1"}
+  ]
+}

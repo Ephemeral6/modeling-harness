@@ -19,10 +19,30 @@ def validate_profile(data: Any, path: Path | None = None) -> dict:
         raise ValueError(f"delivery profile.max_parallel_agents 非法{where}")
     for field in (
         "mandatory_outputs", "human_checkpoints", "report_sections",
-        "quality_dimensions",
+        "quality_dimensions", "required_sections",
     ):
         if not isinstance(data.get(field, []), list):
             raise ValueError(f"delivery profile.{field} 必须是数组{where}")
+        if not all(isinstance(item, str) and item for item in data.get(field, [])):
+            raise ValueError(f"delivery profile.{field} 含非法条目{where}")
+    for field in ("min_figures", "min_external_references"):
+        value = data.get(field, 0)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError(f"delivery profile.{field} 必须是非负整数{where}")
+    format_spec = data.get("format_spec")
+    if format_spec is not None and (
+        not isinstance(format_spec, str) or not format_spec
+    ):
+        raise ValueError(f"delivery profile.format_spec 非法{where}")
+    threshold = data.get("robustness_degradation_threshold")
+    if threshold is not None and (
+        not isinstance(threshold, (int, float))
+        or isinstance(threshold, bool)
+        or threshold <= 0
+    ):
+        raise ValueError(
+            f"delivery profile.robustness_degradation_threshold 非法{where}"
+        )
     return data
 
 
@@ -66,4 +86,3 @@ class ProfileService:
 
     def content_hash(self) -> str:
         return canonical_hash(self.active)
-

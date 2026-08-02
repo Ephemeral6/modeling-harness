@@ -35,6 +35,7 @@ def node_contract(node: dict) -> dict:
         for key in (
             "question", "task_type", "depends_on", "input_evidence",
             "outputs", "acceptance", "method_pack", "workstreams", "reviews",
+            "requirement_ids", "method_pack_options",
         )
     }
 
@@ -127,9 +128,37 @@ def validate_problem_graph(data: Any) -> dict:
                 and _safe_project_path(review["path"]),
                 f"review.path 非法: {node_id}",
             )
+        requirement_ids = node.get("requirement_ids", [])
+        require(
+            isinstance(requirement_ids, list)
+            and all(
+                isinstance(item, str) and ID_RE.match(item)
+                for item in requirement_ids
+            ),
+            f"问题节点 requirement_ids 必须是合法 ID 数组: {node_id}",
+        )
+        method_pack_options = node.get("method_pack_options", [])
+        require(
+            isinstance(method_pack_options, list)
+            and all(
+                isinstance(item, str) and item
+                for item in method_pack_options
+            )
+            and (
+                not method_pack_options
+                or node.get("method_pack") in method_pack_options
+            ),
+            f"问题节点 method_pack_options 必须是字符串数组: {node_id}",
+        )
         risk = node.get("risk", {})
         require(isinstance(risk, dict), f"问题节点 risk 必须是对象: {node_id}")
-        for field in ("downstream_impact", "uncertainty", "estimated_cost"):
+        for field in (
+            "downstream_impact",
+            "uncertainty",
+            "estimated_cost",
+            "improvement_value",
+            "coverage_value",
+        ):
             value = risk.get(field, 1)
             require(
                 isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -181,15 +210,29 @@ class ProblemGraph:
     def contract_hash(self, node_id: str) -> str:
         return node_contract_hash(self.nodes[node_id])
 
+    def active_outputs(self, node_id: str) -> list[dict]:
+        outputs = self.nodes[node_id]["outputs"]
+        source_present = False
+        directory = self.root / "problem" / "data_raw"
+        if directory.is_dir():
+            source_present = any(
+                path.is_file() for path in directory.rglob("*")
+            )
+        return [
+            output for output in outputs
+            if output.get("required_when") != "source_present"
+            or source_present
+        ]
+
     def output_ids(self, node_id: str) -> list[str]:
-        return [x["evidence_id"] for x in self.nodes[node_id]["outputs"]]
+        return [x["evidence_id"] for x in self.active_outputs(node_id)]
 
     def completion(
         self, node_id: str, evidence_nodes: dict
     ) -> bool:
         node = self.nodes[node_id]
         expected = self.contract_hash(node_id)
-        for output in node["outputs"]:
+        for output in self.active_outputs(node_id):
             evidence = evidence_nodes.get(output["evidence_id"])
             if not evidence or evidence.get("status") != "verified":
                 return False
@@ -220,7 +263,7 @@ class ProblemGraph:
             return "active"
         outputs = [
             evidence_nodes.get(output["evidence_id"])
-            for output in node["outputs"]
+            for output in self.active_outputs(node_id)
         ]
         review_paths = [self.root / x["path"] for x in node.get("reviews", [])]
         if any(x and x.get("status") == "rejected" for x in outputs):
@@ -264,6 +307,8 @@ class ProblemGraph:
                 max(0.0, float(risk.get("decision_change_probability", 1)))
                 * max(0.0, float(risk.get("information_gain", 1)))
                 * max(0.0, float(risk.get("falsification_value", 1)))
+                * max(0.0, float(risk.get("improvement_value", 1)))
+                * max(0.0, float(risk.get("coverage_value", 1)))
             )
             penalties = sum(max(0.0, float(risk.get(key, 0))) for key in (
                 "risk_penalty", "latency_penalty", "repeat_penalty"
@@ -283,7 +328,7 @@ class ProblemGraph:
         for node_id, node in self.nodes.items():
             if node.get("superseded", False) or node["milestone"] != stage:
                 continue
-            for output in node["outputs"]:
+            for output in self.active_outputs(node_id):
                 outputs.append((
                     output["evidence_id"],
                     self.contract_hash(node_id),
@@ -334,4 +379,3 @@ class ProblemGraph:
             "impacted_evidence": impacted,
             "revision": self.data["revision"],
         }
-

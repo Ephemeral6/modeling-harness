@@ -58,3 +58,23 @@ modelharness.benchmarking.pass_all_k 可从重复运行报告计算“k 次全�
 
 fixtures/ 只提供格式和回归样例，不冒充完整的 40–60 个 L1、15–20 个 L2 和三类 L3
 正式题库。正式题库应逐步由真实竞赛题、公开论文任务和经过授权的真实项目构成。
+
+## 4.1 消融设计（登记，暂不执行）
+
+固定模型、题包、工具权限、计算预算与截止条件，每个配置至少运行 5 个独立种子：
+
+1. V4.0.1 baseline；
+2. + M1 sanitizer；
+3. + M2 源覆盖 + M5 requirement；
+4. + M4 claim binding；
+5. + M3 boundary + M6 improvement；
+6. 完整 4.1。
+
+各维度单独记录，不做乘积：Soundness（错误断言、不可行方案、数值漂移）；
+Completeness（mandatory coverage、直接回答率）；Objective quality（统一模拟器下相对
+best-known bound 的 regret）；Search quality（边界触发修复、跨 regime 发现）；
+Statistical validity（holdout optimism、区间覆盖、pass^k）；Delivery quality（内部
+标记、格式、图表与引用缺陷）；Cost（token、时间、工具调用、用户介入）。
+
+回归 fixture 提供低成本信号，端到端链只在完整配置验证。不同方案的目标值比较必须使用
+先冻结参数的中立复核器，避免用第三套假设直接裁判两套不可通约的模拟器。

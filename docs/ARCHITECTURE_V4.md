@@ -1,5 +1,7 @@
 # Modeling Harness 4.0：薄 Harness，自由研究
 
+> 本文保留 4.0 基线设计；“4.1 增量”小节记录向后兼容的新增约束与机会发现层。
+
 ## 一句话原则
 
 让模型决定“下一步值得做什么以及怎么做”，让 Harness 只决定“动作是否已有权限、
@@ -17,6 +19,24 @@ Harness 只强制：
 3. 错误证据沿依赖图级联失效；
 4. 未知执行结果进入 RECOVERY_PENDING；
 5. 已登记的 producer 不能成为自己的 reviewer。
+
+## 4.1 增量：可信之外还要完整
+
+4.1 不改变“Agent 自由研究、Harness 只守边界”的分工，而是在既有 soundness 轴旁增加
+completeness 轴，并把 answer quality 作为预算内优化目标：
+
+1. Requirement Gate：源文本逐段映射到 mandatory requirement，再映射到 claim 与
+   verified evidence；未闭合时 S6 不通过；
+2. Claim Gate：正式数字绑定 JSON 字段、单位、容差和安全推导式，数值漂移阻断发布；
+3. Holdout Gate：screen / selection / report / stress 四集分离，随机选择后的头条数字
+   只能来自独立 report set，否则必须承认选择偏差并降级；
+4. Delivery Gate：工作稿与成稿分离，内部证据标记、路径、哈希和模板占位不得泄漏；
+5. Opportunity Layer：搜索边界、欠分辨网格、optimality gap、排名翻转、不可行压力情景
+   与未物化假设分支只生成软机会，由 expanded_search、dominance_proof、
+   budget_qualified_stop、strength_downgrade 或 deferred 显式处置。
+
+Requirement Ledger、Claim Binding、Scenario Sets 与 Opportunity Ledger 都由原始工件和
+权威图派生；它们不会取代 Problem Graph、Evidence Graph 或 Workflow。
 
 ## 状态分层
 
@@ -91,5 +111,6 @@ downstream_impact × uncertainty / estimated_cost
 ~~~
 
 节点可选增加 decision_change_probability、information_gain、
-falsification_value、risk_penalty、latency_penalty 和 repeat_penalty。所有字段缺省时
-分数完全不变。
+falsification_value、improvement_value、coverage_value、risk_penalty、
+latency_penalty 和 repeat_penalty。两个 4.1 价值字段以 1.0 为中性缺省值，
+risk_penalty 仍在分母；所有字段缺省时分数与 4.0.1 逐位一致。

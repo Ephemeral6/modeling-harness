@@ -22,16 +22,45 @@
           "kind": "problem",
           "statement": "决策问题、指标、基线、硬约束与失效出口",
           "artifact": "docs/success_criteria.md"
+        },
+        {
+          "evidence_id": "problem.requirements",
+          "kind": "problem",
+          "statement": "逐条需求、类型契约、条件锚点与闭合状态",
+          "artifact": "problem/requirements.json",
+          "required_when": "source_present"
+        },
+        {
+          "evidence_id": "problem.segmentation",
+          "kind": "problem",
+          "statement": "覆盖全部题面原文的可追溯分句台账",
+          "artifact": "problem/source_segmentation.json",
+          "required_when": "source_present"
         }
       ],
-      "acceptance": {},
+      "acceptance": [
+        {
+          "kind": "requirement_coverage",
+          "phase": "extraction",
+          "when": "source_present"
+        }
+      ],
       "workstreams": [
         {
           "id": "architect",
           "role": "problem-architect",
           "description": "形式化题意、子问题、成功标准与失败出口",
-          "owns": ["docs/success_criteria.md"],
-          "outputs": ["problem.statement", "problem.success"],
+          "owns": [
+            "docs/success_criteria.md",
+            "problem/requirements.json",
+            "problem/source_segmentation.json"
+          ],
+          "outputs": [
+            "problem.statement",
+            "problem.success",
+            "problem.requirements",
+            "problem.segmentation"
+          ],
           "budget": {"max_attempts": 3}
         }
       ],
@@ -73,7 +102,8 @@
           "owns": [
             "docs/candidates",
             "docs/model_spec.md",
-            "docs/assumptions.md"
+            "docs/assumptions.md",
+            "docs/assumptions.json"
           ],
           "outputs": ["model.spec", "model.assumptions"],
           "budget": {"max_attempts": 3}
@@ -144,6 +174,11 @@
       "depends_on": ["s2.data_estimation"],
       "input_evidence": ["model.spec", "result.parameters"],
       "method_pack": "solver-validation",
+      "method_pack_options": [
+        "solver-validation",
+        "mathematical-optimization"
+      ],
+      "method_pack_selection_note": "优化、路径与调度问题应覆盖为 mathematical-optimization；一般数值求解保留 solver-validation。",
       "enforce_contract": true,
       "outputs": [
         {
@@ -175,7 +210,8 @@
             "src/solver.py",
             "checks/l2_toy.py",
             "results/toy.json",
-            "results/nominal.json"
+            "results/nominal.json",
+            "results/research_diagnostics.json"
           ],
           "outputs": ["code.solver", "experiment.toy", "result.nominal"],
           "budget": {"max_attempts": 3}
@@ -220,6 +256,8 @@
           "description": "执行留出验证、UQ、强基线与翻转边界扫描",
           "owns": [
             "src/uq.py",
+            "results/research_diagnostics.json",
+            "results/scenario_sets.json",
             "src/baselines.py",
             "src/sensitivity.py",
             "results/uq.json",
@@ -300,13 +338,34 @@
       "enforce_contract": true,
       "outputs": [
         {
+          "evidence_id": "narrative.worksheet",
+          "kind": "narrative",
+          "statement": "保留内部证据标记的论文工作稿",
+          "artifact": "paper/draft.md"
+        },
+        {
           "evidence_id": "narrative.paper",
           "kind": "narrative",
           "statement": "按交付 Profile 生成并经证据复核的最终文档",
-          "artifact": "paper/draft.md"
+          "artifact": "paper/final.md"
         }
       ],
-      "acceptance": {},
+      "acceptance": [
+        {
+          "kind": "requirement_coverage",
+          "when": "requirements_present"
+        },
+        {
+          "kind": "profile_mandatory_outputs"
+        },
+        {
+          "kind": "check",
+          "check": {
+            "argv": ["python", "checks/check_delivery.py"],
+            "expected_artifacts": ["results/delivery_check.json"]
+          }
+        }
+      ],
       "workstreams": [
         {
           "id": "delivery",
@@ -314,10 +373,13 @@
           "description": "从 verified evidence 生成交付物与图表",
           "owns": [
             "paper/draft.md",
+            "paper/final.md",
+            "paper/claim_map.json",
             "paper/figures",
+            "results/delivery_check.json",
             "results/report_claims.json"
           ],
-          "outputs": ["narrative.paper"],
+          "outputs": ["narrative.worksheet", "narrative.paper"],
           "budget": {"max_attempts": 3}
         }
       ],

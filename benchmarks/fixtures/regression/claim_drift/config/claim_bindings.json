@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "claims": {
+    "Q2.annual_output": {
+      "requirement_ids": ["Q2.annual_output"],
+      "source": {"artifact": "results/q2.json", "pointer": "/annual_lambs"},
+      "value_type": "number",
+      "unit": "lamb/year",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "derivation": {
+        "expr": "2 * ewes * 365 / cycle_days",
+        "inputs": {
+          "ewes": {"artifact": "results/q2.json", "pointer": "/ewes"},
+          "cycle_days": {"const": 229}
+        }
+      },
+      "tolerance": {"abs": 0.0, "rel": 1e-9},
+      "scenario_set": "report"
+    }
+  }
+}

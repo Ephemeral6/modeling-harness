@@ -108,6 +108,58 @@ def _json_path(value: Any, dotted: str) -> tuple[bool, Any]:
     return True, current
 
 
+def _apply_op(
+    operator: str, actual: Any, expected: Any, tolerance: float = 0
+) -> bool:
+    """Apply runtime JSON assertions via the toolchain numeric operator."""
+    if operator == "nonempty":
+        try:
+            return actual is not None and len(actual) > 0
+        except TypeError:
+            return bool(actual)
+    # Lazy import avoids checks -> executor -> checks import cycles.
+    from .toolchain_execution_core import _operator
+
+    numeric_ops = {
+        "eq": "==",
+        "ne": "!=",
+        "ge": ">=",
+        "gt": ">",
+        "le": "<=",
+        "lt": "<",
+        "close_to": "==",
+    }
+    if operator == "between":
+        if (
+            not isinstance(expected, (list, tuple))
+            or len(expected) != 2
+        ):
+            return False
+        try:
+            return _operator(
+                float(actual), ">=", float(expected[0]), tolerance
+            ) and _operator(
+                float(actual), "<=", float(expected[1]), tolerance
+            )
+        except (TypeError, ValueError):
+            return False
+    if operator not in numeric_ops:
+        return False
+    try:
+        return _operator(
+            float(actual),
+            numeric_ops[operator],
+            float(expected),
+            tolerance,
+        )
+    except (TypeError, ValueError):
+        if operator == "eq":
+            return actual == expected
+        if operator == "ne":
+            return actual != expected
+        return False
+
+
 def _record(kind: str, passed: bool, **fields) -> dict:
     freshness = fields.pop("freshness", "valid")
     return {
@@ -115,6 +167,25 @@ def _record(kind: str, passed: bool, **fields) -> dict:
         **fields,
         **outcome("completed", "pass" if passed else "fail", freshness=freshness),
     }
+
+
+def _condition_active(root: Path, condition: Any) -> bool:
+    if condition in {None, "", "always"}:
+        return True
+    if condition == "source_present":
+        directory = root / "problem" / "data_raw"
+        return directory.is_dir() and any(
+            path.is_file() for path in directory.rglob("*")
+        )
+    if condition == "requirements_present":
+        return (root / "problem" / "requirements.json").is_file()
+    if condition == "scenario_sets_present":
+        return (root / "results" / "scenario_sets.json").is_file()
+    if condition == "assumptions_present":
+        return (root / "docs" / "assumptions.json").is_file()
+    if condition == "research_diagnostics_present":
+        return (root / "results" / "research_diagnostics.json").is_file()
+    return False
 
 
 def evaluate_acceptance(
@@ -160,6 +231,15 @@ def evaluate_acceptance(
             })
             continue
         kind = raw.get("kind")
+        condition = raw.get("when")
+        if not _condition_active(root, condition):
+            records.append(_record(
+                str(kind or "conditional"),
+                True,
+                skipped=True,
+                when=condition,
+            ))
+            continue
         if kind == "artifact_exists":
             relative = str(raw.get("path", ""))
             path = safe_relative(root, relative)
@@ -187,6 +267,151 @@ def evaluate_acceptance(
                 fields=fields,
                 missing=missing,
                 freshness="valid" if path.is_file() else "missing",
+            ))
+        elif kind == "json_assert":
+            relative = str(raw.get("path", ""))
+            path = safe_relative(root, relative)
+            data = read_json(path) if path.is_file() else None
+            field = str(raw.get("field", ""))
+            exists, actual = _json_path(data, field)
+            operator = str(raw.get("op", "eq"))
+            passed = exists and _apply_op(
+                operator,
+                actual,
+                raw.get("value"),
+                float(raw.get("tolerance", 0)),
+            )
+            records.append(_record(
+                kind,
+                passed,
+                path=relative,
+                field=field,
+                actual=actual,
+                op=operator,
+                freshness="valid" if path.is_file() else "missing",
+            ))
+        elif kind == "requirement_coverage":
+            from .requirements import (
+                audit_requirement_extraction,
+                audit_requirements,
+            )
+
+            errors = (
+                audit_requirement_extraction(root)
+                if raw.get("phase") == "extraction"
+                else audit_requirements(root)
+            )
+            records.append(_record(
+                kind,
+                not errors,
+                errors=errors,
+                path="problem/requirements.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "profile_mandatory_outputs":
+            profile = read_json(
+                root / "config" / "delivery_profile.json", {}
+            )
+            required = (
+                profile.get("mandatory_outputs", [])
+                if isinstance(profile, dict) else []
+            )
+            graph = read_json(
+                root / ".harness" / "evidence.json", {"nodes": {}}
+            )
+            nodes = (
+                graph.get("nodes", {})
+                if isinstance(graph, dict) else {}
+            )
+
+            def normalized(value: Any) -> str:
+                return str(value).strip().casefold().replace("-", "_")
+
+            def matches(output: str, node_id: str, node: Any) -> bool:
+                if not isinstance(node, dict):
+                    return False
+                aliases = {
+                    normalized(node_id),
+                    normalized(node_id.rsplit(".", 1)[-1]),
+                    normalized(node.get("kind", "")),
+                    normalized(node.get("profile_output", "")),
+                }
+                profile_outputs = node.get("profile_outputs", [])
+                if isinstance(profile_outputs, list):
+                    aliases.update(normalized(item) for item in profile_outputs)
+                return (
+                    normalized(output) in aliases
+                    and node.get("status") == "verified"
+                    and node.get("freshness", "valid") == "valid"
+                )
+
+            missing = [
+                output for output in required
+                if not any(
+                    matches(str(output), node_id, node)
+                    for node_id, node in nodes.items()
+                )
+            ]
+            records.append(_record(
+                kind,
+                isinstance(required, list) and not missing,
+                required=required,
+                missing=missing,
+                path="config/delivery_profile.json",
+                freshness="valid" if not missing else "missing",
+            ))
+        elif kind == "opportunity_scan":
+            from .opportunities import (
+                detect_infeasibility,
+                detect_optimality_gap,
+                detect_rank_flip,
+                detect_unmaterialized_branches,
+            )
+
+            detector = str(raw.get("detector", ""))
+            diag_path = root / "results" / "research_diagnostics.json"
+            assumptions_path = root / "docs" / "assumptions.json"
+            diag = read_json(diag_path, {})
+            evidence = read_json(
+                root / ".harness" / "evidence.json", {}
+            )
+            detectors = {
+                "optimality_gap": lambda: detect_optimality_gap(
+                    evidence or {}, diag or {}
+                ),
+                "rank_flip": lambda: detect_rank_flip(diag or {}),
+                "infeasibility": lambda: detect_infeasibility(diag or {}),
+                "assumption_branches": lambda: (
+                    detect_unmaterialized_branches(
+                        read_json(assumptions_path, {})
+                    )
+                ),
+            }
+            required_path = (
+                assumptions_path
+                if detector == "assumption_branches"
+                else diag_path
+            )
+            passed = detector in detectors and required_path.is_file()
+            opportunities = detectors[detector]() if passed else []
+            records.append(_record(
+                kind,
+                passed,
+                detector=detector,
+                path=required_path.relative_to(root).as_posix(),
+                opportunities=opportunities,
+                freshness="valid" if passed else "missing",
+            ))
+        elif kind == "holdout_separation":
+            from .claims import audit_holdout
+
+            errors = audit_holdout(root)
+            records.append(_record(
+                kind,
+                not errors,
+                errors=errors,
+                path="results/scenario_sets.json",
+                freshness="valid" if not errors else "stale",
             ))
         elif kind == "evidence_exists":
             node_id = str(raw.get("id", ""))

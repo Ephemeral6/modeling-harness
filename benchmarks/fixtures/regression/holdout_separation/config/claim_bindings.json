@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "claims": {
+    "Q3.expected_loss": {
+      "source": {
+        "artifact": "results/q3.json",
+        "pointer": "/expected_loss"
+      },
+      "value_type": "number",
+      "scenario_set": "report",
+      "unbiased_final": true
+    }
+  }
+}

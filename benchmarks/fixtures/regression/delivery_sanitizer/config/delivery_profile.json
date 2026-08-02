@@ -1,0 +1,10 @@
+{
+  "name": "cumcm",
+  "version": "1.0.0",
+  "renderer": "competition_answer_by_subquestion",
+  "report_sections": ["摘要", "模型评价", "参考文献"],
+  "required_sections": ["摘要", "模型评价", "参考文献"],
+  "min_figures": 3,
+  "min_external_references": 3,
+  "format_spec": "problem/format_spec.md"
+}

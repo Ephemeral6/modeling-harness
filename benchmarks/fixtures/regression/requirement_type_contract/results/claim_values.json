@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "generator": "modelharness.claims.evaluate_claims",
+  "claims": {
+    "claim.population": {
+      "status": "valid",
+      "source_value": {"rams": 9, "ewes": 414}
+    },
+    "claim.output_range": {
+      "status": "valid",
+      "source_value": 1501.44
+    }
+  }
+}

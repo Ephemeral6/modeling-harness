@@ -16,5 +16,20 @@
     "process_completeness",
     "reproducibility",
     "robustness"
+  ],
+  "min_figures": 3,
+  "min_external_references": 3,
+  "format_spec": "problem/format_spec.md",
+  "robustness_degradation_threshold": null,
+  "required_sections": [
+    "摘要",
+    "问题重述",
+    "模型假设",
+    "符号说明",
+    "模型建立与求解",
+    "模型检验",
+    "灵敏度分析",
+    "模型评价",
+    "参考文献"
   ]
 }

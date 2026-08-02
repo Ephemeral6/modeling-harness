@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "source_segmentation": "problem/source_segmentation.json",
+  "requirements": {
+    "Q1.output_range": {
+      "type": "answer",
+      "mandatory": true,
+      "question": "估算年化出栏数量范围",
+      "expected": {"kind": "interval", "fields": ["lower", "upper"]},
+      "claim_ids": [],
+      "status": "satisfied"
+    }
+  }
+}
