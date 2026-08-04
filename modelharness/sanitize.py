@@ -37,6 +37,10 @@ _SELF_REFERENCE_RE = re.compile(
     r"(?<![\w./])(?:results|config|checks|paper|docs|src)/",
     re.IGNORECASE,
 )
+_YAML_FRONT_MATTER_RE = re.compile(
+    r"\A---\s*\n(?P<body>.*?)\n---\s*(?:\n|\Z)", re.DOTALL
+)
+_YAML_ABSTRACT_RE = re.compile(r"(?mi)^abstract\s*:")
 
 
 def _profile(root: Path) -> dict:
@@ -44,7 +48,13 @@ def _profile(root: Path) -> dict:
 
 
 def _titles(text: str) -> set[str]:
-    return {match.strip().casefold() for match in _HEADING_RE.findall(text)}
+    titles = {
+        match.strip().casefold() for match in _HEADING_RE.findall(text)
+    }
+    front_matter = _YAML_FRONT_MATTER_RE.match(text)
+    if front_matter and _YAML_ABSTRACT_RE.search(front_matter.group("body")):
+        titles.add("摘要")
+    return titles
 
 
 def _missing_sections(text: str, profile: dict, field: str) -> list[str]:

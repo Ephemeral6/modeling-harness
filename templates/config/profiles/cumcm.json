@@ -1,7 +1,13 @@
 {
   "name": "cumcm",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "renderer": "competition_answer_by_subquestion",
+  "paper_delivery": {
+    "source": "paper/final.md",
+    "output": "paper/final.pdf",
+    "template": "paper/cumcm-template.tex",
+    "pdf_engine": "xelatex"
+  },
   "max_parallel_agents": 3,
   "mandatory_outputs": [
     "subquestion_results",

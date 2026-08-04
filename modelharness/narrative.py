@@ -39,6 +39,7 @@ def build_brief(root):
         "renderer": profile["renderer"],
         "report_sections": profile.get("report_sections", []),
         "quality_dimensions": profile.get("quality_dimensions", []),
+        "paper_delivery": profile.get("paper_delivery"),
         "delivery_nodes": delivery_nodes,
     })
     return output

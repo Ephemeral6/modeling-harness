@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import cli as legacy_cli
 from .opportunities import render_assumptions
+from .paper import audit_render, render_pdf
 from .proposals import ProposalService
 from .requirements import audit_requirements, extract_sources
 from .supervisor import StateCapsule
@@ -165,6 +166,34 @@ def _assumptions(values: list[str]) -> int:
     return 0
 
 
+def _paper(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness paper")
+    sub = parser.add_subparsers(dest="action", required=True)
+    build = sub.add_parser("build")
+    build.add_argument("--source")
+    build.add_argument("--output")
+    build.add_argument("--template")
+    build.add_argument("--timeout", type=int, default=300)
+    build.add_argument("--project", type=Path)
+    audit = sub.add_parser("audit")
+    audit.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    root = _root(args.project)
+    if args.action == "audit":
+        errors = audit_render(root)
+        _emit({"ok": not errors, "errors": errors})
+        return int(bool(errors))
+    report = render_pdf(
+        root,
+        source=args.source,
+        output=args.output,
+        template=args.template,
+        timeout=args.timeout,
+    )
+    _emit(report)
+    return int(report.get("verdict") != "PASS")
+
+
 def main() -> int:
     try:
         if len(sys.argv) >= 2 and sys.argv[1] == "tool":
@@ -177,6 +206,8 @@ def main() -> int:
             return _requirements(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "assumptions":
             return _assumptions(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "paper":
+            return _paper(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:

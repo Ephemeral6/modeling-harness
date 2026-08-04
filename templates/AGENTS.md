@@ -113,3 +113,6 @@ modelharness task recover TASK_ID --outcome safe_to_retry --note "<对账证据>
 - general：通用证据报告。
 
 Profile 只改变交付义务和计算环境基线，不能改写已验证数学事实。
+cumcm 的默认成稿从 `paper/final.md` 单源渲染为 `paper/final.pdf`；运行
+`modelharness paper build --project .` 后再用 `modelharness paper audit --project .`
+核对输入哈希和 PDF 哈希。模板是可编辑的交付默认值，不是研究方法或章节顺序限制。

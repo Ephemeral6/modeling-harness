@@ -125,6 +125,26 @@ Modeling Harness 是 Agent 的研究运行层，不绑定特定模型供应商�
 `modelharness intake` 在后台凭空生成答案。负责求解的 Codex、Claude Code 或其他
 Agent 需要在项目根目录持续读取 `work next`、生成工件并提交验证。
 
+### 国赛 PDF 交付
+
+`cumcm` Profile 内置与竞赛论文一致的 A4 中文 LaTeX 默认样式：摘要独占第一页、
+宋体正文与黑体标题、连续页码、三线表、图题置下、表题置上，以及带行号的源码附录。
+论文内容仍只有一个权威来源 `paper/final.md`，避免 Markdown 与 TeX 两份正文发生数字漂移。
+
+~~~powershell
+modelharness profile use cumcm --project .
+# 完成 paper/draft.md → paper/final.md 的证据净化后
+modelharness paper build --project .
+modelharness paper audit --project .
+~~~
+
+渲染使用 Pandoc + XeLaTeX，结果写入 `paper/final.pdf`；执行状态、输入哈希、PDF 哈希
+和日志写入 `paper/render_report.json` 与 `logs/paper_render.log`。工具缺失时为
+`NOT_RUN + INCONCLUSIVE`，编译错误为 `COMPLETED + FAIL`，超时且结果不明时为
+`RECOVERY_PENDING + INCONCLUSIVE`，不会把“未运行”伪装成通过。Agent 可以直接编辑
+`paper/cumcm-template.tex` 或在 Markdown 中嵌入原生 LaTeX；该模板只约束默认交付外观，
+不约束模型选择、求解路线或论文的实质结构。
+
 ## 全落盘与断点回溯
 
 会话上下文被视为一次性缓存，磁盘才是记忆。你可以在任何时刻关闭 Codex 或
