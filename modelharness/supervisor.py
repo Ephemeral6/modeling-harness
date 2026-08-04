@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .evidence import EvidenceGraph
 from .opportunities import build_ledger
+from .optimization import assess_optimization
 from .problem_graph import ProblemGraph, canonical_hash
 from .profiles import ProfileService
 from .stages import StageService
@@ -106,6 +107,7 @@ class StateCapsule:
                 "resource": resource_ledger,
                 "opportunity": opportunity_ledger,
             },
+            "assurance": assess_optimization(self.project),
             "recent_events": workflow.list_events(20),
         }
         return {

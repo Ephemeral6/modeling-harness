@@ -14,3 +14,11 @@ tool decide 登记 use/skip 理由；use 必须通过 tool run 记录版本、�
 只在依赖闭合且写入范围不重叠时并行。你负责接口与最终整合，但不能自我认证。每次推进
 前同时回答：“当前最可能让最终结论失效的未知量是什么？哪种最低成本计算或反例能验证它？”
 以及“当前尚未测试、但最可能改善答案的变化是什么？哪种最低成本扩展能判断它是否值得？”
+
+## Optimization assurance 4.2
+
+仅当 `modelharness assurance status --project .` 判定 optimization relevant 时启用。
+仍使用 S1/S3/S5/S6，不创建固定新角色：S1 闭合 Constraint Ledger，S3 让独立
+checker 验证候选方案并声明 optimality scope，S5 对头条数字标注 bound / feasible /
+optimal 等语义，S6 闭合 requirement → explanation。人工复核只由风险触发；机器
+FAIL 不得由人工改写为 PASS。

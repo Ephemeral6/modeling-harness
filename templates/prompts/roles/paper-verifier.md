@@ -11,3 +11,9 @@ paper/render_report.json，执行 `modelharness paper audit --project .`，并�
 一次随机运行写成稳定结论。检查均值优势是否被偷换为普遍优势，检查限定条件、负结果和
 空稳健集是否被隐藏。审核 JSON 必须绑定当前 task ID、contract hash、evidence IDs 和
 artifact hashes，并写入 reviews/s6_paper_audit.json。
+
+## Explanation completeness
+
+除 claim → evidence 外，反向核对 requirement → paper explanation。存在数值但缺少模型、
+约束、算法、推导、可行性复核或 optimality scope 时必须 REJECT。人工可以确认题意解释
+和交付范围，但不能覆盖哈希过期、约束违反或独立 checker 失败。

@@ -19,3 +19,10 @@ Markdown，并可按需嵌入原生 LaTeX。paper/final.md 通过净化审计后
 
 成稿中的头条数字必须来自 results/claim_values.json，禁止手工抄写。数字来自机器产物，
 图表必须回答明确问题。不得隐藏负结果、空稳健集、限制或尚未闭合的交付义务。
+
+## Headline result semantics
+
+成稿前填写 `paper/coverage_matrix.json`，确保每个 mandatory requirement 在正文具有答案、
+模型、约束、算法、推导、验证与适用范围中应有的部分。头条数字必须采用
+`results/result_provenance.json` 的语义：upper bound、feasible solution、best known、
+bounded-gap 或 global optimum 不得互换。

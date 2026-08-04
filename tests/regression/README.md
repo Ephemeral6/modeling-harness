@@ -1,4 +1,4 @@
-# Modeling Harness 4.1 回归资产
+# Modeling Harness 4.2 回归资产
 
 `tests/regression/` 下的断言、`benchmarks/fixtures/regression/` 中的错误
 数值、以及各用例的期望失败原因，在本次迭代中不得修改。

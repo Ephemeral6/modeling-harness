@@ -7,7 +7,13 @@ import sys
 from pathlib import Path
 
 from . import cli as legacy_cli
+from .coverage import audit_explanation_coverage, initialize_coverage_matrix
 from .opportunities import render_assumptions
+from .optimization import (
+    assess_optimization, audit_optimization, build_result_provenance,
+    build_review_packet, initialize_constraint_ledger,
+    render_constraint_ledger,
+)
 from .paper import audit_render, render_pdf
 from .proposals import ProposalService
 from .requirements import audit_requirements, extract_sources
@@ -166,6 +172,44 @@ def _assumptions(values: list[str]) -> int:
     return 0
 
 
+def _assurance(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness assurance")
+    sub = parser.add_subparsers(dest="action", required=True)
+    for action in (
+        "init", "constraints", "provenance", "review-packet",
+        "coverage-init", "status", "audit",
+    ):
+        command = sub.add_parser(action)
+        command.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    root = _root(args.project)
+    if args.action == "init":
+        _emit(initialize_constraint_ledger(root))
+    elif args.action == "constraints":
+        output = render_constraint_ledger(root)
+        errors = audit_optimization(root, "model")
+        _emit({"ok": not errors, "errors": errors, "path": output.relative_to(root).as_posix()})
+        return int(bool(errors))
+    elif args.action == "provenance":
+        _emit(build_result_provenance(root))
+    elif args.action == "review-packet":
+        _emit(build_review_packet(root))
+    elif args.action == "coverage-init":
+        _emit(initialize_coverage_matrix(root))
+    elif args.action == "status":
+        report = assess_optimization(root)
+        _emit(report)
+        return int(report.get("machine_status") == "BLOCKED")
+    else:
+        errors = [
+            *audit_optimization(root),
+            *audit_explanation_coverage(root),
+        ]
+        _emit({"ok": not errors, "errors": sorted(set(errors))})
+        return int(bool(errors))
+    return 0
+
+
 def _paper(values: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="modelharness paper")
     sub = parser.add_subparsers(dest="action", required=True)
@@ -208,12 +252,14 @@ def main() -> int:
             return _assumptions(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "paper":
             return _paper(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "assurance":
+            return _assurance(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:
                 return result
         if len(sys.argv) == 2 and sys.argv[1] == "--version":
-            print("modelharness 4.1.0")
+            print("modelharness 4.2.0")
             return 0
         legacy_cli.doctor = _doctor_with_tools
         return legacy_cli.main()

@@ -1,7 +1,7 @@
 # Modeling Harness: Evidence-Gated Mathematical Modeling Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.1.0-1f6feb" alt="Modeling Harness 4.1.0">
+  <img src="https://img.shields.io/badge/version-4.2.0-1f6feb" alt="Modeling Harness 4.2.0">
   <img src="https://img.shields.io/badge/Python-%3E%3D3.10-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
 </p>
@@ -329,6 +329,36 @@ S0–S6 是跨路线的完成度投影：
 Agent 可以在 S4 发现问题后回到模型层，也可以在数据不足时交付“不可辨识”，不必为了
 流程完整而制造伪精确答案。
 
+
+## Optimization assurance 4.2（按需启用）
+
+针对优化题漏约束、保守假设低报目标值、盒内精确但搜索域错误，以及“上界/可行解/最优解”
+混写的问题，4.2 在原 S0–S6 内增加四个轻量合同，不引入固定角色或新的审批流水线：
+
+| 现有阶段 | 按需义务 |
+|---|---|
+| S1 | `constraint_ledger.json` 逐条覆盖题面硬约束 |
+| S3 | 候选解 + 独立轻量可行性 checker + optimality scope |
+| S5 | 头条数字标注 upper bound / feasible / best-known / optimal 等语义 |
+| S6 | requirement → 正文答案、推导、验证和范围的解释覆盖 |
+
+Agent 仍自主选择模型、求解器、搜索域和计算工具；Harness 不要求双求解器，也不要求每阶段
+人工审批。只有题意歧义、未物化的关键假设或异常优解等语义风险触发人工复核，而且人工
+不能把机械 FAIL 改为 PASS。
+
+~~~powershell
+modelharness assurance init --project .
+modelharness assurance constraints --project .
+modelharness assurance provenance --project .
+modelharness assurance status --project .
+# 仅 HUMAN_REQUIRED 时
+modelharness assurance review-packet --project .
+modelharness assurance coverage-init --project .
+modelharness assurance audit --project .
+~~~
+
+完整合同见 [Optimization Assurance 4.2](docs/OPTIMIZATION_ASSURANCE_V42.md)。
+
 ## Benchmark and episode packages
 
 Benchmark Lab 分为局部能力 L1、组合建模 L2 和端到端 L3，并单独覆盖安全与退化问题。
@@ -384,6 +414,7 @@ git diff --check
 - 3.1 工具链：[TOOLCHAIN_V31.md](docs/TOOLCHAIN_V31.md)
 - 4.0 架构：[ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
 - 4.1 迁移：[MIGRATION_V40_TO_V41.md](docs/MIGRATION_V40_TO_V41.md)
+- 4.2 迁移：[MIGRATION_V41_TO_V42.md](docs/MIGRATION_V41_TO_V42.md)
 - 失败模型：[FAILURE_MODEL.md](docs/FAILURE_MODEL.md)
 - 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 安全策略：[SECURITY.md](SECURITY.md)

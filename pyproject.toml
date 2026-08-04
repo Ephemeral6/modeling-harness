@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modeling-harness"
-version = "4.1.0"
+version = "4.2.0"
 description = "Problem-graph and autonomous-toolchain harness for mathematical modeling"
 readme = "README.md"
 license = {file = "LICENSE"}

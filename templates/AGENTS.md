@@ -1,4 +1,4 @@
-# Modeling Harness 4.1 执行宪法
+# Modeling Harness 4.2 执行宪法
 
 本宪法对 Codex 与 Claude Code 两个引擎同等生效；Claude Code 会话由项目内
 `CLAUDE.md` 引导至本文件。本项目以 Problem Graph 的局部问题为求解单元，以 S0–S6 为全局里程碑投影。
@@ -116,3 +116,14 @@ Profile 只改变交付义务和计算环境基线，不能改写已验证数学
 cumcm 的默认成稿从 `paper/final.md` 单源渲染为 `paper/final.pdf`；运行
 `modelharness paper build --project .` 后再用 `modelharness paper audit --project .`
 核对输入哈希和 PDF 哈希。模板是可编辑的交付默认值，不是研究方法或章节顺序限制。
+
+## 优化任务的三条附加不变量
+
+以下规则只在 `optimization_relevant` 时启用，不扩展普通分析任务的流程：
+
+10. 每个题面硬约束必须映射到 Constraint Ledger；求解器代码中的隐含约束不算闭合。
+11. 候选方案必须由不复用求解器实现的轻量 checker 逐约束验证；不强制第二个完整求解器。
+12. 上界、下界、可行解、已知最好解、受限类最优和全局最优必须分开；人工不能覆盖机械 FAIL。
+
+人工介入采用风险触发策略：普通优化任务自动继续；题意存在实质歧义、关键假设分支未物化
+或异常优解与这些风险耦合时，才生成 `optimization_review_packet.json` 请求领域专家判断。

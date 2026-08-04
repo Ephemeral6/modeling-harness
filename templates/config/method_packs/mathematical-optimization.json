@@ -1,31 +1,42 @@
 {
   "name": "mathematical-optimization",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "线性、整数、凸或非线性规划的建模、求解与最优性验证。",
-  "task_types": ["optimization", "routing", "scheduling"],
+  "task_types": [
+    "optimization",
+    "routing",
+    "scheduling"
+  ],
   "protocol": [
-    "显式声明变量、目标、约束、单位、尺度和可行性",
-    "根据结构选择 LP、MIP、CP、凸或非线性后端",
-    "在可枚举小实例上对拍并检查全部约束残差",
-    "报告 gap、界、终止条件、运行时间和不可行诊断"
+    "显式声明变量、目标、单位、尺度和全部硬约束，并映射到 constraint ledger。",
+    "Agent 根据问题结构自主选择 LP、MIP、CP、凸、非线性或启发式后端。",
+    "在可枚举 toy 上对拍，并用与求解器实现不同的轻量 checker 检查候选解的全部硬约束。",
+    "当最优点命中人工搜索边界时扩展边界或给出支配证明，不把盒内精确误当全局质量。",
+    "报告 GLOBAL / restricted / bounded-gap / best-known-feasible 等真实 optimality scope。"
   ],
   "required_tests": [
     "穷举或解析 toy",
-    "约束残差",
-    {
-      "name": "下界或 gap",
-      "acceptance": {
-        "kind": "opportunity_scan",
-        "detector": "optimality_gap"
-      }
-    },
-    "独立后端对拍"
+    "独立可行性 checker 的全约束残差",
+    "人工搜索边界命中检测",
+    "最优性范围、界或 gap"
   ],
-  "fallbacks": ["精确求解超时则给界、可行解和启发式质量证据"],
+  "fallbacks": [
+    "精确求解超时时交付有界间隙、已验证可行解或启发式质量证据，不伪造全局最优。"
+  ],
   "tool_policy": {
     "decision_required": true,
     "required_capabilities": [],
-    "preferred_capabilities": ["continuous_optimization", "mixed_integer_optimization", "constraint_programming", "formal_constraints"],
-    "validation_protocols": ["穷举 toy", "约束残差", "双后端对拍", "最优性 gap"]
+    "preferred_capabilities": [
+      "continuous_optimization",
+      "mixed_integer_optimization",
+      "constraint_programming",
+      "formal_constraints"
+    ],
+    "validation_protocols": [
+      "穷举 toy",
+      "独立约束残差 checker",
+      "边界最优自动扩域",
+      "最优性 scope/gap"
+    ]
   }
 }

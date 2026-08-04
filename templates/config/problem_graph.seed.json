@@ -93,7 +93,13 @@
           "artifact": "docs/assumptions.md"
         }
       ],
-      "acceptance": {},
+      "acceptance": [
+        {
+          "kind": "constraint_coverage",
+          "phase": "model",
+          "when": "optimization_relevant"
+        }
+      ],
       "workstreams": [
         {
           "id": "competition",
@@ -103,7 +109,9 @@
             "docs/candidates",
             "docs/model_spec.md",
             "docs/assumptions.md",
-            "docs/assumptions.json"
+            "docs/assumptions.json",
+            "problem/constraint_ledger.json",
+            "docs/constraints.md"
           ],
           "outputs": ["model.spec", "model.assumptions"],
           "budget": {"max_attempts": 3}
@@ -200,7 +208,13 @@
           "artifact": "results/nominal.json"
         }
       ],
-      "acceptance": {},
+      "acceptance": [
+        {
+          "kind": "optimization_assurance",
+          "phase": "solver",
+          "when": "optimization_relevant"
+        }
+      ],
       "workstreams": [
         {
           "id": "solver",
@@ -211,7 +225,11 @@
             "checks/l2_toy.py",
             "results/toy.json",
             "results/nominal.json",
-            "results/research_diagnostics.json"
+            "results/research_diagnostics.json",
+            "src/feasibility.py",
+            "results/candidate_solution.json",
+            "results/feasibility_audit.json",
+            "results/optimality.json"
           ],
           "outputs": ["code.solver", "experiment.toy", "result.nominal"],
           "budget": {"max_attempts": 3}
@@ -298,7 +316,16 @@
           "artifact": "predictions/registered.json"
         }
       ],
-      "acceptance": {},
+      "acceptance": [
+        {
+          "kind": "result_provenance",
+          "when": "optimization_relevant"
+        },
+        {
+          "kind": "human_review",
+          "when": "optimization_relevant"
+        }
+      ],
       "workstreams": [
         {
           "id": "decision",
@@ -307,7 +334,10 @@
           "owns": [
             "docs/decision_answer.md",
             "predictions/registered.json",
-            "predictions/registered.sha256"
+            "predictions/registered.sha256",
+            "results/result_provenance.json",
+            "reviews/optimization_review_packet.json",
+            "reviews/optimization_human_review.json"
           ],
           "outputs": ["decision.answer", "decision.lock"],
           "budget": {"max_attempts": 3}
@@ -356,6 +386,10 @@
           "when": "requirements_present"
         },
         {
+          "kind": "explanation_coverage",
+          "when": "requirements_present"
+        },
+        {
           "kind": "profile_mandatory_outputs"
         },
         {
@@ -377,7 +411,8 @@
             "paper/claim_map.json",
             "paper/figures",
             "results/delivery_check.json",
-            "results/report_claims.json"
+            "results/report_claims.json",
+            "paper/coverage_matrix.json"
           ],
           "outputs": ["narrative.worksheet", "narrative.paper"],
           "budget": {"max_attempts": 3}

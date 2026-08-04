@@ -1,4 +1,4 @@
-# Modeling Harness 4.0 评测实验室
+# Modeling Harness 4.2 评测实验室
 
 评测分三层，不以论文流畅度替代建模正确性。运行时 Harness 不依赖本目录；隐藏真值
 只在离线评分端出现。
@@ -41,7 +41,7 @@ python -m modelharness.evaluation --project <project>
 python -m modelharness.benchmarking benchmarks/fixtures/l1_numeric.json --project <completed-project> --json report.json
 ~~~
 
-Rubric 支持 artifact_exists、evidence_status、json_numeric、integrity 和
+Rubric 支持 artifact_exists、evidence_status、json_numeric、evaluation_value、integrity 和
 task_status_absent。任务可扩展 rubric，但不应把隐藏目标复制进 Agent 项目。
 
 ## Episode Package

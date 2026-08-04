@@ -287,6 +287,13 @@ def _answer_quality(project: Path) -> dict:
         not audit_holdout(project)
         if scenario_present or has_report_claim else None
     )
+    from .coverage import audit_explanation_coverage
+    from .optimization import assess_optimization
+
+    assurance = assess_optimization(project)
+    explanation_errors = (
+        audit_explanation_coverage(project) if requirements else []
+    )
     quality = {
         "requirement_coverage_rate": requirement_rate,
         "mandatory_open": sorted(mandatory_open),
@@ -297,6 +304,8 @@ def _answer_quality(project: Path) -> dict:
         "discharge_mix": discharge_mix,
         "opportunity_hit_rate": opportunity_hit_rate,
         "holdout_separation_ok": holdout_separation_ok,
+        "optimization_assurance": assurance,
+        "explanation_coverage_errors": explanation_errors,
     }
     profile = read_json(
         project / "config" / "delivery_profile.json", {}
