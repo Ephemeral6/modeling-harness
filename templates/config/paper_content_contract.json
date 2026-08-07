@@ -13,6 +13,13 @@
     "machine lock table",
     "numeric lock table"
   ],
+  "decision_claim_phrases": [
+    "联合优化",
+    "同时决策",
+    "联合决策"
+  ],
+  "decision_claims": [],
+  "require_regenerator_for_headline_claims": true,
   "obligation_defaults": {
     "answer": [
       {

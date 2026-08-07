@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "variables": [
+    {
+      "id": "x.mating_batch",
+      "role": "decision",
+      "statement": "每日开配母羊批次数，由 CP-SAT 在排程模型中求解",
+      "source": {
+        "path": "results/solver_model.json",
+        "sha256": "cc9f069f9d474478454fc143fe625975a0ef3d75c2526c86d88bcdf014b5bfcf"
+      }
+    },
+    {
+      "id": "x.pen_assignment",
+      "role": "parameter",
+      "statement": "栏位分配方案在求解前按经验规则固定，不进入决策空间",
+      "source": {
+        "path": "results/solver_model.json",
+        "sha256": "cc9f069f9d474478454fc143fe625975a0ef3d75c2526c86d88bcdf014b5bfcf"
+      }
+    }
+  ]
+}

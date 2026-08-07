@@ -32,6 +32,12 @@ _REFERENCE_HEADER_RE = re.compile(
 _REFERENCE_ENTRY_RE = re.compile(
     r"(?m)^\s*(?:\[[0-9]+\]|[0-9]+[.)])\s*(\S.*)$"
 )
+_REFERENCE_NUMBER_RE = re.compile(
+    r"(?m)^\s*(?:\[([0-9]+)\]|([0-9]+)[.)])\s*\S"
+)
+_CITATION_RE = re.compile(
+    r"\[([1-9][0-9]{0,2}(?:\s*[,，、-]\s*[1-9][0-9]{0,2})*)\](?!\()"
+)
 _SELF_REFERENCE_RE = re.compile(
     r"本文项目内|随论文交付|"
     r"(?<![\w./])(?:results|config|checks|paper|docs|src)/",
@@ -71,6 +77,44 @@ def _reference_entries(text: str) -> list[str]:
     if not match:
         return []
     return _REFERENCE_ENTRY_RE.findall(text[match.end():])
+
+
+def _cited_reference_numbers(body: str) -> set[int]:
+    """Collect numbers cited in-text as ``[k]``, ``[k,m]`` or ``[k-m]``."""
+    cited: set[int] = set()
+    for match in _CITATION_RE.finditer(body):
+        before = body[match.start() - 1] if match.start() else ""
+        after = body[match.end():match.end() + 1]
+        if "$" in (before, after):
+            continue
+        for part in re.split(r"[,，、]", match.group(1)):
+            bounds = [int(value) for value in re.findall(r"[0-9]+", part)]
+            if "-" in part and len(bounds) == 2 and bounds[0] <= bounds[1]:
+                cited.update(range(bounds[0], bounds[1] + 1))
+            else:
+                cited.update(bounds)
+    return cited
+
+
+def _citation_violations(text: str) -> list[dict]:
+    """Cross-check numbered reference entries against in-text ``[k]`` marks."""
+    header = _REFERENCE_HEADER_RE.search(text)
+    if not header:
+        return []
+    entries = {
+        int(first or second)
+        for first, second in _REFERENCE_NUMBER_RE.findall(text[header.end():])
+    }
+    cited = _cited_reference_numbers(text[:header.start()])
+    violations: list[dict] = []
+    for number in sorted(entries - cited):
+        violations.append({"kind": "uncited_reference", "reference": number})
+    for number in sorted(cited - entries):
+        violations.append({
+            "kind": "citation_without_entry",
+            "reference": number,
+        })
+    return violations
 
 
 def _inject_deferred(root: Path, text: str) -> str:
@@ -201,6 +245,9 @@ def sanitize_report(
             "kind": "self_citation_only",
             "actual": len(references),
         })
+
+    if profile.get("require_in_text_citations") is True:
+        violations.extend(_citation_violations(text))
 
     for section in _missing_sections(text, profile, "required_sections"):
         violations.append({"kind": "missing_section", "section": section})

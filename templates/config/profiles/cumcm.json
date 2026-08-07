@@ -1,6 +1,6 @@
 {
   "name": "cumcm",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "renderer": "competition_answer_by_subquestion",
   "paper_content_contract": "config/paper_content_contract.json",
   "paper_delivery": {
@@ -27,6 +27,7 @@
   ],
   "min_figures": 3,
   "min_external_references": 3,
+  "require_in_text_citations": true,
   "format_spec": "problem/format_spec.md",
   "robustness_degradation_threshold": null,
   "required_sections": [

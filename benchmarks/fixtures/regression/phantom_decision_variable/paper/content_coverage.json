@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "contract": "config/paper_content_contract.json",
+  "contract_sha256": "c5233e46fa5f044afa39a158853b8acb738224bc73fdcee72f4102431989d327",
+  "body": "paper/final.md",
+  "appendices": [
+    "paper/technical_appendix.md"
+  ],
+  "requirements": {}
+}

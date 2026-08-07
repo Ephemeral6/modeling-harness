@@ -126,3 +126,73 @@ modelharness paper audit --project .
 `paper audit` combines render integrity with content-contract auditing when the
 active profile enables both.
 
+## 5a Decision-variable manifest and decision claims
+
+`results/decision_variable_manifest.json` is the single authority on what the
+model actually decided, as opposed to what the paper says it decided:
+
+```json
+{
+  "schema": 1,
+  "variables": [
+    {
+      "id": "x.mating_batch",
+      "role": "decision",
+      "statement": "每日开配母羊批次数，由求解器决定",
+      "source": {"path": "results/solver_model.json", "sha256": "..."}
+    }
+  ]
+}
+```
+
+`role` must be one of `decision`, `parameter` or `derived`.
+`modelharness.optimization.audit_decision_manifest` runs whenever the manifest
+exists (and inside `audit_optimization` for the solver/decision phases): every
+entry needs a unique id, a legal role, a nonempty statement and a `source`
+whose `path` exists with a matching `sha256`.
+
+The content contract gains two optional sections:
+
+- `decision_claim_phrases`: joint-decision phrases to police in the paper;
+  the template defaults are `联合优化`, `同时决策` and `联合决策`;
+- `decision_claims`: `[{"phrase": ..., "variable_ids": [...]}]` declaring
+  which manifest variables back each phrase.
+
+`audit_paper_content` scans `paper/final.md` (the contract body) and
+`paper/draft.md`.  Every occurrence of a listed phrase must be covered by a
+`decision_claims` entry whose `variable_ids` all exist in the manifest with
+`role == "decision"`.  A covered phrase whose variables are missing or not
+decisions reports `phantom_decision_variable`; an uncovered phrase reports
+`undeclared_decision_claim`.  Writing "联合优化 A 与 B" while B was fixed
+before solving is therefore a hard failure.
+
+## 5b In-text citations
+
+When the delivery profile sets `require_in_text_citations: true` (the
+`cumcm` and `mcm_icm` templates do), `sanitize_report` cross-checks the
+References/参考文献 section against the body:
+
+- every numbered entry `[k]` in the references section must be cited at least
+  once in the body before that section, as `[k]`, `[k,m]` or `[k-m]`;
+  each missing one is a `uncited_reference` violation carrying the entry
+  number;
+- every in-text citation number without a matching numbered entry is a
+  `citation_without_entry` violation.
+
+Bracketed numbers followed by `(` (markdown links), bracket groups
+containing `0` (interval notation such as `[0, 1]`) and bracket groups
+directly adjacent to `$` (math-mode intervals such as `$[10,16]$`) are not
+treated as citations.  The check is skipped entirely when the paper has no
+references heading.
+
+## 5c Headline reproduction chain
+
+`config/claim_bindings.json` entries may declare a `regenerator`: the
+project-relative path of the script that regenerates the bound number.  When
+the content contract sets `require_regenerator_for_headline_claims: true`
+(the template default), `audit_paper_content` requires every binding marked
+`headline: true` to name a `regenerator` whose script file exists; otherwise
+it reports `broken_reproduction_chain` for that claim id.  A headline number
+whose producing script has been deleted or was never written can no longer
+pass the S6 gate.
+

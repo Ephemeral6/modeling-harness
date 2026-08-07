@@ -35,6 +35,7 @@ SEMANTIC_TYPES = {
     "simulation_mean",
     "recommendation",
 }
+DECISION_VARIABLE_ROLES = {"decision", "parameter", "derived"}
 _OPTIMIZATION_RE = re.compile(
     r"最优|优化|最大化|最小化|排程|调度|路径规划|资源分配|组合优化|"
     r"整数规划|线性规划|mixed.integer|optimization|scheduling|routing",
@@ -288,6 +289,63 @@ def audit_feasibility(root: Path) -> list[str]:
             errors.append(f"constraint residual is not finite: {constraint_id}")
         elif float(violation) > float(tolerance):
             errors.append(f"constraint violation exceeds tolerance: {constraint_id}")
+    return sorted(set(errors))
+
+
+def audit_decision_manifest(root: Path) -> list[str]:
+    """Audit the declared decision-variable manifest against real artifacts.
+
+    The manifest is optional; when ``results/decision_variable_manifest.json``
+    exists, every variable must carry a legal role and a source artifact whose
+    hash still matches, so the paper cannot cite decision variables that no
+    solver artifact actually contains.
+    """
+    root = root.resolve()
+    path = root / "results" / "decision_variable_manifest.json"
+    if not path.is_file():
+        return []
+    data = read_json(path)
+    if not isinstance(data, dict) or data.get("schema") != 1:
+        return ["decision_variable_manifest missing or schema is not 1"]
+    variables = data.get("variables")
+    if not isinstance(variables, list):
+        return ["decision_variable_manifest.variables must be a list"]
+    errors: list[str] = []
+    seen: set[str] = set()
+    for index, item in enumerate(variables):
+        if not isinstance(item, dict):
+            errors.append(f"decision variable is not an object: index {index}")
+            continue
+        variable_id = item.get("id")
+        label = (
+            variable_id
+            if isinstance(variable_id, str) and variable_id
+            else f"index {index}"
+        )
+        if not isinstance(variable_id, str) or not variable_id:
+            errors.append(f"decision variable id missing: {label}")
+        elif variable_id in seen:
+            errors.append(f"duplicate decision variable id: {label}")
+        else:
+            seen.add(variable_id)
+        if item.get("role") not in DECISION_VARIABLE_ROLES:
+            errors.append(f"invalid decision variable role: {label}")
+        if not str(item.get("statement", "")).strip():
+            errors.append(f"decision variable statement missing: {label}")
+        source = item.get("source")
+        if not isinstance(source, dict):
+            errors.append(f"decision variable source missing: {label}")
+            continue
+        relative = str(source.get("path", ""))
+        actual = _artifact_hash(root, relative) if relative else None
+        if actual is None:
+            errors.append(
+                f"decision variable source artifact missing: {label}: {relative}"
+            )
+        elif source.get("sha256") != actual:
+            errors.append(
+                f"decision variable source hash stale: {label}: {relative}"
+            )
     return sorted(set(errors))
 
 
@@ -617,6 +675,7 @@ def audit_optimization(root: Path, phase: str = "all") -> list[str]:
     if phase in {"solver", "decision", "all"}:
         errors.extend(audit_feasibility(root))
         errors.extend(audit_optimality(root))
+        errors.extend(audit_decision_manifest(root))
     if phase in {"decision", "all"}:
         errors.extend(audit_result_provenance(root))
         errors.extend(audit_human_review(root))

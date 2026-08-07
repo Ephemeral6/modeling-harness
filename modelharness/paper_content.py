@@ -268,6 +268,104 @@ def _audit_artifact(root: Path, item: Any, spec: Any) -> list[str]:
     return []
 
 
+def _decision_manifest_roles(root: Path) -> dict[str, str]:
+    """Map declared decision-variable ids to roles; empty when unavailable."""
+    data = read_json(root / "results" / "decision_variable_manifest.json")
+    if not isinstance(data, dict) or data.get("schema") != 1:
+        return {}
+    variables = data.get("variables")
+    if not isinstance(variables, list):
+        return {}
+    return {
+        item["id"]: str(item.get("role", ""))
+        for item in variables
+        if isinstance(item, dict)
+        and isinstance(item.get("id"), str) and item["id"]
+    }
+
+
+def _decision_claim_issues(
+    root: Path, contract: dict, texts: dict[str, str]
+) -> list[str]:
+    """Every joint-decision phrase must map to real ``role=decision`` variables."""
+    phrases = contract.get("decision_claim_phrases", [])
+    if not isinstance(phrases, list) or not all(
+        isinstance(phrase, str) and phrase for phrase in phrases
+    ):
+        return ["Paper Content Contract.decision_claim_phrases 非法"]
+    raw_claims = contract.get("decision_claims", [])
+    if not isinstance(raw_claims, list):
+        return ["Paper Content Contract.decision_claims 非法"]
+    issues: list[str] = []
+    declared: dict[str, list[str]] = {}
+    for claim in raw_claims:
+        phrase = claim.get("phrase") if isinstance(claim, dict) else None
+        variable_ids = (
+            claim.get("variable_ids") if isinstance(claim, dict) else None
+        )
+        if (
+            not isinstance(phrase, str) or not phrase
+            or not isinstance(variable_ids, list) or not variable_ids
+            or not all(
+                isinstance(value, str) and value for value in variable_ids
+            )
+        ):
+            issues.append("Paper Content Contract.decision_claims 条目非法")
+            continue
+        declared.setdefault(phrase, []).extend(variable_ids)
+    roles = _decision_manifest_roles(root)
+    for relative, text in sorted(texts.items()):
+        for phrase in phrases:
+            if phrase not in text:
+                continue
+            if phrase not in declared:
+                issues.append(
+                    f"undeclared_decision_claim: {relative}: {phrase}"
+                )
+                continue
+            phantom = sorted({
+                variable_id for variable_id in declared[phrase]
+                if roles.get(variable_id) != "decision"
+            })
+            if phantom:
+                issues.append(
+                    f"phantom_decision_variable: {relative}: "
+                    f"{phrase} -> {phantom}"
+                )
+    return issues
+
+
+def _reproduction_chain_issues(root: Path, contract: dict) -> list[str]:
+    """Headline claim bindings must name an existing regenerator script."""
+    if contract.get("require_regenerator_for_headline_claims") is not True:
+        return []
+    bindings = read_json(root / "config" / "claim_bindings.json", {})
+    claims = bindings.get("claims", {}) if isinstance(bindings, dict) else {}
+    if not isinstance(claims, dict):
+        return []
+    issues: list[str] = []
+    for claim_id, binding in sorted(claims.items()):
+        if not isinstance(binding, dict) or binding.get("headline") is not True:
+            continue
+        regenerator = binding.get("regenerator")
+        if not isinstance(regenerator, str) or not regenerator:
+            issues.append(
+                f"broken_reproduction_chain: {claim_id}: regenerator missing"
+            )
+            continue
+        try:
+            script = safe_relative(root, regenerator)
+        except ValueError as exc:
+            issues.append(f"broken_reproduction_chain: {claim_id}: {exc}")
+            continue
+        if not script.is_file():
+            issues.append(
+                f"broken_reproduction_chain: {claim_id}: "
+                f"regenerator script missing: {regenerator}"
+            )
+    return issues
+
+
 def _appendix_policy_issues(contract: dict, body: str) -> list[str]:
     labels = contract.get("appendix_only_labels", [])
     if not isinstance(labels, list):
@@ -322,6 +420,14 @@ def audit_paper_content(root: Path) -> list[str]:
         documents[relative] = target.read_text(encoding="utf-8")
     body = documents.get(body_relative, "")
     issues.extend(_appendix_policy_issues(contract, body))
+    claim_texts = {body_relative: body}
+    draft_path = root / "paper" / "draft.md"
+    if draft_path.is_file():
+        claim_texts.setdefault(
+            "paper/draft.md", draft_path.read_text(encoding="utf-8")
+        )
+    issues.extend(_decision_claim_issues(root, contract, claim_texts))
+    issues.extend(_reproduction_chain_issues(root, contract))
 
     matrix_requirements = matrix.get("requirements", {})
     if not isinstance(matrix_requirements, dict):
