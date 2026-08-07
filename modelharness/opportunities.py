@@ -24,6 +24,11 @@ REASON_CODES = {
     "resolved_interior",
 }
 
+# Search-starvation thresholds (P0 keeps them as module constants; no config
+# file).  See detect_search_starvation for how they combine.
+STARVATION_MIN_NODES = 64
+STARVATION_LAST_INCUMBENT_FRACTION = 0.5
+
 
 def _searches(diag: dict) -> list[tuple[str, dict]]:
     searches = diag.get("searches", {}) if isinstance(diag, dict) else {}
@@ -138,6 +143,73 @@ def detect_optimality_gap(evidence: dict, diag: dict) -> list[dict]:
                 search_id=search_id,
                 gap=float(gap),
             ))
+    return opportunities
+
+
+def detect_search_starvation(diag: dict) -> list[dict]:
+    """Flag time-limited searches that stopped hungry instead of converged.
+
+    A search counts as starved when its optional ``budget`` block reports
+    ``termination == "time_limit"`` with a positive ``final_gap_fraction``
+    while either fewer than ``STARVATION_MIN_NODES`` nodes were explored or
+    the last incumbent update landed before
+    ``STARVATION_LAST_INCUMBENT_FRACTION * time_limit_seconds``.  Entries
+    without a ``budget`` block are skipped so legacy projects never
+    false-positive.
+    """
+
+    def number(value: Any) -> float | None:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return float(value)
+        return None
+
+    def last_incumbent_seconds(updates: Any) -> float | None:
+        if not isinstance(updates, list):
+            return None
+        times = [
+            parsed
+            for update in updates
+            for parsed in [number(
+                update.get("time_seconds")
+                if isinstance(update, dict) else update
+            )]
+            if parsed is not None
+        ]
+        return max(times) if times else None
+
+    opportunities = []
+    for search_id, search in _searches(diag):
+        budget = search.get("budget")
+        if not isinstance(budget, dict):
+            continue
+        gap = number(budget.get("final_gap_fraction"))
+        if budget.get("termination") != "time_limit":
+            continue
+        if gap is None or gap <= 0:
+            continue
+        nodes = number(budget.get("nodes_explored"))
+        starved_nodes = nodes is not None and nodes < STARVATION_MIN_NODES
+        time_limit = number(budget.get("time_limit_seconds"))
+        last_update = last_incumbent_seconds(budget.get("incumbent_updates"))
+        stale_incumbent = (
+            time_limit is not None
+            and time_limit > 0
+            and last_update is not None
+            and last_update < STARVATION_LAST_INCUMBENT_FRACTION * time_limit
+        )
+        if not (starved_nodes or stale_incumbent):
+            continue
+        opportunities.append(_opportunity(
+            "search_starvation",
+            "high",
+            search_id=search_id,
+            nodes_explored=budget.get("nodes_explored"),
+            gap=gap,
+            summary=(
+                f"search {search_id} 在 time_limit 终止仍留 gap={gap:.4g}，"
+                f"nodes_explored={budget.get('nodes_explored')}，疑似搜索饥饿"
+            ),
+        ))
     return opportunities
 
 
@@ -342,6 +414,7 @@ def build_ledger(root: Path) -> list[dict]:
         *detect_boundary_optima(diag),
         *detect_grid_under_resolution(diag),
         *detect_optimality_gap(evidence or {}, diag),
+        *detect_search_starvation(diag),
         *detect_rank_flip(diag),
         *detect_infeasibility(diag),
         *detect_unmaterialized_branches(assumptions),

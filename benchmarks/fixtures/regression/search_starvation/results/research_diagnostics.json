@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "searches": {
+    "Q1.open_grain_mip": {
+      "objective": "total_profit_yuan",
+      "sense": "max",
+      "budget": {
+        "time_limit_seconds": 180,
+        "wall_time_seconds": 180.03,
+        "nodes_explored": 2,
+        "incumbent_updates": [
+          {"time_seconds": 6.4, "objective": 16211034.5},
+          {"time_seconds": 41.2, "objective": 16683178.3}
+        ],
+        "best_bound": 16866693.4,
+        "final_gap_fraction": 0.011,
+        "termination": "time_limit"
+      },
+      "top_k": [
+        {"point": {"component": "open_grain"}, "objective": 16683178.3}
+      ]
+    },
+    "Q1.greenhouse_mip": {
+      "objective": "total_profit_yuan",
+      "sense": "max",
+      "top_k": [
+        {"point": {"component": "irrigated_greenhouse"}, "objective": 46098558.0}
+      ]
+    }
+  },
+  "assumptions": {},
+  "opportunities": []
+}
