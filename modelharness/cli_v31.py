@@ -18,6 +18,7 @@ from .paper import audit_render, render_pdf
 from .paper_content import audit_paper_content, initialize_content_coverage
 from .profiles import ProfileService
 from .proposals import ProposalService
+from .provenance_core import audit_warm_start_keys, scan_against_baselines
 from .requirements import audit_requirements, extract_sources
 from .supervisor import StateCapsule
 from .tool_cli_ext import main as tool_main
@@ -212,6 +213,23 @@ def _assurance(values: list[str]) -> int:
     return 0
 
 
+def _provenance(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness provenance")
+    sub = parser.add_subparsers(dest="action", required=True)
+    audit = sub.add_parser("audit")
+    audit.add_argument("--project", type=Path)
+    scan = sub.add_parser("scan")
+    scan.add_argument("--root", type=Path, required=True)
+    scan.add_argument("--baselines", type=Path, required=True)
+    args = parser.parse_args(values)
+    if args.action == "audit":
+        errors = audit_warm_start_keys(_root(args.project))
+    else:
+        errors = scan_against_baselines(args.root, args.baselines)
+    _emit({"ok": not errors, "errors": errors})
+    return int(bool(errors))
+
+
 def _paper(values: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="modelharness paper")
     sub = parser.add_subparsers(dest="action", required=True)
@@ -270,6 +288,8 @@ def main() -> int:
             return _paper(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "assurance":
             return _assurance(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "provenance":
+            return _provenance(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:
