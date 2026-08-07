@@ -1,0 +1,6 @@
+{
+  "number_whitelist": [
+    {"value": "1", "reason": "文内参考文献编号"},
+    {"value": "2", "reason": "文内参考文献编号"}
+  ]
+}

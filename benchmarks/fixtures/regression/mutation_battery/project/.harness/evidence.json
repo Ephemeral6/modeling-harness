@@ -1,0 +1,63 @@
+{
+  "schema": 3,
+  "revision": 3,
+  "nodes": {
+    "EV.plan_replay": {
+      "id": "EV.plan_replay",
+      "kind": "result",
+      "statement": "交付计划逐日重放一致：E=416、峰值 112、Y=1326.11",
+      "artifact": "results/q2_plan.json",
+      "artifact_sha256": "8225cdcb21c1c51a9fff6ad430ceee5acd3186af127fe6f60491fffab3eff726",
+      "depends_on": [],
+      "check": null,
+      "checks": [],
+      "obligation_hash": null,
+      "reviews": [],
+      "producer_task_id": null,
+      "status": "verified",
+      "freshness": "valid",
+      "created_at": "2026-08-06T12:00:00+08:00",
+      "verified_at": "2026-08-06T12:05:00+08:00",
+      "verification": null,
+      "revocation": null
+    },
+    "EV.gap_witness": {
+      "id": "EV.gap_witness",
+      "kind": "result",
+      "statement": "缺口区间 [10,16] 与受限类下界 11 的证人复算一致",
+      "artifact": "results/gap_witness.json",
+      "artifact_sha256": "9de463188c0f7dd9e1908e321ca3003b520a4c5bd4f18d14907351e39fbfd33f",
+      "depends_on": [],
+      "check": null,
+      "checks": [],
+      "obligation_hash": null,
+      "reviews": [],
+      "producer_task_id": null,
+      "status": "verified",
+      "freshness": "valid",
+      "created_at": "2026-08-06T12:00:00+08:00",
+      "verified_at": "2026-08-06T12:05:00+08:00",
+      "verification": null,
+      "revocation": null
+    },
+    "EV.q3_report": {
+      "id": "EV.q3_report",
+      "kind": "experiment",
+      "statement": "问题三报告集头条 962.48 与配对差 -3.49 复算一致",
+      "artifact": "results/q3_report.json",
+      "artifact_sha256": "9250a992b5c28b789555312fe688422efb9a9247bed276c0dbb988ca305e36a1",
+      "depends_on": [],
+      "check": null,
+      "checks": [],
+      "obligation_hash": null,
+      "reviews": [],
+      "producer_task_id": null,
+      "status": "verified",
+      "freshness": "valid",
+      "created_at": "2026-08-06T12:00:00+08:00",
+      "verified_at": "2026-08-06T12:05:00+08:00",
+      "verification": null,
+      "revocation": null
+    }
+  }
+}

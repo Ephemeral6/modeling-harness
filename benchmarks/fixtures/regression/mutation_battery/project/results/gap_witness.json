@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "gap_lower_bound": 10,
+  "gap_upper_bound": 16,
+  "restricted_class_lower_bound": 11,
+  "rows": [
+    {"budget": 122, "annual_output": 1498.087, "reaches_target": false},
+    {"budget": 123, "annual_output": 1511.0044, "reaches_target": true}
+  ]
+}

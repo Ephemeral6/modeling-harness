@@ -78,3 +78,30 @@ Statistical validity（holdout optimism、区间覆盖、pass^k）；Delivery qu
 
 回归 fixture 提供低成本信号，端到端链只在完整配置验证。不同方案的目标值比较必须使用
 先冻结参数的中立复核器，避免用第三套假设直接裁判两套不可通约的模拟器。
+
+## 变异注入战（Mutation Battery）
+
+`fixtures/regression/mutation_battery/` 把 2023D 项目第 11 轮红队的 21 条变异注入
+测试常驻化（并补充 2 条引用/单位类条目，共 23 条）。`project/` 是最小完整项目骨架：
+claim bindings + predictions 锁定值、Paper IR 结构化源（头条数字一律走 `{num:}`
+占位符）、编译出的 `paper/draft.md` 与 `paper/final.md`、数值工件、情景四集、
+证据图与升级后的回归语料 `docs/regression_corpus.json`。`mutations.json` 逐条登记
+变异：`id`、`class`、`target`、`operator`（numeric_swap / sign_flip / caliber_swap /
+claim_rollback / disclosure_inversion / unit_swap / reference_unmark）、`params` 与
+`expected_detectors`。
+
+`tests/regression/test_mutation_battery.py` 对每条变异执行 copytree →
+`modelharness.mutation_core.apply_mutation` → `modelharness.mutation_core.detect`，
+逐条断言 `expected_detectors` 至少命中其一，并汇总断言总检出率 ≥ 90%、
+`class == "headline_tamper"`（篡改交付数字类，对应 v11 的 M06/M09/M10/M11）
+检出率 == 100%。基线（未注入）必须 0 发现，否则检出率没有意义。
+
+目录冻结规则（防 Goodhart）：
+
+1. 检出率只对 `mutations.json` 已收录条目计算；不得为拉高比率删除或弱化已收录
+   条目，也不得移除某条变异仍然有效的 `expected_detectors`。
+2. 新发现的逃逸案例必须先作为新条目入目录（含变异算子与期望检测器），再重新
+   计数；未入目录前的任何检出率数字一律无效。
+3. 某条变异在现有检测器组合下确实测不出时，允许给该条加 `known_gap: "<原因>"`
+   并从分母剔除，但 known_gap 条数 ≤ 2、必须逐条写明原因，测试会强制该上限；
+   不允许静默降目标。

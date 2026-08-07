@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "claims": {
+    "Q2.annual_output": {
+      "requirement_ids": ["Q2"],
+      "source": {"artifact": "results/q2_plan.json", "pointer": "/annual_output"},
+      "value_type": "number",
+      "unit": "只/年",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q2.ewes": {
+      "requirement_ids": ["Q2"],
+      "source": {"artifact": "results/q2_plan.json", "pointer": "/ewes"},
+      "value_type": "number",
+      "unit": "只",
+      "display": {"decimals": 0, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q2.peak_pens": {
+      "requirement_ids": ["Q2"],
+      "source": {"artifact": "results/q2_plan.json", "pointer": "/peak_pens"},
+      "value_type": "number",
+      "unit": "栏",
+      "display": {"decimals": 0, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q2.layer1_best": {
+      "requirement_ids": ["Q2"],
+      "source": {"artifact": "results/q2_plan.json", "pointer": "/layer1_uniform_best"},
+      "value_type": "number",
+      "unit": "只/年",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q2.upper_bound": {
+      "requirement_ids": ["Q2"],
+      "source": {"artifact": "results/upper_bound.json", "pointer": "/annual_output_bound"},
+      "value_type": "number",
+      "unit": "只/年",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q2.knapsack_bound": {
+      "requirement_ids": ["Q2"],
+      "source": {"artifact": "results/upper_bound.json", "pointer": "/knapsack_bound"},
+      "value_type": "number",
+      "unit": "只/年",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q1.gap_lower": {
+      "requirement_ids": ["Q1"],
+      "source": {"artifact": "results/gap_witness.json", "pointer": "/gap_lower_bound"},
+      "value_type": "number",
+      "unit": "栏",
+      "display": {"decimals": 0, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q1.gap_upper": {
+      "requirement_ids": ["Q1"],
+      "source": {"artifact": "results/gap_witness.json", "pointer": "/gap_upper_bound"},
+      "value_type": "number",
+      "unit": "栏",
+      "display": {"decimals": 0, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q1.restricted_lower": {
+      "requirement_ids": ["Q1"],
+      "source": {"artifact": "results/gap_witness.json", "pointer": "/restricted_class_lower_bound"},
+      "value_type": "number",
+      "unit": "栏",
+      "display": {"decimals": 0, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q3.report_n": {
+      "requirement_ids": ["Q3"],
+      "source": {"artifact": "results/q3_report.json", "pointer": "/n"},
+      "value_type": "number",
+      "unit": "个",
+      "display": {"decimals": 0, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    },
+    "Q3.report_headline": {
+      "requirement_ids": ["Q3"],
+      "source": {"artifact": "results/q3_report.json", "pointer": "/report/headline_mean"},
+      "value_type": "number",
+      "unit": "只/年",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9},
+      "scenario_set": "report",
+      "source_run_id": "run-q3-report"
+    },
+    "Q3.selection_headline": {
+      "requirement_ids": ["Q3"],
+      "source": {"artifact": "results/q3_report.json", "pointer": "/selection/headline_mean"},
+      "value_type": "number",
+      "unit": "只/年",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9},
+      "scenario_set": "selection"
+    },
+    "Q3.pairing_diff": {
+      "requirement_ids": ["Q3"],
+      "source": {"artifact": "results/q3_report.json", "pointer": "/pairing_diff"},
+      "value_type": "number",
+      "unit": "只",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "n": 200,
+  "report": {"headline_mean": 962.478812},
+  "selection": {"headline_mean": 950.354079},
+  "pairing_diff": -3.485905
+}

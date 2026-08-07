@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "sets": {
+    "screen": {"n": 60, "scenario_sha256": "hash-screen-01", "sealed": false},
+    "selection": {"n": 200, "scenario_sha256": "hash-selection-01", "sealed": false},
+    "report": {
+      "n": 200,
+      "scenario_sha256": "hash-report-01",
+      "sealed": true,
+      "unsealed_at": null
+    },
+    "stress": {"n": 150, "scenario_sha256": "hash-stress-01", "sealed": false}
+  },
+  "usage": [
+    {"set": "screen", "purpose": "exploration", "at": "run-1"},
+    {"set": "selection", "purpose": "policy_ranking", "at": "run-2"},
+    {"set": "report", "purpose": "headline_estimate", "at": "run-3"}
+  ]
+}
