@@ -1,0 +1,65 @@
+{
+  "name": "decomposition-matheuristic",
+  "version": "1.0.0",
+  "description": "资源×计划两阶段分解：单资源计划库、最大覆盖主 MILP 与列生成抛光。",
+  "task_types": [
+    "allocation",
+    "assignment",
+    "set_covering",
+    "combinatorial_optimization"
+  ],
+  "protocol": [
+    "识别资源×计划可分解结构：把问题重写为每个资源选择一个计划加全局耦合目标或约束，显式列出资源集、计划空间参数化与耦合项，并映射到 constraint ledger。",
+    "单资源计划库生成：对每个资源用枚举、DP 或受限子 MIP 独立生成高质量候选计划库，把库规模、生成方法与覆盖率遥测写入 results/research_diagnostics.json 的 plan_library 段。",
+    "主问题求解：以计划为列构建最大覆盖或集合划分 MILP 整体选列求解；当解质量受限于列不足时运行定价子问题做列生成补列后重解。",
+    "抛光：固定主问题 incumbent 后做大邻域搜索或继续列生成抛光，记录 incumbent 更新轨迹与最终 gap。",
+    "强制对照：incumbent 必须同时不劣于同时限的单体 MIP 直接求解与贪心基线，对照结果写入 results/incumbent_dominance_audit.json（schema 1，与 audit_incumbent_dominance 合同一致）。"
+  ],
+  "required_tests": [
+    {
+      "name": "计划库规模与覆盖率遥测",
+      "acceptance": {
+        "kind": "json_fields",
+        "path": "results/research_diagnostics.json",
+        "fields": [
+          "plan_library.size",
+          "plan_library.coverage_fraction",
+          "plan_library.generation_method"
+        ]
+      }
+    },
+    {
+      "name": "incumbent 支配审计（单体 MIP 与贪心对照）",
+      "acceptance": {
+        "kind": "search_quality",
+        "phase": "solver"
+      }
+    },
+    {
+      "name": "独立可行性与最优性范围审计",
+      "acceptance": {
+        "kind": "optimization_assurance",
+        "phase": "solver"
+      }
+    },
+    "可枚举 toy 上分解解与直接精确解对拍"
+  ],
+  "fallbacks": [
+    "列生成超时时交付计划库内最优解并声明库覆盖率；optimality scope 只允许 RESTRICTED_CLASS_OPTIMAL（restrictions 必须列出计划库限制）或 BEST_KNOWN_FEASIBLE，不得上报 GLOBAL_CERTIFICATE。"
+  ],
+  "tool_policy": {
+    "decision_required": true,
+    "required_capabilities": [],
+    "preferred_capabilities": [
+      "mixed_integer_optimization",
+      "continuous_optimization",
+      "constraint_programming"
+    ],
+    "validation_protocols": [
+      "可枚举 toy 分解对拍",
+      "独立约束残差 checker",
+      "单体 MIP 与贪心支配对照",
+      "计划库覆盖率申报"
+    ]
+  }
+}

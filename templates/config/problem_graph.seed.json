@@ -184,7 +184,8 @@
       "method_pack": "solver-validation",
       "method_pack_options": [
         "solver-validation",
-        "mathematical-optimization"
+        "mathematical-optimization",
+        "decomposition-matheuristic"
       ],
       "method_pack_selection_note": "优化、路径与调度问题应覆盖为 mathematical-optimization；一般数值求解保留 solver-validation。",
       "enforce_contract": true,
