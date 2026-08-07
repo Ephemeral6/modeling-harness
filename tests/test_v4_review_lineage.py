@@ -136,6 +136,33 @@ def test_versioned_approve_supersedes_reject_without_overwrite(
     assert canonical.read_bytes() == canonical_before
 
 
+def test_lineage_orders_double_digit_versions(tmp_path: Path):
+    root = create(tmp_path / "case", "demo")
+    reviews = root / "reviews"
+    reviews.mkdir(exist_ok=True)
+    for name in (
+        "s6_paper_audit.json",
+        "s6_paper_audit_v2.json",
+        "s6_paper_audit_v9.json",
+        "s6_paper_audit_v10.json",
+        "s6_paper_audit_v11.json",
+    ):
+        (reviews / name).write_text("{}", encoding="utf-8")
+
+    from modelharness.review_store import latest_review_path, review_candidates
+
+    versions = [
+        version
+        for version, _ in review_candidates(root, "reviews/s6_paper_audit.json")
+    ]
+    latest = latest_review_path(root, "reviews/s6_paper_audit.json")
+
+    assert versions == [1, 2, 9, 10, 11], (
+        "谱系漏掉了两位数版本号：_v10/_v11 若被正则排除，门禁会把 _v9 当最新裁决"
+    )
+    assert latest is not None and latest.name == "s6_paper_audit_v11.json"
+
+
 def test_scheduler_allocates_new_review_version(tmp_path: Path):
     root = create(tmp_path / "case", "demo")
     contract = _require_s0_review(root)

@@ -6,7 +6,7 @@
 
 ## Claude Code 适配
 
-- 会话开始即读取 `AGENTS.md`，其中的 Freedom Envelope、权威状态、五条硬不变量、
+- 会话开始即读取 `AGENTS.md`，其中的 Freedom Envelope、权威状态、九条硬不变量、
   建模工作规则和工作循环对两个引擎完全一致。
 - 需要独立冷启动审核时，用 Task/Agent 工具 spawn 无状态 subagent，只提供正式输入
   与产物路径；生成者与审核者必须是不同 task 与不同 worker（不变量 5）。

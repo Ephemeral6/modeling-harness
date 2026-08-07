@@ -1,7 +1,7 @@
 # Modeling Harness: Evidence-Gated Mathematical Modeling Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.3.0-1f6feb" alt="Modeling Harness 4.3.0">
+  <img src="https://img.shields.io/badge/version-4.4.0-1f6feb" alt="Modeling Harness 4.4.0">
   <img src="https://img.shields.io/badge/Python-%3E%3D3.10-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
 </p>

@@ -27,10 +27,12 @@ REGRESSION_CORPUS_RELATIVE = "docs/regression_corpus.json"
 DERIVED_ARTIFACTS: tuple[str, ...] = (
     "logs/paper_render.log",
     "paper/claim_map.json",
+    "paper/delivery_freeze.json",
     "paper/delivery_manifest.json",
     "paper/draft.md",
     "paper/final.md",
     "paper/final.pdf",
+    "paper/final_preview.md",
     "paper/narrative_brief.md",
     "paper/paper_ir.json",
     "paper/render_report.json",
