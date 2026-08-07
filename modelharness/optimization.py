@@ -526,11 +526,14 @@ def assess_optimization(root: Path) -> dict:
             "machine_blockers": [],
             "triggers": [],
         }
+    from .search_quality import audit_search_quality
+
     blockers = {
         "constraints": audit_constraint_ledger(root, "implementation"),
         "feasibility": audit_feasibility(root),
         "optimality": audit_optimality(root),
         "provenance": audit_result_provenance(root),
+        "search_quality": audit_search_quality(root),
     }
     flat_blockers = [f"{kind}: {message}" for kind, values in blockers.items() for message in values]
     triggers: list[dict] = []

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "warm_start": {
+    "allowed": true,
+    "source_sha256": [
+      "9c3f8a1de0b54c76a1c58c2f4be9e37d5f0a6d2b81e4c9f7a3b6d5e8c1f2a4b7"
+    ],
+    "note": "prior incumbent declared as warm-start seed"
+  }
+}

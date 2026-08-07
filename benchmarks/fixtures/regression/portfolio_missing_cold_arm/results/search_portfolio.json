@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "search_id": "Q1.master_mip",
+  "sense": "max",
+  "arms": [
+    {
+      "id": "warm-main",
+      "kind": "warm_start",
+      "seed": 0,
+      "method": "mip_highs",
+      "incumbent_objective": 100.0,
+      "tool_run_ids": []
+    }
+  ],
+  "selected_arm": "warm-main"
+}

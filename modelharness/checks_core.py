@@ -337,6 +337,16 @@ def evaluate_acceptance(
                 kind, not errors, errors=errors,
                 freshness="valid" if not errors else "stale",
             ))
+        elif kind == "search_quality":
+            from .search_quality import audit_search_quality
+
+            errors = audit_search_quality(
+                root, str(raw.get("phase", "all"))
+            )
+            records.append(_record(
+                kind, not errors, errors=errors,
+                freshness="valid" if not errors else "stale",
+            ))
         elif kind == "result_provenance":
             from .optimization import audit_result_provenance
 

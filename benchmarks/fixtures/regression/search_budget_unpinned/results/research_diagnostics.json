@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "searches": {
+    "Q1.master_mip": {
+      "objective": "total_profit_yuan",
+      "sense": "max",
+      "budget": {
+        "time_limit_seconds": 180,
+        "wall_time_seconds": 180.2,
+        "nodes_explored": 4210,
+        "final_gap_fraction": 0.004,
+        "termination": "time_limit"
+      },
+      "top_k": [
+        {
+          "point": {
+            "component": "master"
+          },
+          "objective": 16683178.3
+        }
+      ]
+    }
+  },
+  "assumptions": {},
+  "opportunities": []
+}

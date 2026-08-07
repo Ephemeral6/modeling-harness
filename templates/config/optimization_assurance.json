@@ -8,5 +8,11 @@
     "source_ambiguity",
     "unmodeled_hard_constraint",
     "unresolved_load_bearing_assumption"
-  ]
+  ],
+  "search_quality": {
+    "mode": "auto",
+    "search_budget": {
+      "wall_time_overrun_factor": 1.5
+    }
+  }
 }

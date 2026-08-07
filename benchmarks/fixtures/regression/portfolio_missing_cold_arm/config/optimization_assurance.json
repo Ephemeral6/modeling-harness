@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "mode": "required",
+  "search_quality": {
+    "mode": "auto"
+  }
+}

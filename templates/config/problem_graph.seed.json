@@ -213,6 +213,11 @@
           "kind": "optimization_assurance",
           "phase": "solver",
           "when": "optimization_relevant"
+        },
+        {
+          "kind": "search_quality",
+          "phase": "solver",
+          "when": "optimization_relevant"
         }
       ],
       "workstreams": [
@@ -229,7 +234,10 @@
             "src/feasibility.py",
             "results/candidate_solution.json",
             "results/feasibility_audit.json",
-            "results/optimality.json"
+            "results/optimality.json",
+            "results/incumbent_dominance_audit.json",
+            "results/search_portfolio.json",
+            "config/search_policy.json"
           ],
           "outputs": ["code.solver", "experiment.toy", "result.nominal"],
           "budget": {"max_attempts": 3}
