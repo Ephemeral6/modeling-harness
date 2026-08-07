@@ -189,6 +189,10 @@ def _condition_active(root: Path, condition: Any) -> bool:
         from .optimization import optimization_relevant
 
         return optimization_relevant(root)
+    if condition == "paper_content_contract_enabled":
+        from .paper_content import content_contract_enabled
+
+        return content_contract_enabled(root)
     return False
 
 
@@ -357,6 +361,15 @@ def evaluate_acceptance(
             records.append(_record(
                 kind, not errors, errors=errors,
                 path="paper/coverage_matrix.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "paper_content_contract":
+            from .paper_content import audit_paper_content
+
+            errors = audit_paper_content(root)
+            records.append(_record(
+                kind, not errors, errors=errors,
+                path="results/paper_coverage.json",
                 freshness="valid" if not errors else "stale",
             ))
         elif kind == "profile_mandatory_outputs":

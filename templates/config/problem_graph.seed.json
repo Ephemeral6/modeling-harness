@@ -390,6 +390,10 @@
           "when": "requirements_present"
         },
         {
+          "kind": "paper_content_contract",
+          "when": "paper_content_contract_enabled"
+        },
+        {
           "kind": "profile_mandatory_outputs"
         },
         {
@@ -410,9 +414,12 @@
             "paper/final.md",
             "paper/claim_map.json",
             "paper/figures",
+            "paper/technical_appendix.md",
             "results/delivery_check.json",
+            "results/paper_coverage.json",
             "results/report_claims.json",
-            "paper/coverage_matrix.json"
+            "paper/coverage_matrix.json",
+            "paper/content_coverage.json"
           ],
           "outputs": ["narrative.worksheet", "narrative.paper"],
           "budget": {"max_attempts": 3}

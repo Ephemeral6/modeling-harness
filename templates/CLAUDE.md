@@ -1,6 +1,6 @@
 # Claude Code 会话入口
 
-本项目由 Modeling Harness 4.2 管理，可运行在 Codex 或 Claude Code 底座上。
+本项目由 Modeling Harness 4.3 管理，可运行在 Codex 或 Claude Code 底座上。
 执行宪法的唯一权威文本是同目录的 `AGENTS.md`：开始任何工作前先完整读取并遵守它。
 本文件只补充 Claude Code 特有的操作方式，不新增或放宽任何约束。
 

@@ -1,7 +1,7 @@
 # Modeling Harness: Evidence-Gated Mathematical Modeling Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.2.0-1f6feb" alt="Modeling Harness 4.2.0">
+  <img src="https://img.shields.io/badge/version-4.3.0-1f6feb" alt="Modeling Harness 4.3.0">
   <img src="https://img.shields.io/badge/Python-%3E%3D3.10-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
 </p>
@@ -133,6 +133,10 @@ Agent 需要在项目根目录持续读取 `work next`、生成工件并提交�
 
 ~~~powershell
 modelharness profile use cumcm --project .
+# 从 mandatory requirements 生成正文详细度工作表
+modelharness paper contract-init --project .
+# 填写 paper/content_coverage.json 与 technical_appendix.md 后
+modelharness paper content-audit --project .
 # 完成 paper/draft.md → paper/final.md 的证据净化后
 modelharness paper build --project .
 modelharness paper audit --project .
@@ -144,6 +148,19 @@ modelharness paper audit --project .
 `RECOVERY_PENDING + INCONCLUSIVE`，不会把“未运行”伪装成通过。Agent 可以直接编辑
 `paper/cumcm-template.tex` 或在 Markdown 中嵌入原生 LaTeX；该模板只约束默认交付外观，
 不约束模型选择、求解路线或论文的实质结构。
+
+### 竞赛论文内容契约 4.3
+
+`cumcm` 与 `mcm_icm` Profile 还会反向检查 mandatory requirement 是否在论文中形成
+“直接答案—模型定义—公式推导—算法/伪代码—验证过程—管理解释”的闭环。题目特有的
+完整生产计划、状态转移图、收敛表或压力测试可通过 `paper_obligations` 声明，并机械检查
+附件行数、字段、哈希、表示形式和正文引用。审计结果写入 `results/paper_coverage.json`，
+并成为 S6 硬 Gate。
+
+正文建议 18–25 页，但页数只产生软警告，不能用填充篇幅替代语义完整性。完整逐日/逐情景
+表、检查器明细和机器字段锁定表进入独立 `paper/technical_appendix.md`；正文必须保留关键
+结论、公式、验证和管理解释。完整合同见
+[Paper Content Contract 4.3](docs/PAPER_CONTENT_CONTRACT_V43.md)。
 
 ## 全落盘与断点回溯
 
@@ -415,6 +432,8 @@ git diff --check
 - 4.0 架构：[ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
 - 4.1 迁移：[MIGRATION_V40_TO_V41.md](docs/MIGRATION_V40_TO_V41.md)
 - 4.2 迁移：[MIGRATION_V41_TO_V42.md](docs/MIGRATION_V41_TO_V42.md)
+- 4.3 论文内容契约：[PAPER_CONTENT_CONTRACT_V43.md](docs/PAPER_CONTENT_CONTRACT_V43.md)
+- 4.3 迁移：[MIGRATION_V42_TO_V43.md](docs/MIGRATION_V42_TO_V43.md)
 - 失败模型：[FAILURE_MODEL.md](docs/FAILURE_MODEL.md)
 - 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 安全策略：[SECURITY.md](SECURITY.md)

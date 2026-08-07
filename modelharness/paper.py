@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import uuid
@@ -10,6 +11,16 @@ from pathlib import Path
 from .contracts import safe_relative
 from .storage import atomic_write_json, read_json
 from .util import now, sha256
+
+
+def _pdf_page_count(path: Path) -> int | None:
+    """Best-effort page count for locally rendered, unencrypted PDFs."""
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return None
+    count = len(re.findall(rb"/Type\s*/Page\b", payload))
+    return count or None
 
 
 def _text(value: str | bytes | None) -> str:
@@ -78,6 +89,7 @@ def render_pdf(
         "execution_status": "NOT_RUN", "verdict": "INCONCLUSIVE",
         "authority": "MACHINE", "returncode": None,
         "input_hashes": {}, "output_sha256": None,
+        "page_count": None,
         "log": log_path.relative_to(root).as_posix(),
     }
     missing = [
@@ -149,6 +161,7 @@ def render_pdf(
         report["verdict"] = "PASS"
         report["output_sha256"] = sha256(output_path)
         report["output_bytes"] = output_path.stat().st_size
+        report["page_count"] = _pdf_page_count(output_path)
     else:
         report["verdict"] = "FAIL"
         temporary.unlink(missing_ok=True)

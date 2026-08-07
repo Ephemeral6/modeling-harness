@@ -1,4 +1,4 @@
-# Modeling Harness 4.0 对话入口
+# Modeling Harness 4.3 对话入口
 
 本契约对 Codex 与 Claude Code 两个底座同等生效（Claude Code 经 `CLAUDE.md`
 进入本文件）。当用户在本仓库上传数学建模题目、数据或参考材料并要求开始时，直接 Intake。不要要求
@@ -71,6 +71,13 @@ State Capsule 与 Task / Progress / Failure / Resource / Opportunity 五本账�
 
 除这九条、项目路径安全和用户权限外，不增加限制。G6–G9 只约束交付闭合；
 搜索边界、假设分支和潜在改进进入 Opportunity Ledger，不直接触发 FAIL。
+
+## 竞赛论文内容不变量
+
+当 Delivery Profile 定义 `paper_content_contract` 时，S6 还必须通过 requirement → paper
+的反向内容审计。每个 mandatory answer 均需直接答案、模型定义、公式推导、算法/伪代码、
+验证过程和管理解释；题目特有义务按 `paper_obligations` 检查表示形式、verified evidence、
+附件行数/字段/哈希与正文引用。18–25 页只作软目标，机器字段锁定表只进入技术附件。
 
 ## Agent 工具自主权
 

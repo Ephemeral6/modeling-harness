@@ -15,6 +15,8 @@ from .optimization import (
     render_constraint_ledger,
 )
 from .paper import audit_render, render_pdf
+from .paper_content import audit_paper_content, initialize_content_coverage
+from .profiles import ProfileService
 from .proposals import ProposalService
 from .requirements import audit_requirements, extract_sources
 from .supervisor import StateCapsule
@@ -221,10 +223,24 @@ def _paper(values: list[str]) -> int:
     build.add_argument("--project", type=Path)
     audit = sub.add_parser("audit")
     audit.add_argument("--project", type=Path)
+    contract_init = sub.add_parser("contract-init")
+    contract_init.add_argument("--project", type=Path)
+    content_audit = sub.add_parser("content-audit")
+    content_audit.add_argument("--project", type=Path)
     args = parser.parse_args(values)
     root = _root(args.project)
+    if args.action == "contract-init":
+        _emit(initialize_content_coverage(root))
+        return 0
+    if args.action == "content-audit":
+        errors = audit_paper_content(root)
+        _emit({"ok": not errors, "errors": errors})
+        return int(bool(errors))
     if args.action == "audit":
-        errors = audit_render(root)
+        profile = ProfileService(root).active
+        errors = audit_render(root) if profile.get("paper_delivery") else []
+        if profile.get("paper_content_contract"):
+            errors.extend(audit_paper_content(root))
         _emit({"ok": not errors, "errors": errors})
         return int(bool(errors))
     report = render_pdf(
@@ -259,7 +275,7 @@ def main() -> int:
             if result is not None:
                 return result
         if len(sys.argv) == 2 and sys.argv[1] == "--version":
-            print("modelharness 4.2.0")
+            print("modelharness 4.3.0")
             return 0
         legacy_cli.doctor = _doctor_with_tools
         return legacy_cli.main()

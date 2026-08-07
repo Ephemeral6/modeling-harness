@@ -1,7 +1,8 @@
 {
   "name": "mcm_icm",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "renderer": "decision_narrative_paper",
+  "paper_content_contract": "config/paper_content_contract.json",
   "max_parallel_agents": 3,
   "mandatory_outputs": [
     "executive_summary",
@@ -22,6 +23,7 @@
     "conceptual_clarity",
     "model_justification",
     "communication",
+    "exposition_completeness",
     "robustness"
   ],
   "min_figures": 0,

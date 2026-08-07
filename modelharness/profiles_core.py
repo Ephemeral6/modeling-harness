@@ -34,6 +34,13 @@ def validate_profile(data: Any, path: Path | None = None) -> dict:
         not isinstance(format_spec, str) or not format_spec
     ):
         raise ValueError(f"delivery profile.format_spec 非法{where}")
+    content_contract = data.get("paper_content_contract")
+    if content_contract is not None and (
+        not isinstance(content_contract, str) or not content_contract
+    ):
+        raise ValueError(
+            f"delivery profile.paper_content_contract 非法{where}"
+        )
     threshold = data.get("robustness_degradation_threshold")
     if threshold is not None and (
         not isinstance(threshold, (int, float))

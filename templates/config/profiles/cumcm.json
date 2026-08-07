@@ -1,7 +1,8 @@
 {
   "name": "cumcm",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "renderer": "competition_answer_by_subquestion",
+  "paper_content_contract": "config/paper_content_contract.json",
   "paper_delivery": {
     "source": "paper/final.md",
     "output": "paper/final.pdf",
@@ -20,6 +21,7 @@
   "quality_dimensions": [
     "numeric_correctness",
     "process_completeness",
+    "exposition_completeness",
     "reproducibility",
     "robustness"
   ],
@@ -36,6 +38,7 @@
     "模型检验",
     "灵敏度分析",
     "模型评价",
+    "管理建议",
     "参考文献"
   ]
 }
