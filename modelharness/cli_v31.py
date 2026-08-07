@@ -9,7 +9,9 @@ from pathlib import Path
 from . import cli as legacy_cli
 from .coverage import audit_explanation_coverage, initialize_coverage_matrix
 from .delivery_core import freeze_delivery, verify_freeze
-from .opportunities import render_assumptions
+from .opportunities import (
+    build_search_improvement_proposal, render_assumptions, write_proposal,
+)
 from .optimization import (
     assess_optimization, audit_optimization, build_result_provenance,
     build_review_packet, initialize_constraint_ledger,
@@ -176,6 +178,26 @@ def _assumptions(values: list[str]) -> int:
     args = parser.parse_args(values)
     output = render_assumptions(_root(args.project))
     _emit({"ok": True, "path": output.relative_to(_root(args.project)).as_posix()})
+    return 0
+
+
+def _opportunities(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness opportunities")
+    sub = parser.add_subparsers(dest="action", required=True)
+    propose = sub.add_parser("propose")
+    propose.add_argument("--write", action="store_true")
+    propose.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    root = _root(args.project)
+    if args.write:
+        path = write_proposal(root)
+        _emit({
+            "ok": True,
+            "path": path.relative_to(root).as_posix(),
+            "next": "modelharness plan apply <path> --reason ...",
+        })
+        return 0
+    _emit(build_search_improvement_proposal(root))
     return 0
 
 
@@ -359,6 +381,8 @@ def main() -> int:
             return _requirements(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "assumptions":
             return _assumptions(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "opportunities":
+            return _opportunities(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "paper":
             return _paper(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "assurance":

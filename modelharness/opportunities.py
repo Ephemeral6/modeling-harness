@@ -1,12 +1,13 @@
 """Derived improvement opportunities and discharge accounting."""
 from __future__ import annotations
 
+import copy
 import re
 from pathlib import Path
 from typing import Any
 
-from .problem_graph import canonical_hash
-from .storage import read_json
+from .problem_graph import canonical_hash, validate_problem_graph
+from .storage import atomic_write_json, read_json
 
 
 ACTIONS = {
@@ -28,6 +29,16 @@ REASON_CODES = {
 # file).  See detect_search_starvation for how they combine.
 STARVATION_MIN_NODES = 64
 STARVATION_LAST_INCUMBENT_FRACTION = 0.5
+
+# 4.5 mechanism 4: budgeted searches finishing above this optimality-gap
+# fraction leave enough headroom to open a "raise search quality" node.
+GAP_ALERT_FRACTION = 0.05
+SEARCH_IMPROVEMENT_KINDS = {"search_gap_headroom", "search_starvation"}
+SEARCH_IMPROVEMENT_NODE_PREFIX = "s3x.search_improvement."
+SEARCH_IMPROVEMENT_PARENT = "s3.solver_validation"
+SEARCH_IMPROVEMENT_PROPOSAL_PATH = (
+    Path(".harness") / "search_improvement_proposal.json"
+)
 
 
 def _searches(diag: dict) -> list[tuple[str, dict]]:
@@ -208,6 +219,54 @@ def detect_search_starvation(diag: dict) -> list[dict]:
             summary=(
                 f"search {search_id} 在 time_limit 终止仍留 gap={gap:.4g}，"
                 f"nodes_explored={budget.get('nodes_explored')}，疑似搜索饥饿"
+            ),
+        ))
+    return opportunities
+
+
+def detect_gap_headroom(diag: dict) -> list[dict]:
+    """Flag budgeted searches that finished with material optimality headroom.
+
+    A search earns a ``search_gap_headroom`` opportunity when its optional
+    ``budget`` block reports ``final_gap_fraction`` above
+    ``GAP_ALERT_FRACTION``, or when the same search already counts as starved
+    per :func:`detect_search_starvation` (a starved search keeps headroom even
+    below the alert threshold).  Both kinds may coexist for one search: the
+    payloads differ at least by ``kind``, so the derived ids stay distinct.
+    Entries without a ``budget`` block are skipped so legacy projects never
+    false-positive.
+    """
+    starved_ids = {
+        item.get("search_id") for item in detect_search_starvation(diag)
+    }
+    opportunities = []
+    for search_id, search in _searches(diag):
+        budget = search.get("budget")
+        if not isinstance(budget, dict):
+            continue
+        raw = budget.get("final_gap_fraction")
+        gap = (
+            float(raw)
+            if isinstance(raw, (int, float)) and not isinstance(raw, bool)
+            else None
+        )
+        above = gap is not None and gap > GAP_ALERT_FRACTION
+        starved = search_id in starved_ids
+        if not (above or starved):
+            continue
+        trigger = "gap_above_threshold" if above else "starved_search"
+        gap_text = f"{gap:.4g}" if gap is not None else "unknown"
+        opportunities.append(_opportunity(
+            "search_gap_headroom",
+            "high",
+            search_id=search_id,
+            gap=gap,
+            threshold=GAP_ALERT_FRACTION,
+            trigger=trigger,
+            summary=(
+                f"search {search_id} 收工仍留 gap={gap_text}"
+                f"（阈值 {GAP_ALERT_FRACTION:g}，触发={trigger}），"
+                "存在提升求解质量的余量"
             ),
         ))
     return opportunities
@@ -415,6 +474,7 @@ def build_ledger(root: Path) -> list[dict]:
         *detect_grid_under_resolution(diag),
         *detect_optimality_gap(evidence or {}, diag),
         *detect_search_starvation(diag),
+        *detect_gap_headroom(diag),
         *detect_rank_flip(diag),
         *detect_infeasibility(diag),
         *detect_unmaterialized_branches(assumptions),
@@ -461,3 +521,140 @@ def audit_discharge(root: Path) -> list[str]:
         ):
             errors.append(f"Opportunity 未注入成稿局限性: {opportunity_id}")
     return sorted(set(errors))
+
+
+def _search_improvement_node(
+    search_id: str,
+    slug: str,
+    opportunity_ids: list[str],
+    depends_on: list[str],
+    method_pack: str,
+) -> dict:
+    artifact = f"results/search_improvement/{slug}.json"
+    evidence_id = f"result.search_improvement.{slug}"[:128]
+    return {
+        "question": (
+            f"search {search_id} 的求解质量能否提升到 gap ≤ "
+            f"{GAP_ALERT_FRACTION:g}，或给出机器可查的支配性界/预算耗尽证明？"
+        ),
+        "task_type": "solver_engineering",
+        "milestone": "s3",
+        "depends_on": depends_on,
+        "input_evidence": [],
+        "method_pack": method_pack,
+        "enforce_contract": True,
+        "opportunity_ids": opportunity_ids,
+        "outputs": [
+            {
+                "evidence_id": evidence_id,
+                "kind": "result",
+                "statement": (
+                    f"search {search_id} 提升后的求解遥测与 gap 结论"
+                ),
+                "artifact": artifact,
+            }
+        ],
+        "acceptance": [
+            {
+                "kind": "search_quality",
+                "search_id": search_id,
+                "max_gap_fraction": GAP_ALERT_FRACTION,
+                "when": "optimization_relevant",
+            }
+        ],
+        "workstreams": [
+            {
+                "id": "search_improvement",
+                "role": "solver-team",
+                "description": (
+                    f"通过更强模型化、热启动或更大预算收敛 {search_id}，"
+                    "或给出对偶界/支配性证明"
+                ),
+                "owns": [artifact],
+                "outputs": [evidence_id],
+                "budget": {"max_attempts": 3},
+            }
+        ],
+        "reviews": [],
+        "risk": {
+            "downstream_impact": 4,
+            "uncertainty": 3,
+            "estimated_cost": 3,
+        },
+    }
+
+
+def build_search_improvement_proposal(root: Path) -> dict:
+    """Materialize undischarged search opportunities as a plan proposal.
+
+    Returns a full problem-graph revision proposal — never auto-applied.
+    Each undischarged ``search_gap_headroom`` / ``search_starvation``
+    opportunity becomes an ``s3x.search_improvement.<search_id>`` boundary
+    node whose acceptance demands machine-checkable search quality.  The
+    result always passes :func:`validate_problem_graph` and is idempotent
+    per opportunity id: a search whose node already exists (proposal applied
+    earlier) only accumulates opportunity ids instead of duplicating nodes.
+    Apply through the existing ``plan validate`` / ``plan apply`` chain,
+    e.g. after :func:`write_proposal` lands it on
+    ``SEARCH_IMPROVEMENT_PROPOSAL_PATH``.
+    """
+    root = root.resolve()
+    data = read_json(root / "results" / "opportunity_outcomes.json", {})
+    outcomes = data.get("outcomes", []) if isinstance(data, dict) else []
+    handled = {
+        item.get("opportunity_id")
+        for item in outcomes
+        if isinstance(item, dict) and item.get("opportunity_id")
+    }
+    by_search: dict[str, list[dict]] = {}
+    for item in build_ledger(root):
+        if item["kind"] not in SEARCH_IMPROVEMENT_KINDS:
+            continue
+        if item["id"] in handled:
+            continue
+        search_id = str(item.get("search_id") or "")
+        if search_id:
+            by_search.setdefault(search_id, []).append(item)
+    graph = read_json(root / ".harness" / "problem_graph.json")
+    if not isinstance(graph, dict) or not isinstance(graph.get("nodes"), dict):
+        seed = (
+            Path(__file__).parent.parent / "templates" /
+            "config" / "problem_graph.seed.json"
+        )
+        graph = read_json(seed, {"schema": 1, "revision": 0, "nodes": {}})
+    proposal = copy.deepcopy(graph)
+    nodes = proposal["nodes"]
+    parent = nodes.get(SEARCH_IMPROVEMENT_PARENT)
+    method_pack = (
+        parent.get("method_pack") if isinstance(parent, dict) else None
+    ) or "solver-validation"
+    for search_id in sorted(by_search):
+        opportunity_ids = sorted({
+            item["id"] for item in by_search[search_id]
+        })
+        slug = re.sub(r"[^A-Za-z0-9_.:-]", "_", search_id)
+        node_id = (SEARCH_IMPROVEMENT_NODE_PREFIX + slug)[:128]
+        existing = nodes.get(node_id)
+        if isinstance(existing, dict):
+            existing["opportunity_ids"] = sorted({
+                *existing.get("opportunity_ids", []),
+                *opportunity_ids,
+            })
+            continue
+        nodes[node_id] = _search_improvement_node(
+            search_id,
+            slug,
+            opportunity_ids,
+            [SEARCH_IMPROVEMENT_PARENT] if parent is not None else [],
+            method_pack,
+        )
+    return validate_problem_graph(proposal)
+
+
+def write_proposal(root: Path) -> Path:
+    """Persist the proposal where plan validate/apply can consume it."""
+    root = root.resolve()
+    proposal = build_search_improvement_proposal(root)
+    path = root / SEARCH_IMPROVEMENT_PROPOSAL_PATH
+    atomic_write_json(path, proposal)
+    return path
