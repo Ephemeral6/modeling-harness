@@ -10,6 +10,7 @@ from .engines import VALID as ENGINE_CHOICES, detect as detect_engines
 from .evidence import EvidenceGraph
 from .intake import intake
 from .integration import audit_integration
+from .lifecycle import describe as describe_status, set_status
 from .method_packs import MethodPackRegistry
 from .narrative import audit_paper, build_brief
 from .problem_graph import ProblemGraph, validate_problem_graph
@@ -164,6 +165,14 @@ def build_parser() -> argparse.ArgumentParser:
     use = profile_sub.add_parser("use")
     use.add_argument("name")
     add_project_option(use)
+
+    project = sub.add_parser("project", help="管理 run 生命周期状态")
+    project_sub = project.add_subparsers(dest="action", required=True)
+    abandon = project_sub.add_parser("abandon")
+    abandon.add_argument("--reason", required=True)
+    add_project_option(abandon)
+    project_status = project_sub.add_parser("status")
+    add_project_option(project_status)
 
     pack = sub.add_parser("pack", help="管理方法包")
     pack_sub = pack.add_subparsers(dest="action", required=True)
@@ -407,6 +416,10 @@ def main() -> int:
                     ) if service.content_hash() != before else []
                 )
                 emit({"profile": selected, "invalidated": invalidated})
+        elif args.command == "project":
+            if args.action == "abandon":
+                set_status(project, "abandoned", args.reason)
+            emit(describe_status(project))
         elif args.command == "pack":
             registry = MethodPackRegistry(project)
             if args.action == "list":
