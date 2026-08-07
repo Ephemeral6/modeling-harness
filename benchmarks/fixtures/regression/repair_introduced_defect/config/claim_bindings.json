@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "claims": {
+    "Q2.out": {
+      "requirement_ids": ["Q2"],
+      "source": {"artifact": "results/q2.json", "pointer": "/annual_lambs"},
+      "value_type": "number",
+      "unit": "只/年",
+      "display": {"decimals": 2, "rounding": "half_up"},
+      "tolerance": {"abs": 0.0, "rel": 1e-9}
+    }
+  }
+}

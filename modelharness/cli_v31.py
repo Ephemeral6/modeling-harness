@@ -16,9 +16,11 @@ from .optimization import (
 )
 from .paper import audit_render, render_pdf
 from .paper_content import audit_paper_content, initialize_content_coverage
+from .paper_ir import compile_paper
 from .profiles import ProfileService
 from .proposals import ProposalService
 from .provenance_core import audit_warm_start_keys, scan_against_baselines
+from .repairs import begin_repair, verify_repair
 from .requirements import audit_requirements, extract_sources
 from .supervisor import StateCapsule
 from .tool_cli_ext import main as tool_main
@@ -245,8 +247,15 @@ def _paper(values: list[str]) -> int:
     contract_init.add_argument("--project", type=Path)
     content_audit = sub.add_parser("content-audit")
     content_audit.add_argument("--project", type=Path)
+    compile_cmd = sub.add_parser("compile")
+    compile_cmd.add_argument("--check", action="store_true")
+    compile_cmd.add_argument("--project", type=Path)
     args = parser.parse_args(values)
     root = _root(args.project)
+    if args.action == "compile":
+        report = compile_paper(root, check=args.check)
+        _emit(report)
+        return int(bool(report.get("errors")))
     if args.action == "contract-init":
         _emit(initialize_content_coverage(root))
         return 0
@@ -272,6 +281,34 @@ def _paper(values: list[str]) -> int:
     return int(report.get("verdict") != "PASS")
 
 
+def _repair(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness repair")
+    sub = parser.add_subparsers(dest="action", required=True)
+    begin = sub.add_parser("begin")
+    begin.add_argument("--finding", required=True)
+    begin.add_argument("--scope", action="append", required=True)
+    begin.add_argument("--project", type=Path)
+    verify = sub.add_parser("verify")
+    verify.add_argument("--repair", required=True)
+    verify.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    root = _root(args.project)
+    if args.action == "begin":
+        record = begin_repair(root, args.finding, args.scope)
+        _emit({
+            "ok": True,
+            "id": record["id"],
+            "finding": record["finding"],
+            "scope": record["scope"],
+            "snapshot_files": len(record["snapshot"]),
+            "guardrail_baseline": len(record["guardrail_baseline"]),
+        })
+        return 0
+    report = verify_repair(root, args.repair)
+    _emit(report)
+    return int(not report.get("ok"))
+
+
 def main() -> int:
     try:
         if len(sys.argv) >= 2 and sys.argv[1] == "tool":
@@ -290,6 +327,8 @@ def main() -> int:
             return _assurance(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "provenance":
             return _provenance(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "repair":
+            return _repair(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:

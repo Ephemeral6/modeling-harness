@@ -111,7 +111,9 @@ tool recover；不得把 RECOVERY_PENDING 当作普通失败直接重复。
    非幂等副作用时声明 idempotent=false。
 7. 审核绑定 task、contract、evidence、artifact 和相关 tool run；严格写入审核任务
    owns 给出的版本化路径，不自行维护 canonical 文件。
-8. 发现错误用 evidence revise/revoke，只返工最小受影响子图。
+8. 发现错误用 evidence revise/revoke，只返工最小受影响子图；修复走 repair
+   begin/verify 合同：动手前声明 finding 锚点与写入范围，收尾由机器核对域外
+   改动、新增护栏违规与回归语料条目。
 9. 最优不稳或优势不显著时输出集合、区间或条件式建议。
 10. 只有全部交付闭合、需要新授权，或同一阻断连续三轮时停止。
 
