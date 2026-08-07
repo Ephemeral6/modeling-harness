@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .evaluation import score_project
 from .lifecycle import get_status
+from .sanitize import INTERNAL_ARTIFACTS
 from .storage import atomic_write_json
 from .util import now, project_root, sha256
 from .workflow import WorkflowEngine
@@ -45,6 +46,8 @@ def _copy_selected(root: Path, destination: Path) -> list[dict]:
         elif source.is_file():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
+    for relative in INTERNAL_ARTIFACTS:
+        (destination / "project" / relative).unlink(missing_ok=True)
     for path in sorted((destination / "project").rglob("*")):
         if path.is_file():
             files.append({
@@ -66,9 +69,12 @@ def capture_episode(
 ) -> Path:
     root = project_root(project)
     status = get_status(root)
-    if not allow_partial and status not in {"completed", "abandoned"}:
+    if not allow_partial and status not in {
+        "completed", "delivered", "abandoned"
+    }:
         raise ValueError(
-            f"项目状态为 {status}，只有 completed/abandoned 可捕获 episode；"
+            f"项目状态为 {status}，"
+            "只有 completed/delivered/abandoned 可捕获 episode；"
             "确需捕获请传 allow_partial=True"
         )
     episode_id = (

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import cli as legacy_cli
 from .coverage import audit_explanation_coverage, initialize_coverage_matrix
+from .delivery_core import freeze_delivery, verify_freeze
 from .opportunities import render_assumptions
 from .optimization import (
     assess_optimization, audit_optimization, build_result_provenance,
@@ -22,6 +23,7 @@ from .proposals import ProposalService
 from .provenance_core import audit_warm_start_keys, scan_against_baselines
 from .repairs import begin_repair, verify_repair
 from .requirements import audit_requirements, extract_sources
+from .sanitize import render_final
 from .supervisor import StateCapsule
 from .tool_cli_ext import main as tool_main
 from .toolchain_registry import ToolRegistry
@@ -309,6 +311,42 @@ def _repair(values: list[str]) -> int:
     return int(not report.get("ok"))
 
 
+def _deliver(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness deliver")
+    sub = parser.add_subparsers(dest="action", required=True)
+    render = sub.add_parser("render")
+    render.add_argument("--preview", action="store_true")
+    render.add_argument("--project", type=Path)
+    freeze = sub.add_parser("freeze")
+    freeze.add_argument("--reason", required=True)
+    freeze.add_argument("--project", type=Path)
+    verify = sub.add_parser("verify")
+    verify.add_argument("--project", type=Path)
+    args = parser.parse_args(values)
+    root = _root(args.project)
+    if args.action == "render":
+        target = render_final(root, preview=args.preview)
+        _emit({
+            "ok": True,
+            "preview": args.preview,
+            "path": target.relative_to(root).as_posix(),
+        })
+        return 0
+    if args.action == "freeze":
+        manifest = freeze_delivery(root, args.reason)
+        _emit({
+            "ok": True,
+            "status": "delivered",
+            "manifest": "paper/delivery_freeze.json",
+            "files": len(manifest["files"]),
+            "terminal_review": manifest["terminal_review"]["path"],
+        })
+        return 0
+    report = verify_freeze(root)
+    _emit(report)
+    return int(not report.get("ok"))
+
+
 def main() -> int:
     try:
         if len(sys.argv) >= 2 and sys.argv[1] == "tool":
@@ -329,6 +367,8 @@ def main() -> int:
             return _provenance(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "repair":
             return _repair(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "deliver":
+            return _deliver(sys.argv[2:])
         if len(sys.argv) >= 3 and sys.argv[1] == "task":
             result = _task_extension(sys.argv[2:])
             if result is not None:

@@ -5,8 +5,15 @@ import re
 from pathlib import Path
 
 from .contracts import safe_relative
+from .paper_content import content_contract_enabled
 from .storage import atomic_write_json, read_json
 
+
+# 内部产物清单：这些文件只服务项目内部流程（如 --preview 逃生口），
+# 不进入交付冻结清单，也不进入 episode 打包。
+INTERNAL_ARTIFACTS: frozenset[str] = frozenset({
+    "paper/final_preview.md",
+})
 
 INTERNAL_PATTERNS: list[tuple[str, str]] = [
     (r"\[\[[^\]\n]{1,128}\]\]", "evidence_marker"),
@@ -150,13 +157,27 @@ def render_final(
     root: Path,
     draft: str = "paper/draft.md",
     out: str = "paper/final.md",
+    *,
+    preview: bool = False,
 ) -> Path:
-    """Strip internal evidence markers and materialize a delivery artifact."""
+    """Strip internal evidence markers and materialize a delivery artifact.
+
+    启用 paper_content_contract 的 delivery profile 下，正式渲染前必须
+    通过交付门禁：s6_paper_audit 谱系最新裁决为 APPROVE 且其
+    artifact_hashes 与当前工作稿一致。``preview=True`` 是唯一逃生口，
+    只写内部产物 ``paper/final_preview.md``，不产出 claim_map 与交付报告。
+    """
     root = root.resolve()
+    if preview:
+        out = "paper/final_preview.md"
     source = safe_relative(root, draft)
     target = safe_relative(root, out)
     if not source.is_file():
         raise ValueError(f"工作稿不存在: {draft}")
+    if not preview and content_contract_enabled(root):
+        from .delivery_core import require_terminal_approval
+
+        require_terminal_approval(root, draft=draft)
     text = _inject_deferred(
         root, source.read_text(encoding="utf-8")
     )
@@ -179,6 +200,9 @@ def render_final(
     rendered = "".join(parts)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(rendered, encoding="utf-8", newline="\n")
+    if preview:
+        # 预览不得伪装成交付物：不产出 claim_map，也不生成交付报告。
+        return target
     atomic_write_json(root / "paper" / "claim_map.json", {
         "schema": 1,
         "draft": draft,

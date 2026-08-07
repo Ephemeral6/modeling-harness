@@ -6,7 +6,7 @@ from pathlib import Path
 from .storage import atomic_write_json, file_lock, read_json
 from .util import now
 
-STATUSES = ("active", "interrupted", "completed", "abandoned")
+STATUSES = ("active", "interrupted", "completed", "delivered", "abandoned")
 
 
 def _manifest_path(root: Path) -> Path:

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "role": "paper-audit",
+  "reviewer": "cold-audit-01",
+  "verdict": "REJECT",
+  "findings": [
+    "F1 正文年出栏 1400 只与权威上界口径不一致，缺少长期平均限定词"
+  ],
+  "required_fixes": [
+    "RF1 修正年化口径并补限定词后重新提交终审"
+  ],
+  "artifact_hashes": {
+    "paper/draft.md": "d38367a36ff00e76b53943c3c24725a27c15d82d25144c61dabbe2d9fd889c99"
+  }
+}
