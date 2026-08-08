@@ -1,7 +1,7 @@
 # Modeling Harness: Evidence-Gated Mathematical Modeling Agents
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.1.0-1f6feb" alt="Modeling Harness 4.1.0">
+  <img src="https://img.shields.io/badge/version-4.6.0-1f6feb" alt="Modeling Harness 4.6.0">
   <img src="https://img.shields.io/badge/Python-%3E%3D3.10-3776ab?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4c1" alt="MIT License"></a>
 </p>
@@ -124,6 +124,43 @@ git clone https://github.com/Ephemeral6/modeling-harness.git
 Modeling Harness 是 Agent 的研究运行层，不绑定特定模型供应商，也不会仅靠
 `modelharness intake` 在后台凭空生成答案。负责求解的 Codex、Claude Code 或其他
 Agent 需要在项目根目录持续读取 `work next`、生成工件并提交验证。
+
+### 国赛 PDF 交付
+
+`cumcm` Profile 内置与竞赛论文一致的 A4 中文 LaTeX 默认样式：摘要独占第一页、
+宋体正文与黑体标题、连续页码、三线表、图题置下、表题置上，以及带行号的源码附录。
+论文内容仍只有一个权威来源 `paper/final.md`，避免 Markdown 与 TeX 两份正文发生数字漂移。
+
+~~~powershell
+modelharness profile use cumcm --project .
+# 从 mandatory requirements 生成正文详细度工作表
+modelharness paper contract-init --project .
+# 填写 paper/content_coverage.json 与 technical_appendix.md 后
+modelharness paper content-audit --project .
+# 完成 paper/draft.md → paper/final.md 的证据净化后
+modelharness paper build --project .
+modelharness paper audit --project .
+~~~
+
+渲染使用 Pandoc + XeLaTeX，结果写入 `paper/final.pdf`；执行状态、输入哈希、PDF 哈希
+和日志写入 `paper/render_report.json` 与 `logs/paper_render.log`。工具缺失时为
+`NOT_RUN + INCONCLUSIVE`，编译错误为 `COMPLETED + FAIL`，超时且结果不明时为
+`RECOVERY_PENDING + INCONCLUSIVE`，不会把“未运行”伪装成通过。Agent 可以直接编辑
+`paper/cumcm-template.tex` 或在 Markdown 中嵌入原生 LaTeX；该模板只约束默认交付外观，
+不约束模型选择、求解路线或论文的实质结构。
+
+### 竞赛论文内容契约 4.3
+
+`cumcm` 与 `mcm_icm` Profile 还会反向检查 mandatory requirement 是否在论文中形成
+“直接答案—模型定义—公式推导—算法/伪代码—验证过程—管理解释”的闭环。题目特有的
+完整生产计划、状态转移图、收敛表或压力测试可通过 `paper_obligations` 声明，并机械检查
+附件行数、字段、哈希、表示形式和正文引用。审计结果写入 `results/paper_coverage.json`，
+并成为 S6 硬 Gate。
+
+正文建议 18–25 页，但页数只产生软警告，不能用填充篇幅替代语义完整性。完整逐日/逐情景
+表、检查器明细和机器字段锁定表进入独立 `paper/technical_appendix.md`；正文必须保留关键
+结论、公式、验证和管理解释。完整合同见
+[Paper Content Contract 4.3](docs/PAPER_CONTENT_CONTRACT_V43.md)。
 
 ## 全落盘与断点回溯
 
@@ -309,6 +346,36 @@ S0–S6 是跨路线的完成度投影：
 Agent 可以在 S4 发现问题后回到模型层，也可以在数据不足时交付“不可辨识”，不必为了
 流程完整而制造伪精确答案。
 
+
+## Optimization assurance 4.2（按需启用）
+
+针对优化题漏约束、保守假设低报目标值、盒内精确但搜索域错误，以及“上界/可行解/最优解”
+混写的问题，4.2 在原 S0–S6 内增加四个轻量合同，不引入固定角色或新的审批流水线：
+
+| 现有阶段 | 按需义务 |
+|---|---|
+| S1 | `constraint_ledger.json` 逐条覆盖题面硬约束 |
+| S3 | 候选解 + 独立轻量可行性 checker + optimality scope |
+| S5 | 头条数字标注 upper bound / feasible / best-known / optimal 等语义 |
+| S6 | requirement → 正文答案、推导、验证和范围的解释覆盖 |
+
+Agent 仍自主选择模型、求解器、搜索域和计算工具；Harness 不要求双求解器，也不要求每阶段
+人工审批。只有题意歧义、未物化的关键假设或异常优解等语义风险触发人工复核，而且人工
+不能把机械 FAIL 改为 PASS。
+
+~~~powershell
+modelharness assurance init --project .
+modelharness assurance constraints --project .
+modelharness assurance provenance --project .
+modelharness assurance status --project .
+# 仅 HUMAN_REQUIRED 时
+modelharness assurance review-packet --project .
+modelharness assurance coverage-init --project .
+modelharness assurance audit --project .
+~~~
+
+完整合同见 [Optimization Assurance 4.2](docs/OPTIMIZATION_ASSURANCE_V42.md)。
+
 ## Benchmark and episode packages
 
 Benchmark Lab 分为局部能力 L1、组合建模 L2 和端到端 L3，并单独覆盖安全与退化问题。
@@ -364,6 +431,9 @@ git diff --check
 - 3.1 工具链：[TOOLCHAIN_V31.md](docs/TOOLCHAIN_V31.md)
 - 4.0 架构：[ARCHITECTURE_V4.md](docs/ARCHITECTURE_V4.md)
 - 4.1 迁移：[MIGRATION_V40_TO_V41.md](docs/MIGRATION_V40_TO_V41.md)
+- 4.2 迁移：[MIGRATION_V41_TO_V42.md](docs/MIGRATION_V41_TO_V42.md)
+- 4.3 论文内容契约：[PAPER_CONTENT_CONTRACT_V43.md](docs/PAPER_CONTENT_CONTRACT_V43.md)
+- 4.3 迁移：[MIGRATION_V42_TO_V43.md](docs/MIGRATION_V42_TO_V43.md)
 - 失败模型：[FAILURE_MODEL.md](docs/FAILURE_MODEL.md)
 - 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 安全策略：[SECURITY.md](SECURITY.md)

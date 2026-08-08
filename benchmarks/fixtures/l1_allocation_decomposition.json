@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "l1.allocation.decomposition",
+  "level": "L1",
+  "description": "Allocation decomposition benchmark: both instances must reach >= 99% of the certified optimum (exact values baked from allocation_instances/verify_instances.py).",
+  "pass_threshold": 1.0,
+  "rubric": [
+    {
+      "kind": "json_numeric",
+      "name": "instance A objective within 99% of certified optimum 61",
+      "path": "results/optimality.json",
+      "field": "instances.instance_a_max_coverage.objective.value",
+      "target": 61,
+      "tolerance": 0.61,
+      "weight": 3
+    },
+    {
+      "kind": "json_numeric",
+      "name": "instance B objective within 99% of certified optimum 927",
+      "path": "results/optimality.json",
+      "field": "instances.instance_b_generalized_assignment.objective.value",
+      "target": 927,
+      "tolerance": 9.27,
+      "weight": 3
+    },
+    {
+      "kind": "artifact_exists",
+      "name": "incumbent dominance audit published",
+      "path": "results/incumbent_dominance_audit.json",
+      "weight": 1
+    },
+    {
+      "kind": "evidence_status",
+      "name": "nominal result evidence verified",
+      "id": "result.nominal",
+      "statuses": ["verified"],
+      "weight": 1
+    },
+    {
+      "kind": "integrity",
+      "name": "project integrity",
+      "expected": true,
+      "weight": 1
+    }
+  ]
+}

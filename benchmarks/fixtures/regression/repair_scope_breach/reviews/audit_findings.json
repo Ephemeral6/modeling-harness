@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "reviewer": "s1_redteam",
+  "verdict": "REJECT_WITH_BLOCKING_FINDINGS",
+  "findings": [
+    {
+      "id": "F-2023D-01",
+      "summary": "模型节缺少栏舍利用率的口径定义",
+      "target": "paper/src/20_model.md"
+    }
+  ]
+}

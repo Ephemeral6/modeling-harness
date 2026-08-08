@@ -1,0 +1,5 @@
+{
+  "plan": "repeat the 2023 planting verbatim",
+  "objective": 108.5,
+  "checker": "src/feasibility.py"
+}

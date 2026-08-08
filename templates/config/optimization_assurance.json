@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "mode": "auto",
+  "human_policy": "risk_triggered",
+  "suspicious_improvement_fraction": 0.01,
+  "near_bound_gap_fraction": 0.02,
+  "require_human_for": [
+    "source_ambiguity",
+    "unmodeled_hard_constraint",
+    "unresolved_load_bearing_assumption"
+  ],
+  "search_quality": {
+    "mode": "auto",
+    "search_budget": {
+      "wall_time_overrun_factor": 1.5
+    }
+  }
+}

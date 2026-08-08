@@ -185,6 +185,14 @@ def _condition_active(root: Path, condition: Any) -> bool:
         return (root / "docs" / "assumptions.json").is_file()
     if condition == "research_diagnostics_present":
         return (root / "results" / "research_diagnostics.json").is_file()
+    if condition == "optimization_relevant":
+        from .optimization import optimization_relevant
+
+        return optimization_relevant(root)
+    if condition == "paper_content_contract_enabled":
+        from .paper_content import content_contract_enabled
+
+        return content_contract_enabled(root)
     return False
 
 
@@ -306,6 +314,81 @@ def evaluate_acceptance(
                 not errors,
                 errors=errors,
                 path="problem/requirements.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "constraint_coverage":
+            from .optimization import audit_constraint_ledger
+
+            errors = audit_constraint_ledger(
+                root, str(raw.get("phase", "model"))
+            )
+            records.append(_record(
+                kind, not errors, errors=errors,
+                path="problem/constraint_ledger.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "optimization_assurance":
+            from .optimization import audit_optimization
+
+            errors = audit_optimization(
+                root, str(raw.get("phase", "all"))
+            )
+            records.append(_record(
+                kind, not errors, errors=errors,
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "search_quality":
+            from .search_quality import audit_search_quality
+
+            errors = audit_search_quality(
+                root, str(raw.get("phase", "all"))
+            )
+            records.append(_record(
+                kind, not errors, errors=errors,
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "calibration_freeze":
+            from .calibration import audit_freeze
+
+            errors = audit_freeze(root)
+            records.append(_record(
+                kind, not errors, errors=errors,
+                path="config/calibration_freeze.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "result_provenance":
+            from .optimization import audit_result_provenance
+
+            errors = audit_result_provenance(root)
+            records.append(_record(
+                kind, not errors, errors=errors,
+                path="results/result_provenance.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "human_review":
+            from .optimization import audit_human_review
+
+            errors = audit_human_review(root)
+            records.append(_record(
+                kind, not errors, errors=errors,
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "explanation_coverage":
+            from .coverage import audit_explanation_coverage
+
+            errors = audit_explanation_coverage(root)
+            records.append(_record(
+                kind, not errors, errors=errors,
+                path="paper/coverage_matrix.json",
+                freshness="valid" if not errors else "stale",
+            ))
+        elif kind == "paper_content_contract":
+            from .paper_content import audit_paper_content
+
+            errors = audit_paper_content(root)
+            records.append(_record(
+                kind, not errors, errors=errors,
+                path="results/paper_coverage.json",
                 freshness="valid" if not errors else "stale",
             ))
         elif kind == "profile_mandatory_outputs":

@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "baseline_id": "2023d_codex",
+  "description": "Codex native blind-run baseline for CUMCM 2023D (clean_benchmark src)",
+  "files": [
+    {
+      "path": "run_analysis.py",
+      "sha256": "a5c2e5830d23eae0f1f3e0d98b9c08ebdf7a6d9023ac5a7d6377e255a74af42f"
+    },
+    {
+      "path": "solve_model.py",
+      "sha256": "d234f077e2f029ddf8a95739febd47a631c9d7b39b64d382b749aa7304ebb2da"
+    },
+    {
+      "path": "verify_results.py",
+      "sha256": "86b0c6bdb603a9ca7ce02fd401715e83a0acff62940e094f68b400072894a427"
+    }
+  ]
+}

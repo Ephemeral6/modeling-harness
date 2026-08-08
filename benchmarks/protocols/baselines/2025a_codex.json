@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "baseline_id": "2025a_codex",
+  "description": "Codex native blind-run baseline for CUMCM 2025A (clean_benchmark src)",
+  "files": [
+    {
+      "path": "cylinder_eval.py",
+      "sha256": "bcc14d116472e3d296ae5e2b045513b89c94648c9321654cdb62c5f9f3d2b052"
+    },
+    {
+      "path": "model.py",
+      "sha256": "9cf6f8fdec1ff707495e90470bd84051ab89a6b1641a60e1684a7037605fbd04"
+    },
+    {
+      "path": "optimize.py",
+      "sha256": "3d9947974c202ef4a7f999b5e41965d865fa77f809ef2704396fac6f6890806d"
+    },
+    {
+      "path": "optimizer_hard.py",
+      "sha256": "4d60d3d84da7f47ed41dc1d938892c0454636a0d33fb84667e65238c5825c336"
+    },
+    {
+      "path": "optimizer_v2.py",
+      "sha256": "1b4a835f54caf5640d688560ca87a7699af4372b1f5458b875caade952be7b2a"
+    },
+    {
+      "path": "postprocess_exact.py",
+      "sha256": "2c3ab335f1a31984a7de7642a35f954ab59f87f699a2ae53de6e2fc7d7a8d6b7"
+    },
+    {
+      "path": "robustness_operational.py",
+      "sha256": "aad6a89a3058416e6837b828f1c50396b8491432d4386838c7aa8ca4078a4f15"
+    },
+    {
+      "path": "run_complete.py",
+      "sha256": "91f0d9bc263899cd9abb8e25da33aef255fcdb0e77aef78d149d03600ee2a28d"
+    },
+    {
+      "path": "run_final.py",
+      "sha256": "62df0ff32ea1f8ad5c1de24d88d871fb076adc6f125781afc8c2a2430dc5e450"
+    },
+    {
+      "path": "run_hard.py",
+      "sha256": "a83b938106b90fcdb0c2911f1623440472a078e26190a3f7a9dab21584d7d853"
+    },
+    {
+      "path": "run_solution.py",
+      "sha256": "fa56f3cf2af673a7f98c7326789340d83e1a73cdf00fe4182b47349c9e045e71"
+    },
+    {
+      "path": "solve_all.py",
+      "sha256": "722b2ae7a94f3c5db69fbd5296be9af7773a9cd5e0d548e932b1e392879b6ed4"
+    },
+    {
+      "path": "validate_solution.py",
+      "sha256": "9d5e2105b2b68a0d77c5e2f221c10356cecf4f6193a3c8145b9e4c16465c2349"
+    }
+  ]
+}

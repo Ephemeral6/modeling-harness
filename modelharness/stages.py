@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .lifecycle import set_status
 from .problem_graph import ProblemGraph
 from .stages_core import StageService as _StageService
 from .toolchain import ToolchainService
@@ -31,4 +32,7 @@ class StageService(_StageService):
             errors = [*registry_errors, *decision_errors]
             if errors:
                 raise RuntimeError("\n".join(errors))
-        return super().gate(stage)
+        record = super().gate(stage)
+        if stage == "s6":
+            set_status(self.project, "completed", "s6 gate passed")
+        return record

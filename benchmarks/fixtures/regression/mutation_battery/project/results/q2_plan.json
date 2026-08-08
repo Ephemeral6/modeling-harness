@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "source": "manual_incumbent",
+  "period_days": 229,
+  "ewes": 416,
+  "peak_pens": 112,
+  "rams": 9,
+  "annual_output": 1326.113537117904,
+  "layer1_uniform_best": 1314.0,
+  "groups": [
+    {"offset": 0, "size": 56},
+    {"offset": 28, "size": 56},
+    {"offset": 57, "size": 40},
+    {"offset": 86, "size": 40},
+    {"offset": 114, "size": 56},
+    {"offset": 143, "size": 48},
+    {"offset": 172, "size": 56},
+    {"offset": 200, "size": 64}
+  ]
+}

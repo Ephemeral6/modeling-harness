@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "constraints": {
+    "constraint.Q1.cell_assignment": {
+      "statement": "每块地每季最多整数指派一种作物（0-1 组合约束）",
+      "type": "constraint",
+      "hard": true,
+      "scope": "source",
+      "source_requirement_ids": [],
+      "status": "MODELED",
+      "reason": "",
+      "mathematical_form": "x[p,c,t] ∈ {0,1} (binary assignment), sum_c x[p,c,t] <= 1",
+      "implementation": {
+        "solver_artifact": "",
+        "checker_artifact": ""
+      }
+    }
+  }
+}

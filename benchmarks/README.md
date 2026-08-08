@@ -1,4 +1,4 @@
-# Modeling Harness 4.0 评测实验室
+# Modeling Harness 4.2 评测实验室
 
 评测分三层，不以论文流畅度替代建模正确性。运行时 Harness 不依赖本目录；隐藏真值
 只在离线评分端出现。
@@ -41,7 +41,7 @@ python -m modelharness.evaluation --project <project>
 python -m modelharness.benchmarking benchmarks/fixtures/l1_numeric.json --project <completed-project> --json report.json
 ~~~
 
-Rubric 支持 artifact_exists、evidence_status、json_numeric、integrity 和
+Rubric 支持 artifact_exists、evidence_status、json_numeric、evaluation_value、integrity 和
 task_status_absent。任务可扩展 rubric，但不应把隐藏目标复制进 Agent 项目。
 
 ## Episode Package
@@ -78,3 +78,61 @@ Statistical validity（holdout optimism、区间覆盖、pass^k）；Delivery qu
 
 回归 fixture 提供低成本信号，端到端链只在完整配置验证。不同方案的目标值比较必须使用
 先冻结参数的中立复核器，避免用第三套假设直接裁判两套不可通约的模拟器。
+
+## 变异注入战（Mutation Battery）
+
+`fixtures/regression/mutation_battery/` 把 2023D 项目第 11 轮红队的 21 条变异注入
+测试常驻化（并补充 2 条引用/单位类条目，共 23 条）。`project/` 是最小完整项目骨架：
+claim bindings + predictions 锁定值、Paper IR 结构化源（头条数字一律走 `{num:}`
+占位符）、编译出的 `paper/draft.md` 与 `paper/final.md`、数值工件、情景四集、
+证据图与升级后的回归语料 `docs/regression_corpus.json`。`mutations.json` 逐条登记
+变异：`id`、`class`、`target`、`operator`（numeric_swap / sign_flip / caliber_swap /
+claim_rollback / disclosure_inversion / unit_swap / reference_unmark）、`params` 与
+`expected_detectors`。
+
+`tests/regression/test_mutation_battery.py` 对每条变异执行 copytree →
+`modelharness.mutation_core.apply_mutation` → `modelharness.mutation_core.detect`，
+逐条断言 `expected_detectors` 至少命中其一，并汇总断言总检出率 ≥ 90%、
+`class == "headline_tamper"`（篡改交付数字类，对应 v11 的 M06/M09/M10/M11）
+检出率 == 100%。基线（未注入）必须 0 发现，否则检出率没有意义。
+
+目录冻结规则（防 Goodhart）：
+
+1. 检出率只对 `mutations.json` 已收录条目计算；不得为拉高比率删除或弱化已收录
+   条目，也不得移除某条变异仍然有效的 `expected_detectors`。
+2. 新发现的逃逸案例必须先作为新条目入目录（含变异算子与期望检测器），再重新
+   计数；未入目录前的任何检出率数字一律无效。
+3. 某条变异在现有检测器组合下确实测不出时，允许给该条加 `known_gap: "<原因>"`
+   并从分母剔除，但 known_gap 条数 ≤ 2、必须逐条写明原因，测试会强制该上限；
+   不允许静默降目标。
+
+## 分配分解基准（L1）
+
+背景：独立评审实测本 harness 在 2025A Q5 多机分配题上落后 Codex 5.3%，制胜方法是
+"单机计划库 + 最大覆盖 MILP + 列生成抛光"两阶段分解。该能力已抽象为
+`templates/config/method_packs/decomposition-matheuristic.json` 方法包；本基准提供
+能暴露这一能力差距的最小实例组（防单实例过拟合，两实例结构异质、全部可精确验证）。
+
+实例位于 `fixtures/allocation_instances/`，数据由固定种子生成脚本产出后静态落盘：
+
+- **实例 A `instance_a_max_coverage`**（仿 2025A Q5 结构）：5 资源 × 15 候选计划/资源，
+  每资源恰选一个计划，最大化 3 个目标 × 24 个时隙上覆盖元素并集大小。
+  已知最优 **61**（15^5 全枚举精确验证），canonical 最大覆盖贪心 **58**，
+  贪心差距 **4.92%**。
+- **实例 B `instance_b_generalized_assignment`**（结构异质）：12 资源 × 12 任务广义
+  指派（资源容量 + 收益，任务可空置）。已知最优 **927**（bitmask 精确 DP 验证），
+  贪心基线取收益密度贪心与绝对收益贪心中的较优者 **859**，贪心差距 **7.34%**。
+
+`fixtures/allocation_instances/verify_instances.py` 可重跑精确求解与贪心基线，
+断言两实例贪心差距 ≥ 4% 且实例文件烘焙的 `certified` 数值与实测一致，全程 < 30 秒。
+
+隐藏 rubric `fixtures/l1_allocation_decomposition.json` 要求完成项目在
+`results/optimality.json` 的 `instances.<实例 id>.objective.value` 达到各实例已知
+最优的 99% 以上（close_to 容差为最优值的 1%；最优值直接烘焙自验证器实测，不采信
+项目自报），并发布 `results/incumbent_dominance_audit.json` 廉价对照审计。
+
+与消融第 7 维（Search quality）的关系：贪心与短时限单体求解会停在 ≥4% 的已证差距
+上，只有"计划库 + 主 MILP + 列生成/大邻域抛光"级别的搜索才能关闭 99% rubric，因此
+本基准把 Search quality 维度落成可评分实例；rubric 要求的 incumbent 支配审计与
+4.5 波 1 的 `audit_incumbent_dominance` 合同（`modelharness/search_quality.py`）
+完全一致——贪心基线在该审计中同时充当"incumbent 不得劣于廉价构造解"的对照。

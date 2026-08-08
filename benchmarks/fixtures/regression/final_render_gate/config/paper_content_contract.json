@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "body": "paper/final.md",
+  "appendices": [],
+  "obligation_defaults": {
+    "answer": []
+  }
+}

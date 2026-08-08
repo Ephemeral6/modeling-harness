@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "id": "RC-provenance-source",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q2_plan.json",
+      "path": "source",
+      "expected": "manual_incumbent",
+      "comparison": "eq",
+      "summary": "在位解来源标签不得改回扫描标签（v11 M03）"
+    },
+    {
+      "id": "RC-three-paths",
+      "round": 11,
+      "kind": "forbidden_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md", "paper/src/00_summary.md"],
+      "pattern": "(三|3) ?(条|路)[^。]{0,15}(路径|复算)",
+      "summary": "上界复核是四条路径且仅符号积分一路独立，不得改回三路口径（v11 M01）"
+    },
+    {
+      "id": "RC-cpsat-provenance",
+      "round": 11,
+      "kind": "forbidden_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md", "paper/src/00_summary.md"],
+      "pattern": "CP-?SAT[^。]{0,30}(搜出|搜索|复现|得到)|(热启动|warm[- ]?start)[^。]{0,30}CP-?SAT",
+      "summary": "在位解是手工构造的，不得以任何句式宣称由 CP-SAT 搜索得到（v11 M02/M17）"
+    },
+    {
+      "id": "RC-no-search-record",
+      "round": 11,
+      "kind": "required_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md"],
+      "pattern": "没有可核对的搜索记录",
+      "negation_window": ["撤回", "更正", "并非", "实为", "确由", "复现"],
+      "window_chars": 60,
+      "summary": "在位解无搜索记录的披露必须保留且不得被就地否定（v11 M17）"
+    },
+    {
+      "id": "RC-scope-sentence",
+      "round": 11,
+      "kind": "required_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md"],
+      "pattern": "整数背包上界只对固定周期与整批构成的计划成立",
+      "negation_window": ["撤回", "已不需要"],
+      "window_chars": 50,
+      "summary": "背包上界的作用域区分句不得删除（v11 M15/M18）"
+    },
+    {
+      "id": "RC-knapsack-any-plan",
+      "round": 11,
+      "kind": "forbidden_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md", "paper/src/00_summary.md"],
+      "pattern": "背包上界[^。]{0,30}任意计划|任意计划[^。]{0,20}背包上界",
+      "summary": "背包上界不得宣称对任意计划成立（v11 M18）"
+    },
+    {
+      "id": "RC-optimality-scope",
+      "round": 11,
+      "kind": "forbidden_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md", "paper/src/00_summary.md"],
+      "pattern": "全[场局]最优|全空间[^。]{0,6}最优|最优(计划|方案|解|点)",
+      "summary": "最优性宣称词族整体禁用，改写句式同样命中（v11 M04）"
+    },
+    {
+      "id": "RC-optimality-disclosure",
+      "round": 11,
+      "kind": "required_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md"],
+      "pattern": "最优性作用域仅限已探索的构造类",
+      "summary": "最优性作用域限定句不得删除（v11 M04）"
+    },
+    {
+      "id": "RC-report-set-label",
+      "round": 11,
+      "kind": "required_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md"],
+      "pattern": "报告集 ?n ?= ?200",
+      "summary": "问题三头条必须带情景集标签（v11 M05）"
+    },
+    {
+      "id": "RC-assumption-a12",
+      "round": 11,
+      "kind": "required_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md"],
+      "pattern": "A12 \\| 育肥期自断奶日起算",
+      "summary": "假设 A12 的读法是自断奶日起算，就地改写即红（v11 M21）"
+    },
+    {
+      "id": "RC-layer1-frontier",
+      "round": 11,
+      "kind": "forbidden_text",
+      "regex": true,
+      "targets": ["paper/draft.md", "paper/final.md", "paper/src/10_results.md"],
+      "pattern": "1304[.,]?[0-9]*",
+      "summary": "第一层前沿是 1314.00，任何 1304.x 变体都是已判错的旧值（v11 M14/M16）"
+    },
+    {
+      "id": "RC-ewes-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q2_plan.json",
+      "path": "ewes",
+      "expected": 416,
+      "comparison": "eq",
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "交付计划共",
+          "decimals": 0
+        }
+      ],
+      "summary": "基础母羊总数文本锚点必须等于计划工件值（v11 M07）"
+    },
+    {
+      "id": "RC-peak-pens-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q2_plan.json",
+      "path": "peak_pens",
+      "expected": 112,
+      "comparison": "eq",
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "日峰值恰为",
+          "decimals": 0
+        }
+      ],
+      "summary": "日峰值文本锚点必须等于证书工件值（v11 M08）"
+    },
+    {
+      "id": "RC-upper-bound-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/upper_bound.json",
+      "path": "annual_output_bound",
+      "expected": 1387.2518522707992,
+      "comparison": "eq",
+      "tol": 1e-9,
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "解析上界为",
+          "decimals": 2
+        }
+      ],
+      "summary": "摘要与正文的解析上界必须等于工件值，换成背包上界即红（v11 M06）"
+    },
+    {
+      "id": "RC-gap-upper-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/gap_witness.json",
+      "path": "gap_upper_bound",
+      "expected": 16,
+      "comparison": "eq",
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "缺口区间为 10 至",
+          "decimals": 0
+        }
+      ],
+      "summary": "缺口区间上端必须等于证人工件值（v11 M09）"
+    },
+    {
+      "id": "RC-restricted-lower-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/gap_witness.json",
+      "path": "restricted_class_lower_bound",
+      "expected": 11,
+      "comparison": "eq",
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "受限类缺口下界为",
+          "decimals": 0
+        }
+      ],
+      "summary": "受限类缺口下界与 rows 证人绑定，正文与工件必须同值（v11 M10）"
+    },
+    {
+      "id": "RC-report-headline-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q3_report.json",
+      "path": "report.headline_mean",
+      "expected": 962.478812,
+      "comparison": "eq",
+      "tol": 1e-9,
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "头条产出为",
+          "decimals": 2
+        }
+      ],
+      "summary": "报告集头条必须等于报告集工件值，换成选型集值即红（v11 M11）"
+    },
+    {
+      "id": "RC-layer1-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q2_plan.json",
+      "path": "layer1_uniform_best",
+      "expected": 1314.0,
+      "comparison": "eq",
+      "tol": 1e-9,
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "等批规模穷举的最好结果为",
+          "decimals": 2
+        }
+      ],
+      "summary": "第一层前沿文本锚点必须等于工件值，删掉锚点句同样红（v11 M14/M16）"
+    },
+    {
+      "id": "RC-r2-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q2_plan.json",
+      "path": "annual_output",
+      "expected": 1326.113537117904,
+      "comparison": "eq",
+      "tol": 1e-9,
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "R2 的输出为",
+          "decimals": 2
+        }
+      ],
+      "summary": "附录复算输出必须等于交付计划工件值（v11 M20）"
+    },
+    {
+      "id": "RC-batch6-anchor",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q2_plan.json",
+      "path": "groups.5.size",
+      "expected": 48,
+      "comparison": "eq",
+      "anchors": [
+        {
+          "targets": ["paper/draft.md", "paper/final.md"],
+          "pattern": "\\| 6 \\| 143 \\|",
+          "decimals": 0
+        }
+      ],
+      "summary": "论文批次表逐行绑定在位解证书，第 6 批批规模为 48（v11 M19 / RT11-B2）"
+    },
+    {
+      "id": "RC-pairing-diff-sign",
+      "round": 11,
+      "kind": "artifact_value",
+      "artifact": "results/q3_report.json",
+      "path": "pairing_diff",
+      "expected": 0,
+      "comparison": "lt",
+      "summary": "出栏配对差必须为负，符号翻正即红（v11 M13）"
+    }
+  ]
+}

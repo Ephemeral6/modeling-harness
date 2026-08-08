@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "warm_start_sha256": "ee98e7886ea0e3bef40a2ff1c791214abcca21486b617cb969b2281f98eff590",
+  "warm_start_role": "prior local artifact as route candidate only; all geometry recomputed",
+  "route_variant_options": {
+    "FY1": ["warm", "current"],
+    "FY2": ["warm", "current"],
+    "FY3": ["warm", "current"]
+  },
+  "combination_count": 8,
+  "beam_width": 1200,
+  "elapsed_s": 41.7
+}

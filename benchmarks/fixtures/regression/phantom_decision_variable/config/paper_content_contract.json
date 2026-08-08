@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "body": "paper/final.md",
+  "appendices": [
+    "paper/technical_appendix.md"
+  ],
+  "appendix_only_labels": [],
+  "decision_claim_phrases": [
+    "联合优化",
+    "同时决策",
+    "联合决策"
+  ],
+  "decision_claims": [
+    {
+      "phrase": "联合优化",
+      "variable_ids": [
+        "x.mating_batch",
+        "x.pen_assignment"
+      ]
+    }
+  ],
+  "require_regenerator_for_headline_claims": true,
+  "obligation_defaults": {
+    "answer": []
+  }
+}

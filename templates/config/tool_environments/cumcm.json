@@ -3,7 +3,7 @@
   "name": "cumcm",
   "description": "国赛过程、数值结果与可复现代码环境",
   "required_tools": ["python", "numpy", "scipy", "pandas", "matplotlib", "scikit-learn", "statsmodels", "networkx", "cvxpy", "ortools", "openpyxl"],
-  "optional_tools": ["sympy", "z3", "torch", "xgboost", "lightgbm", "simpy", "geopandas", "rasterio", "pandoc", "latexmk", "matlab"],
+  "optional_tools": ["sympy", "z3", "torch", "xgboost", "lightgbm", "simpy", "geopandas", "rasterio", "pandoc", "xelatex", "latexmk", "matlab"],
   "constraints": [
     {"tool": "python", "operator": ">=", "version": "3.10", "required": true},
     {"tool": "cvxpy", "operator": ">=", "version": "1.5", "required": true},

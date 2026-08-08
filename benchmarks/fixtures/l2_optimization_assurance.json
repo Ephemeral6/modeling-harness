@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "l2-optimization-assurance",
+  "description": "Optimization answer completeness, independent feasibility and scoped optimality.",
+  "pass_threshold": 1.0,
+  "rubric": [
+    {
+      "kind": "evaluation_value",
+      "name": "optimization detected",
+      "field": "answer_quality.optimization_assurance.relevant",
+      "op": "eq",
+      "value": true,
+      "weight": 1
+    },
+    {
+      "kind": "evaluation_value",
+      "name": "mechanical assurance ready",
+      "field": "answer_quality.optimization_assurance.machine_status",
+      "op": "eq",
+      "value": "READY",
+      "weight": 3
+    },
+    {
+      "kind": "evaluation_value",
+      "name": "paper explanation coverage closed",
+      "field": "answer_quality.explanation_coverage_errors",
+      "op": "eq",
+      "value": [],
+      "weight": 2
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "baseline_id": "prior_run_2023d",
+  "description": "Registered prior blind-run baseline used by the regression fixture",
+  "files": [
+    {
+      "path": "src/solve_model.py",
+      "sha256": "170ac44d189daf02e73ba6461edd3cc0d7baa5e00034273a20d3ce2dd9b688cf"
+    }
+  ]
+}

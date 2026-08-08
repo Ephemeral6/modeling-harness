@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "baseline_id": "prior_run_2025a",
+  "description": "Registered hashes of a prior blind-run src tree",
+  "files": [
+    {
+      "path": "optimize.py",
+      "sha256": "1fc557dc7606bf53fbba4f3b8d921d4e5147b0cff0db7b1bca19eac985c2eb15"
+    }
+  ]
+}

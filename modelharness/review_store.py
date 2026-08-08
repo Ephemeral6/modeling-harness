@@ -21,7 +21,7 @@ def review_candidates(root: Path, logical: str) -> list[tuple[int, Path]]:
     if canonical.is_file():
         candidates[1] = canonical
     pattern = re.compile(
-        rf"^{re.escape(stem)}_v([2-9][0-9]*){re.escape(suffix)}$",
+        rf"^{re.escape(stem)}_v([2-9]|[1-9][0-9]+){re.escape(suffix)}$",
         re.IGNORECASE,
     )
     if canonical.parent.is_dir():

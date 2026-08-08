@@ -1,0 +1,506 @@
+[
+  {
+    "id": "M01",
+    "class": "disclosure",
+    "target": "paper/src/00_summary.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "上界经四条互不复用的路径复核，两两取值一致；其中只有符号积分一路是独立的建模推导。",
+          "replace": "上界经三路独立复算复核，两两取值一致。"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "上界经四条互不复用的路径复核，两两取值一致；其中只有符号积分一路是独立的建模推导。",
+          "replace": "上界经三路独立复算复核，两两取值一致。"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "上界经四条互不复用的路径复核，两两取值一致；其中只有符号积分一路是独立的建模推导。",
+          "replace": "上界经三路独立复算复核，两两取值一致。"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M01：四路改三路并改写措辞绕开字面串；当时 0/14 层命中"
+  },
+  {
+    "id": "M02",
+    "class": "provenance",
+    "target": "paper/src/00_summary.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "该计划为手工构造的在位解，没有可核对的搜索记录。",
+          "replace": "该计划由带热启动的 CP-SAT 搜索得到。"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "该计划为手工构造的在位解，没有可核对的搜索记录。",
+          "replace": "该计划由带热启动的 CP-SAT 搜索得到。"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "该计划为手工构造的在位解，没有可核对的搜索记录。",
+          "replace": "该计划由带热启动的 CP-SAT 搜索得到。"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M02：换句式重新宣称 CP-SAT 搜索来源；当时 0/14 层命中"
+  },
+  {
+    "id": "M03",
+    "class": "provenance",
+    "target": "results/q2_plan.json",
+    "operator": "claim_rollback",
+    "params": {"pointer": "/source", "value": "uniform_scan"},
+    "expected_detectors": ["regression_corpus", "narrative"],
+    "note": "v11 M03：来源标签改回扫描标签；当时仅 l7 命中"
+  },
+  {
+    "id": "M04",
+    "class": "disclosure",
+    "target": "paper/src/00_summary.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "本计划是受限搜索下的最好可行解，其最优性作用域仅限已探索的构造类。",
+          "replace": "本文报告的是全场最优的生产计划。"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "本计划是受限搜索下的最好可行解，其最优性作用域仅限已探索的构造类。",
+          "replace": "本文报告的是全场最优的生产计划。"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "本计划是受限搜索下的最好可行解，其最优性作用域仅限已探索的构造类。",
+          "replace": "本文报告的是全场最优的生产计划。"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M04：『全场最优』绕开 l9 逐串禁用表；当时 0/14 层命中"
+  },
+  {
+    "id": "M05",
+    "class": "disclosure",
+    "target": "paper/src/10_results.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/10_results.md",
+          "find": "报告集 n={num:Q3.report_n} 的头条产出为",
+          "replace": "头条产出为"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "报告集 n=200 的头条产出为",
+          "replace": "头条产出为"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "报告集 n=200 的头条产出为",
+          "replace": "头条产出为"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M05：删掉『报告集 n=200』情景集标签；当时 0/14 层命中"
+  },
+  {
+    "id": "M06",
+    "class": "headline_tamper",
+    "target": "paper/src/00_summary.md",
+    "operator": "caliber_swap",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "解析上界为 {num:Q2.upper_bound} 只/年",
+          "replace": "解析上界为 {num:Q2.knapsack_bound} 只/年"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "解析上界为 1387.25 只/年",
+          "replace": "解析上界为 1377.12 只/年"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "解析上界为 1387.25 只/年",
+          "replace": "解析上界为 1377.12 只/年"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M06：摘要解析上界 1387.25 换成背包上界 1377.12（占位符换绑定，编译自洽）；当时 0/14 层命中"
+  },
+  {
+    "id": "M07",
+    "class": "plan_tamper",
+    "target": "results/q2_plan.json",
+    "operator": "numeric_swap",
+    "params": {
+      "edits": [
+        {"target": "results/q2_plan.json", "pointer": "/groups/3/size", "value": 44},
+        {"target": "results/q2_plan.json", "pointer": "/ewes", "value": 420},
+        {"target": "results/q2_plan.json", "pointer": "/annual_output", "value": 1338.855895196507}
+      ]
+    },
+    "expected_detectors": ["claims", "narrative", "regression_corpus", "paper_ir"],
+    "note": "v11 M07：批 4 由 40 改 44 并同步改 ewes/annual_output；当时被 l6/l10 命中"
+  },
+  {
+    "id": "M08",
+    "class": "plan_tamper",
+    "target": "results/q2_plan.json",
+    "operator": "numeric_swap",
+    "params": {"pointer": "/peak_pens", "value": 110},
+    "expected_detectors": ["claims", "narrative", "regression_corpus", "paper_ir"],
+    "note": "v11 M08：证书自称 peak_pens=110；当时被 l6/l10 命中"
+  },
+  {
+    "id": "M09",
+    "class": "headline_tamper",
+    "target": "paper/src/00_summary.md",
+    "operator": "numeric_swap",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "至 {num:Q1.gap_upper} 栏",
+          "replace": "至 14 栏"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "至 16 栏",
+          "replace": "至 14 栏"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "至 16 栏",
+          "replace": "至 14 栏"
+        }
+      ]
+    },
+    "expected_detectors": ["paper_ir", "regression_corpus"],
+    "note": "v11 M09：缺口区间 [10,16] 改成 [10,14]，无证人支撑；当时 0/14 层命中"
+  },
+  {
+    "id": "M10",
+    "class": "headline_tamper",
+    "target": "results/gap_witness.json",
+    "operator": "numeric_swap",
+    "params": {"pointer": "/restricted_class_lower_bound", "value": 12},
+    "expected_detectors": ["claims", "narrative", "regression_corpus", "paper_ir"],
+    "note": "v11 M10：受限类下界 11 改 12，与同文件 rows 直接矛盾；当时 0/14 层命中"
+  },
+  {
+    "id": "M11",
+    "class": "headline_tamper",
+    "target": "paper/src/10_results.md",
+    "operator": "caliber_swap",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/10_results.md",
+          "find": "头条产出为 {num:Q3.report_headline} 只/年",
+          "replace": "头条产出为 {num:Q3.selection_headline} 只/年"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "头条产出为 962.48 只/年",
+          "replace": "头条产出为 950.35 只/年"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "头条产出为 962.48 只/年",
+          "replace": "头条产出为 950.35 只/年"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M11：报告集头条 962.48 换成选型集 950.35（换在锚点未覆盖处）；当时 0/14 层命中"
+  },
+  {
+    "id": "M12",
+    "class": "seal_break",
+    "target": "results/scenario_sets.json",
+    "operator": "disclosure_inversion",
+    "params": {
+      "pointer": "/usage/-",
+      "value": {"set": "report", "purpose": "policy_ranking", "at": "run-4"}
+    },
+    "expected_detectors": ["claims", "narrative"],
+    "note": "v11 M12：报告集破封用于选型；当时被 l8/l11/l13 命中"
+  },
+  {
+    "id": "M13",
+    "class": "artifact_tamper",
+    "target": "results/q3_report.json",
+    "operator": "sign_flip",
+    "params": {"pointer": "/pairing_diff", "negate": true},
+    "expected_detectors": ["claims", "narrative", "regression_corpus", "paper_ir"],
+    "note": "v11 M13：出栏配对差符号翻正；当时被 l11 命中"
+  },
+  {
+    "id": "M14",
+    "class": "caliber",
+    "target": "paper/src/10_results.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/10_results.md",
+          "find": "第一层等批规模穷举的最好结果为 {num:Q2.layer1_best} 只/年",
+          "replace": "第一层等批规模穷举的最好结果为 1304.70 只/年"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "第一层等批规模穷举的最好结果为 1314.00 只/年",
+          "replace": "第一层等批规模穷举的最好结果为 1304.70 只/年"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "第一层等批规模穷举的最好结果为 1314.00 只/年",
+          "replace": "第一层等批规模穷举的最好结果为 1304.70 只/年"
+        }
+      ]
+    },
+    "expected_detectors": ["paper_ir", "regression_corpus"],
+    "note": "v11 M14：第一层前沿改回 1304.70；当时被 l5 命中"
+  },
+  {
+    "id": "M15",
+    "class": "disclosure",
+    "target": "paper/src/00_summary.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "整数背包上界只对固定周期与整批构成的计划成立；解析上界则覆盖全部滚动计划。",
+          "replace": ""
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "整数背包上界只对固定周期与整批构成的计划成立；解析上界则覆盖全部滚动计划。",
+          "replace": ""
+        },
+        {
+          "target": "paper/final.md",
+          "find": "整数背包上界只对固定周期与整批构成的计划成立；解析上界则覆盖全部滚动计划。",
+          "replace": ""
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M15：删掉背包上界作用域区分句；当时 0/14 层命中"
+  },
+  {
+    "id": "M16",
+    "class": "caliber",
+    "target": "paper/src/10_results.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/10_results.md",
+          "find": "第一层等批规模穷举的最好结果为 {num:Q2.layer1_best} 只/年，作为交付计划的对照下限。",
+          "replace": "等批规模全空间穷举最好只到 1304.68 只/年（每批 42 只）。"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "第一层等批规模穷举的最好结果为 1314.00 只/年，作为交付计划的对照下限。",
+          "replace": "等批规模全空间穷举最好只到 1304.68 只/年（每批 42 只）。"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "第一层等批规模穷举的最好结果为 1314.00 只/年，作为交付计划的对照下限。",
+          "replace": "等批规模全空间穷举最好只到 1304.68 只/年（每批 42 只）。"
+        }
+      ]
+    },
+    "expected_detectors": ["paper_ir", "regression_corpus"],
+    "note": "v11 M16：用工件里真实存在的 1304.68 并改写句式复辟旧值；当时 0/14 层命中"
+  },
+  {
+    "id": "M17",
+    "class": "disclosure",
+    "target": "paper/src/00_summary.md",
+    "operator": "disclosure_inversion",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "anchor": "没有可核对的搜索记录。",
+          "insert": "这一说法已被撤回：该计划确由带热启动的 CP-SAT 搜索复现。"
+        },
+        {
+          "target": "paper/draft.md",
+          "anchor": "没有可核对的搜索记录。",
+          "insert": "这一说法已被撤回：该计划确由带热启动的 CP-SAT 搜索复现。"
+        },
+        {
+          "target": "paper/final.md",
+          "anchor": "没有可核对的搜索记录。",
+          "insert": "这一说法已被撤回：该计划确由带热启动的 CP-SAT 搜索复现。"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M17：保留 required 短语、紧接一句整段否定；当时 0/14 层命中"
+  },
+  {
+    "id": "M18",
+    "class": "disclosure",
+    "target": "paper/src/00_summary.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "整数背包上界只对固定周期与整批构成的计划成立；解析上界则覆盖全部滚动计划。",
+          "replace": "整数背包上界对任意计划同样成立。"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "整数背包上界只对固定周期与整批构成的计划成立；解析上界则覆盖全部滚动计划。",
+          "replace": "整数背包上界对任意计划同样成立。"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "整数背包上界只对固定周期与整批构成的计划成立；解析上界则覆盖全部滚动计划。",
+          "replace": "整数背包上界对任意计划同样成立。"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M18：作用域区分就地改成『对任意计划成立』；当时 0/14 层命中"
+  },
+  {
+    "id": "M19",
+    "class": "plan_tamper",
+    "target": "paper/src/10_results.md",
+    "operator": "numeric_swap",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/10_results.md",
+          "find": "| 6 | 143 | 48 | 4 | 6 | 8 | 4 | 7 |",
+          "replace": "| 6 | 143 | 56 | 4 | 6 | 8 | 4 | 7 |"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "| 6 | 143 | 48 | 4 | 6 | 8 | 4 | 7 |",
+          "replace": "| 6 | 143 | 56 | 4 | 6 | 8 | 4 | 7 |"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "| 6 | 143 | 48 | 4 | 6 | 8 | 4 | 7 |",
+          "replace": "| 6 | 143 | 56 | 4 | 6 | 8 | 4 | 7 |"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M19 / RT11-B2：只改论文印出的批次表（批 6 由 48 改 56）；当时 0/14 层命中"
+  },
+  {
+    "id": "M20",
+    "class": "caliber",
+    "target": "paper/src/10_results.md",
+    "operator": "caliber_swap",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/10_results.md",
+          "find": "复算脚本 R2 的输出为 {num:Q2.annual_output} 只/年",
+          "replace": "复算脚本 R2 的输出为 {num:Q2.knapsack_bound} 只/年"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "复算脚本 R2 的输出为 1326.11 只/年",
+          "replace": "复算脚本 R2 的输出为 1377.12 只/年"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "复算脚本 R2 的输出为 1326.11 只/年",
+          "replace": "复算脚本 R2 的输出为 1377.12 只/年"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M20：附录 R2 输出由可行值换成背包上界；当时被 l3 命中"
+  },
+  {
+    "id": "M21",
+    "class": "assumption_flip",
+    "target": "paper/src/00_summary.md",
+    "operator": "claim_rollback",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/00_summary.md",
+          "find": "| A12 | 育肥期自断奶日起算 |",
+          "replace": "| A12 | 育肥期自出生日起算 |"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "| A12 | 育肥期自断奶日起算 |",
+          "replace": "| A12 | 育肥期自出生日起算 |"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "| A12 | 育肥期自断奶日起算 |",
+          "replace": "| A12 | 育肥期自出生日起算 |"
+        }
+      ]
+    },
+    "expected_detectors": ["regression_corpus"],
+    "note": "v11 M21：假设表 A12 就地改成自出生日起算，与全文数值矛盾；当时 0/14 层命中"
+  },
+  {
+    "id": "M22",
+    "class": "reference",
+    "target": "paper/src/10_results.md",
+    "operator": "reference_unmark",
+    "params": {
+      "edits": [
+        {
+          "target": "paper/src/10_results.md",
+          "find": "，建模框架综述见文献[1]。",
+          "replace": "。"
+        },
+        {
+          "target": "paper/draft.md",
+          "find": "，建模框架综述见文献[1]。",
+          "replace": "。"
+        },
+        {
+          "target": "paper/final.md",
+          "find": "，建模框架综述见文献[1]。",
+          "replace": "。"
+        }
+      ]
+    },
+    "expected_detectors": ["sanitize"],
+    "note": "补充条目：摘掉文内引用标记，使参考文献 [1] 失去正文引用"
+  },
+  {
+    "id": "M23",
+    "class": "caliber",
+    "target": "predictions/registered.json",
+    "operator": "unit_swap",
+    "params": {"pointer": "/claims/Q2.annual_output/unit", "value": "只/月"},
+    "expected_detectors": ["claims", "narrative"],
+    "note": "补充条目：登记口径单位由只/年偷换成只/月"
+  }
+]

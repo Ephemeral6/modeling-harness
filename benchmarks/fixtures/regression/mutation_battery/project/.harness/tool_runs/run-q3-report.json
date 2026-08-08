@@ -1,0 +1,7 @@
+{
+  "run_id": "run-q3-report",
+  "inputs": ["hash-report-01"],
+  "outputs": [{"path": "results/q3_report.json"}],
+  "claim_ids": ["Q3.report_headline"],
+  "verification": {"status": "verified"}
+}

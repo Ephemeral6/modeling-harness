@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "sections": [
+    {"file": "00_summary.md", "title": "摘要与主要结论"},
+    {"file": "10_results.md", "title": "结果核对与披露"}
+  ]
+}

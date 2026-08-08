@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "id": "calib.min_planting_area_fraction",
+      "kind": "management_constraint",
+      "statement": "单地块单季单作物的最小种植面积不低于地块面积的 20%。",
+      "value": 0.2,
+      "unit": "fraction_of_plot_area",
+      "origin": "self_imposed",
+      "rationale": "题面只写“便于田间管理”，20% 是本题解自定的可管理性口径。",
+      "result_path": "model_calibration.min_planting_area_fraction",
+      "disclosure_anchor": "自设口径与管理假设",
+      "frozen_at": "2026-08-02T17:43:49+08:00",
+      "inherited": false
+    }
+  ]
+}

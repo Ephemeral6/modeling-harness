@@ -34,6 +34,13 @@ def validate_profile(data: Any, path: Path | None = None) -> dict:
         not isinstance(format_spec, str) or not format_spec
     ):
         raise ValueError(f"delivery profile.format_spec 非法{where}")
+    content_contract = data.get("paper_content_contract")
+    if content_contract is not None and (
+        not isinstance(content_contract, str) or not content_contract
+    ):
+        raise ValueError(
+            f"delivery profile.paper_content_contract 非法{where}"
+        )
     threshold = data.get("robustness_degradation_threshold")
     if threshold is not None and (
         not isinstance(threshold, (int, float))
@@ -43,6 +50,16 @@ def validate_profile(data: Any, path: Path | None = None) -> dict:
         raise ValueError(
             f"delivery profile.robustness_degradation_threshold 非法{where}"
         )
+    paper_delivery = data.get("paper_delivery")
+    if paper_delivery is not None:
+        if not isinstance(paper_delivery, dict):
+            raise ValueError(f"delivery profile.paper_delivery 必须是对象{where}")
+        for field in ("source", "output", "template", "pdf_engine"):
+            value = paper_delivery.get(field)
+            if not isinstance(value, str) or not value:
+                raise ValueError(
+                    f"delivery profile.paper_delivery.{field} 缺失{where}"
+                )
     return data
 
 

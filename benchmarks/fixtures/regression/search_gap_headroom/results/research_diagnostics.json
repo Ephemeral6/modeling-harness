@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "searches": {
+    "Q2.route_mip": {
+      "objective": "total_cost_yuan",
+      "sense": "min",
+      "budget": {
+        "time_limit_seconds": 300,
+        "wall_time_seconds": 300.02,
+        "nodes_explored": 84213,
+        "incumbent_updates": [
+          {"time_seconds": 12.7, "objective": 5231044.0},
+          {"time_seconds": 268.4, "objective": 5077310.5}
+        ],
+        "best_bound": 4671125.7,
+        "final_gap_fraction": 0.08,
+        "termination": "time_limit"
+      },
+      "top_k": [
+        {"point": {"fleet": "mixed"}, "objective": 5077310.5}
+      ]
+    },
+    "Q2.route_heuristic": {
+      "objective": "total_cost_yuan",
+      "sense": "min",
+      "top_k": [
+        {"point": {"fleet": "trucks_only"}, "objective": 5411882.0}
+      ]
+    }
+  },
+  "assumptions": {},
+  "opportunities": []
+}

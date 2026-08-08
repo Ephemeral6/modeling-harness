@@ -439,6 +439,19 @@
       "risk": "local",
       "license": "GPL"
     },
+    "xelatex": {
+      "kind": "command",
+      "description": "XeLaTeX 中文论文 PDF 引擎",
+      "detect": {"command": "xelatex"},
+      "version_argv": ["{executable}", "--version"],
+      "capabilities": ["report_rendering", "latex", "pdf"],
+      "task_types": ["evidence_delivery"],
+      "runners": ["xelatex"],
+      "priority": 95,
+      "cost": 2,
+      "risk": "local",
+      "license": "TeX"
+    },
     "latexmk": {
       "kind": "command",
       "description": "LaTeX 自动编译",

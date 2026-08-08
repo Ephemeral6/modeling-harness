@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "reviewer": "s1_referee",
+  "verdict": "REJECT_WITH_BLOCKING_FINDINGS",
+  "findings": [
+    {
+      "id": "F-display-drift",
+      "summary": "结果节的年化出栏量表述含混，需补充口径说明",
+      "target": "paper/src/10_results.md"
+    }
+  ]
+}

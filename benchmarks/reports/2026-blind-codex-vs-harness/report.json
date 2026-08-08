@@ -1,0 +1,981 @@
+{
+  "schema": 1,
+  "protocol_id": "2026-blind-codex-vs-harness",
+  "report_kind": "retrospective independent recomputation",
+  "judge": {
+    "worker": "retrospective-independent-judge",
+    "command": "benchmarks/protocols/judges/retrospective_2026_blind.py",
+    "script_sha256": "d92882d91528463cc5776b21e2d8c724f8256b9b924ffa2d69babcc49b88573e",
+    "frozen_at": "2026-08-08T17:13:00+08:00",
+    "inputs_path": "benchmarks/reports/2026-blind-codex-vs-harness/measurements.json",
+    "inputs_sha256": "41aa5534183fde676f5664e65e0682985f6d04116411c9d73015f3df088ec9ba",
+    "pre_registered": false,
+    "protocol_clause_d_satisfied": false
+  },
+  "note": "⚠️ 事后判卷（retrospective judgment）。判卷脚本与判卷参数是在三条 harness 臂全部完成之后才写、才冻结的，不满足对照协议 (d)『judge 先冻结参数、且冻结时刻早于每条臂的完成时刻』的要求，因此本报告不具备预注册（pre-registration）效力：它能证明『有人判了卷、判法可复算』，不能证明『判法没有被结果反向调过』。frozen_at 填的是真实的冻结时刻，绝不为了让 comparison audit 转绿而回填成早于各臂完成时间的假时刻；audit 里保留的 `judge freeze too late` 就是这条欠账的正确、预期的残留。",
+  "judging_method": {
+    "gap_formula": "gap_vs_best_pct = (best - value) / |best| * 100（direction=max）或 (value - best) / |best| * 100（direction=min）。0 表示该臂即最优臂，正数表示比最优臂差这么多个百分点（分母统一取最优臂的值）。",
+    "normalized_score": "direction=max 取 value/best，direction=min 取 best/value；1.0 = 该指标最优臂。无量纲，可跨题求均值。",
+    "aggregate": "aggregate_normalized_score = 该臂参与的全部『计分且 head_to_head』指标的 normalized_score 均值。",
+    "tie_rule": "|value - best| <= tie_abs_tolerance 时判平局并并列 rank 1。2025A 各时长指标的容差取 2.2e-4 s，即评审声明的独立复算最大偏差，低于该量级的差异不构成优劣判定。",
+    "verdict_rule": "单题臂按其 headline 指标的 outcome 定 verdict（best→win / tie→tie / behind→loss）；跨题臂按 aggregate_normalized_score 是否最高定 verdict。逐指标胜负平明细一律写进 verdict_detail，不因 verdict 是单值而被吞掉。",
+    "denominator_discrepancy_notice": "评审原文的『codex 高 5.3%』与『codex 高 1.03%』分母不一致：前者以更优值为分母（5.29%），后者以更劣值为分母（1.03%，以最优值为分母则是 1.02%）。本表统一以最优臂的值为分母重算，故 2024C 8-04 口径记为 1.0197% 而非 1.03%——绝对差 410,955.27 元不变，只是分母口径统一。"
+  },
+  "arms": {
+    "harness-2023d": {
+      "arm_id": "harness-2023d",
+      "kind": "harness",
+      "problems_covered": [
+        "2023D"
+      ],
+      "objective_value": 1165.177777777778,
+      "objective_metric": "2023D.q3.annual_expected_loss.registered_arm",
+      "objective_unit": "等效栏日/年",
+      "objective_source_kind": "metric",
+      "verdict": "loss",
+      "verdict_basis": "headline metric 2023D.q3.annual_expected_loss.registered_arm",
+      "verdict_detail": {
+        "scored_metrics": 1,
+        "best_on": [],
+        "tied_on": [],
+        "behind_on": [
+          "2023D.q3.annual_expected_loss.registered_arm"
+        ]
+      },
+      "aggregate_normalized_score": 0.894367573856,
+      "gap_vs_best_arm": {
+        "metric_id": "2023D.q3.annual_expected_loss.registered_arm",
+        "best_arm_id": "codex-native-blind",
+        "best_value": 1042.0972222222222,
+        "gap_pct": 11.8108515147,
+        "gap_absolute": 123.080555555556,
+        "unit": "等效栏日/年"
+      },
+      "notes": [
+        "objective_value 取的是清单登记路径 projects/projects/2023d_圈养湖羊空间利用率--20260802-174228 自己的产物，不是评审引用的那份仓库外交付包。"
+      ]
+    },
+    "harness-2024c": {
+      "arm_id": "harness-2024c",
+      "kind": "harness",
+      "problems_covered": [
+        "2024C"
+      ],
+      "objective_value": 39229094.25,
+      "objective_metric": "2024C.q1_waste.total_profit_yuan.registered_arm",
+      "objective_unit": "元",
+      "objective_source_kind": "metric",
+      "verdict": "loss",
+      "verdict_basis": "headline metric 2024C.q1_waste.total_profit_yuan.registered_arm",
+      "verdict_detail": {
+        "scored_metrics": 1,
+        "best_on": [],
+        "tied_on": [],
+        "behind_on": [
+          "2024C.q1_waste.total_profit_yuan.registered_arm"
+        ]
+      },
+      "aggregate_normalized_score": 0.973425233822,
+      "gap_vs_best_arm": {
+        "metric_id": "2024C.q1_waste.total_profit_yuan.registered_arm",
+        "best_arm_id": "codex-native-blind",
+        "best_value": 40300058.892009996,
+        "gap_pct": 2.6574766178,
+        "gap_absolute": 1070964.6420099959,
+        "unit": "元"
+      },
+      "notes": [
+        "objective_value 取的是清单登记路径 projects/projects/2024c-农作物种植策略--20260802-174349 自己的产物，不是评审引用的 8-04 那次重跑。"
+      ]
+    },
+    "harness-2025a": {
+      "arm_id": "harness-2025a",
+      "kind": "harness",
+      "problems_covered": [
+        "2025A"
+      ],
+      "objective_value": 23.77147840823222,
+      "objective_metric": "2025A.q5.total_full_cylinder_duration_s",
+      "objective_unit": "s",
+      "objective_source_kind": "metric",
+      "verdict": "loss",
+      "verdict_basis": "headline metric 2025A.q5.total_full_cylinder_duration_s",
+      "verdict_detail": {
+        "scored_metrics": 5,
+        "best_on": [
+          "2025A.q2.full_cylinder_duration_s"
+        ],
+        "tied_on": [
+          "2025A.q1.full_cylinder_duration_s"
+        ],
+        "behind_on": [
+          "2025A.q3.full_cylinder_duration_s",
+          "2025A.q4.full_cylinder_duration_s",
+          "2025A.q5.total_full_cylinder_duration_s"
+        ]
+      },
+      "aggregate_normalized_score": 0.985885430299,
+      "gap_vs_best_arm": {
+        "metric_id": "2025A.q5.total_full_cylinder_duration_s",
+        "best_arm_id": "codex-native-blind",
+        "best_value": 25.098089441414814,
+        "gap_pct": 5.2857052577,
+        "gap_absolute": 1.326611033183,
+        "unit": "s"
+      },
+      "notes": [
+        "本臂是三条 harness 臂里唯一一条“评审引用的产物 == 清单登记路径的产物”的臂。"
+      ]
+    },
+    "codex-native-blind": {
+      "arm_id": "codex-native-blind",
+      "kind": "external_baseline",
+      "problems_covered": [
+        "2023D",
+        "2024C",
+        "2025A"
+      ],
+      "objective_value": 0.999954745621,
+      "objective_metric": "aggregate_normalized_score",
+      "objective_unit": "unitless (1.0 = best arm on every scored metric)",
+      "objective_source_kind": "aggregate_normalized_score",
+      "verdict": "win",
+      "verdict_basis": "aggregate normalized score over all scored head-to-head metrics this arm participates in",
+      "verdict_detail": {
+        "scored_metrics": 7,
+        "best_on": [
+          "2025A.q3.full_cylinder_duration_s",
+          "2025A.q4.full_cylinder_duration_s",
+          "2025A.q5.total_full_cylinder_duration_s",
+          "2024C.q1_waste.total_profit_yuan.registered_arm",
+          "2023D.q3.annual_expected_loss.registered_arm"
+        ],
+        "tied_on": [
+          "2025A.q1.full_cylinder_duration_s"
+        ],
+        "behind_on": [
+          "2025A.q2.full_cylinder_duration_s"
+        ]
+      },
+      "aggregate_normalized_score": 0.999954745621,
+      "gap_vs_best_arm": null,
+      "notes": [
+        "该臂横跨三题、量纲互不相同，故顶层 objective_value 用无量纲汇总标量（各计分指标归一化分的均值，1.0 = 该指标最优），逐题明细见 per_problem。"
+      ]
+    }
+  },
+  "per_problem": {
+    "2023D": {
+      "problem_id": "2023D",
+      "headline_metric_id": "2023D.q3.annual_expected_loss.registered_arm",
+      "headline_ranking": [
+        {
+          "rank": 1,
+          "arm_id": "codex-native-blind",
+          "is_declared_arm": true,
+          "value": 1042.0972222222222,
+          "gap_vs_best_pct": 0.0
+        },
+        {
+          "rank": 2,
+          "arm_id": "harness-2023d",
+          "is_declared_arm": true,
+          "value": 1165.177777777778,
+          "gap_vs_best_pct": 11.8108515147
+        }
+      ],
+      "comparable": true,
+      "comparability_summary": "登记臂（8-02 run）与 codex 无任何逐字节相同的源码，构成可比的独立对照；但评审判卷时引用的是仓库外交付包 2023D_圈养湖羊_最终论文，那份产物的核心求解代码与 codex 逐字节相同（solve_model.py 同 SHA256），属同源重放，不可作为独立对照。两种口径本表都给出。",
+      "metrics": [
+        {
+          "metric_id": "2023D.q3.annual_expected_loss.registered_arm",
+          "problem_id": "2023D",
+          "label": "Q3 期望年损失（idle + 3*rent 栏日）——清单登记臂 vs codex",
+          "unit": "等效栏日/年",
+          "direction": "min",
+          "comparability": "head_to_head",
+          "comparability_reason": "损失定义一致（codex src/run_analysis.py: loss = idle + 3 * rent；harness 8-02 臂同为 idle_pen_days + 3*rented_pen_days）。登记臂与 codex 无任何逐字节相同源码（全仓哈希扫描 0 命中），构成真正的独立对照。",
+          "scored": true,
+          "best_arm_id": "codex-native-blind",
+          "best_value": 1042.0972222222222,
+          "tie_abs_tolerance": 0.0,
+          "observations": [
+            {
+              "arm_id": "harness-2023d",
+              "is_declared_arm": true,
+              "value": 1165.177777777778,
+              "artifact_label": "harness 8-02 登记臂（三年损失年化）",
+              "source_path": "projects/projects/2023d_圈养湖羊空间利用率--20260802-174228/results/q3.json",
+              "source_pointer": "/expected_performance/loss/mean",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/projects/2023d_圈养湖羊空间利用率--20260802-174228/results/q3.json#/expected_performance/loss/mean",
+                "source_raw_value": 3495.5333333333333
+              },
+              "gap_vs_best_pct": 11.8108515147,
+              "gap_vs_best_absolute": 123.080555555556,
+              "normalized_score": 0.894367573856,
+              "outcome": "behind",
+              "rank": 2
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 1042.0972222222222,
+              "artifact_label": "codex 原生盲测（推荐预案 d8_b14_L40_N367）",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2023D_圈养湖羊空间利用率/results/summary.json",
+              "source_pointer": "/stochastic_chosen_policy/annual_loss_mean",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2023D_圈养湖羊空间利用率/results/summary.json#/stochastic_chosen_policy/annual_loss_mean",
+                "source_raw_value": 1042.0972222222222
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            }
+          ],
+          "notes": [
+            "harness 一侧是三年期望损失 3495.5333333333333（1095 天仿真、900 天预热）除以 3 年化，判卷脚本按 derivation 现场重算并核对。",
+            "见 integrity_findings F2：评审引用的 1023.56 出自仓库外交付包，不是这条登记臂。"
+          ],
+          "errata": null
+        },
+        {
+          "metric_id": "2023D.q3.annual_expected_loss.reviewed_deliverable",
+          "problem_id": "2023D",
+          "label": "Q3 期望年损失——评审实际引用的仓库外交付包 vs codex（同源代码，仅反映搜索深度）",
+          "unit": "等效栏日/年",
+          "direction": "min",
+          "comparability": "within_same_model",
+          "comparability_reason": "该交付包的核心求解代码与 codex 逐字节相同（solve_model.py 同 SHA256），两个数字出自同一模型同一实现，差异只反映策略搜索深度，不能读成两套系统的建模优劣对照。",
+          "scored": false,
+          "best_arm_id": "harness-2023d",
+          "best_value": 1023.5558333333333,
+          "tie_abs_tolerance": 0.0,
+          "observations": [
+            {
+              "arm_id": "harness-2023d",
+              "is_declared_arm": false,
+              "value": 1023.5558333333333,
+              "artifact_label": "仓库外交付包 2023D_圈养湖羊_最终论文（未登记为臂）",
+              "source_path": "C:/Users/12729/Desktop/数学建模/2023D_圈养湖羊_最终论文/results/final_summary.json",
+              "source_pointer": "/q3/independent_report/annual_loss",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/2023D_圈养湖羊_最终论文/results/final_summary.json#/q3/independent_report/annual_loss",
+                "source_raw_value": 1023.5558333333333
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 1042.0972222222222,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2023D_圈养湖羊空间利用率/results/summary.json",
+              "source_pointer": "/stochastic_chosen_policy/annual_loss_mean",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2023D_圈养湖羊空间利用率/results/summary.json#/stochastic_chosen_policy/annual_loss_mean",
+                "source_raw_value": 1042.0972222222222
+              },
+              "gap_vs_best_pct": 1.8114682448,
+              "gap_vs_best_absolute": 18.541388888889,
+              "normalized_score": 0.98220762085,
+              "outcome": "behind",
+              "rank": 2
+            }
+          ],
+          "notes": [
+            "这一行复现的正是评审给出的『harness 1023.56 vs codex 1042.10，模型内更优』。",
+            "该交付包在仓库之外，且不是本清单登记的任何一条臂。"
+          ],
+          "errata": null
+        },
+        {
+          "metric_id": "2023D.q2.annual_output_head",
+          "problem_id": "2023D",
+          "label": "Q2 年化出栏（同源重放证据）",
+          "unit": "只/年",
+          "direction": "max",
+          "comparability": "within_same_model",
+          "comparability_reason": "两个数字逐位相同（1361.17903930131），是同源代码重放的直接证据，不构成对照。",
+          "scored": false,
+          "best_arm_id": "harness-2023d",
+          "best_value": 1361.17903930131,
+          "tie_abs_tolerance": 0.0,
+          "observations": [
+            {
+              "arm_id": "harness-2023d",
+              "is_declared_arm": false,
+              "value": 1361.17903930131,
+              "artifact_label": "仓库外交付包 2023D_圈养湖羊_最终论文（未登记为臂）",
+              "source_path": "C:/Users/12729/Desktop/数学建模/2023D_圈养湖羊_最终论文/results/final_summary.json",
+              "source_pointer": "/q2/annual_output",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/2023D_圈养湖羊_最终论文/results/final_summary.json#/q2/annual_output",
+                "source_raw_value": 1361.17903930131
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "tie_within_tolerance",
+              "rank": 1
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 1361.17903930131,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2023D_圈养湖羊空间利用率/results/summary.json",
+              "source_pointer": "/deterministic_q2/annual_output",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2023D_圈养湖羊空间利用率/results/summary.json#/deterministic_q2/annual_output",
+                "source_raw_value": 1361.17903930131
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "tie_within_tolerance",
+              "rank": 1
+            }
+          ],
+          "notes": [],
+          "errata": null
+        }
+      ]
+    },
+    "2024C": {
+      "problem_id": "2024C",
+      "headline_metric_id": "2024C.q1_waste.total_profit_yuan.registered_arm",
+      "headline_ranking": [
+        {
+          "rank": 1,
+          "arm_id": "codex-native-blind",
+          "is_declared_arm": true,
+          "value": 40300058.892009996,
+          "gap_vs_best_pct": 0.0
+        },
+        {
+          "rank": 2,
+          "arm_id": "harness-2024c",
+          "is_declared_arm": true,
+          "value": 39229094.25,
+          "gap_vs_best_pct": 2.6574766178
+        }
+      ],
+      "comparable": true,
+      "comparability_summary": "滞销（废弃）口径可比：两臂都在各自模型内求七年总利润，量纲与口径一致。半价口径不可比：两臂自设的管理约束不同，可行域不同，数值差异 8.6% 不构成求解质量差距。",
+      "metrics": [
+        {
+          "metric_id": "2024C.q1_waste.total_profit_yuan.registered_arm",
+          "problem_id": "2024C",
+          "label": "七年总利润·滞销（超产废弃）口径——清单登记臂 vs codex",
+          "unit": "元",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "同口径（超产部分废弃）、同量纲（七年总利润，元）；codex 方案经复核在 harness 模型内可行，差距属求解质量。",
+          "scored": true,
+          "best_arm_id": "codex-native-blind",
+          "best_value": 40300058.892009996,
+          "tie_abs_tolerance": 0.0,
+          "observations": [
+            {
+              "arm_id": "harness-2024c",
+              "is_declared_arm": true,
+              "value": 39229094.25,
+              "artifact_label": "harness 8-02 登记臂",
+              "source_path": "projects/projects/2024c-农作物种植策略--20260802-174349/results/subquestion_results.json",
+              "source_pointer": "/problem_1/waste_plan/objective_yuan",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/projects/2024c-农作物种植策略--20260802-174349/results/subquestion_results.json#/problem_1/waste_plan/objective_yuan",
+                "source_raw_value": 39229094.25
+              },
+              "gap_vs_best_pct": 2.6574766178,
+              "gap_vs_best_absolute": 1070964.6420099959,
+              "normalized_score": 0.973425233822,
+              "outcome": "behind",
+              "rank": 2
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 40300058.892009996,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2024C_农作物种植策略/results/reported_metrics.json",
+              "source_pointer": "/0/mean_or_total_profit",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2024C_农作物种植策略/results/reported_metrics.json#/0/mean_or_total_profit",
+                "source_raw_value": 40300058.892009996
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            }
+          ],
+          "notes": [
+            "harness 一侧取的是清单登记的 8-02 run 的产物，其 relative_gap 为 3.96%（未证明全局最优）。",
+            "见 integrity_findings F1：评审判卷引用的是 8-04 那次重跑，不是这条登记臂。"
+          ],
+          "errata": null
+        },
+        {
+          "metric_id": "2024C.q1_waste.total_profit_yuan.reviewed_run_8_04",
+          "problem_id": "2024C",
+          "label": "七年总利润·滞销口径——评审实际引用的 8-04 重跑 vs codex（不计分，臂归属不符）",
+          "unit": "元",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "口径与量纲可比；不计分的原因不是不可比，而是 harness 一侧的产物不是本清单登记的任何一条臂。",
+          "scored": false,
+          "best_arm_id": "codex-native-blind",
+          "best_value": 40300058.892009996,
+          "tie_abs_tolerance": 0.0,
+          "observations": [
+            {
+              "arm_id": "harness-2024c",
+              "is_declared_arm": false,
+              "value": 39889103.620366916,
+              "artifact_label": "harness 8-04 重跑（未在清单中登记为臂）",
+              "source_path": "projects/2024c_农作物种植策略--20260804-201441/results/nominal.json",
+              "source_pointer": "/cases/0/chosen_profit_yuan",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2024c_农作物种植策略--20260804-201441/results/nominal.json#/cases/0/chosen_profit_yuan",
+                "source_raw_value": 39889103.620366916
+              },
+              "gap_vs_best_pct": 1.019738638,
+              "gap_vs_best_absolute": 410955.2716430798,
+              "normalized_score": 0.98980261362,
+              "outcome": "behind",
+              "rank": 2
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 40300058.892009996,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2024C_农作物种植策略/results/reported_metrics.json",
+              "source_pointer": "/0/mean_or_total_profit",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2024C_农作物种植策略/results/reported_metrics.json#/0/mean_or_total_profit",
+                "source_raw_value": 40300058.892009996
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            }
+          ],
+          "notes": [
+            "这一行复现的正是评审给出的『codex 高 1.03%』；本表统一分母后重算为 1.0197%，绝对差 410,955.27 元。"
+          ],
+          "errata": null
+        },
+        {
+          "metric_id": "2024C.q1_discount.total_profit_yuan",
+          "problem_id": "2024C",
+          "label": "七年总利润·半价（超产降价出售）口径——不可比",
+          "unit": "元",
+          "direction": "max",
+          "comparability": "not_comparable",
+          "comparability_reason": "两臂在半价情形下自设的管理约束不同（可种作物集合/轮作与地块管理的自定条款不同），可行域本身不同，8.6% 的数值差异已裁决为口径差异而非求解质量差距，不得直接比较优劣，故不计算 gap 与排名。",
+          "scored": false,
+          "best_arm_id": null,
+          "best_value": null,
+          "tie_abs_tolerance": 0.0,
+          "observations": [
+            {
+              "arm_id": "harness-2024c",
+              "is_declared_arm": true,
+              "value": 60052293.25,
+              "artifact_label": "harness 8-02 登记臂",
+              "source_path": "projects/projects/2024c-农作物种植策略--20260802-174349/results/subquestion_results.json",
+              "source_pointer": "/problem_1/discount_plan/objective_yuan",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/projects/2024c-农作物种植策略--20260802-174349/results/subquestion_results.json#/problem_1/discount_plan/objective_yuan",
+                "source_raw_value": 60052293.25
+              },
+              "gap_vs_best_pct": null,
+              "gap_vs_best_absolute": null,
+              "normalized_score": null,
+              "rank": null,
+              "outcome": "not_comparable"
+            },
+            {
+              "arm_id": "harness-2024c",
+              "is_declared_arm": false,
+              "value": 63820383.283026546,
+              "artifact_label": "harness 8-04 重跑（评审引用值，未登记为臂）",
+              "source_path": "projects/2024c_农作物种植策略--20260804-201441/results/nominal.json",
+              "source_pointer": "/cases/1/chosen_profit_yuan",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2024c_农作物种植策略--20260804-201441/results/nominal.json#/cases/1/chosen_profit_yuan",
+                "source_raw_value": 63820383.283026546
+              },
+              "gap_vs_best_pct": null,
+              "gap_vs_best_absolute": null,
+              "normalized_score": null,
+              "rank": null,
+              "outcome": "not_comparable"
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 58746214.59980625,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2024C_农作物种植策略/results/reported_metrics.json",
+              "source_pointer": "/1/mean_or_total_profit",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2024C_农作物种植策略/results/reported_metrics.json#/1/mean_or_total_profit",
+                "source_raw_value": 58746214.59980625
+              },
+              "gap_vs_best_pct": null,
+              "gap_vs_best_absolute": null,
+              "normalized_score": null,
+              "rank": null,
+              "outcome": "not_comparable"
+            }
+          ],
+          "notes": [],
+          "errata": null
+        }
+      ]
+    },
+    "2025A": {
+      "problem_id": "2025A",
+      "headline_metric_id": "2025A.q5.total_full_cylinder_duration_s",
+      "headline_ranking": [
+        {
+          "rank": 1,
+          "arm_id": "codex-native-blind",
+          "is_declared_arm": true,
+          "value": 25.098089441414814,
+          "gap_vs_best_pct": 0.0
+        },
+        {
+          "rank": 2,
+          "arm_id": "harness-2025a",
+          "is_declared_arm": true,
+          "value": 23.77147840823222,
+          "gap_vs_best_pct": 5.2857052577
+        }
+      ],
+      "comparable": true,
+      "comparability_summary": "三方同口径可比：Q1–Q5 全部采用全圆柱严格遮蔽判据，harness 与 codex 的上报值经独立复算偏差 ≤2.2e-4 s，无人虚报。",
+      "metrics": [
+        {
+          "metric_id": "2025A.q1.full_cylinder_duration_s",
+          "problem_id": "2025A",
+          "label": "Q1 有效遮蔽时长（全圆柱严格判据）",
+          "unit": "s",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "同一判据、同一场景、同一量纲；两臂上报值经独立复算偏差 ≤2.2e-4 s。",
+          "scored": true,
+          "best_arm_id": "harness-2025a",
+          "best_value": 1.391642817891725,
+          "tie_abs_tolerance": 0.00022,
+          "observations": [
+            {
+              "arm_id": "harness-2025a",
+              "is_declared_arm": true,
+              "value": 1.391642817891725,
+              "artifact_label": "harness 8-02 登记臂",
+              "source_path": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json",
+              "source_pointer": "/problems/q1/effective_duration_s",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json#/problems/q1/effective_duration_s",
+                "source_raw_value": 1.391642817891725
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "tie_within_tolerance",
+              "rank": 1
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 1.3916426682674565,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json",
+              "source_pointer": "/q1/union_duration_cylinder_total",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json#/q1/union_duration_cylinder_total",
+                "source_raw_value": 1.3916426682674565
+              },
+              "gap_vs_best_pct": 1.07516e-05,
+              "gap_vs_best_absolute": 1.49624e-07,
+              "normalized_score": 0.999999892484,
+              "outcome": "tie_within_tolerance",
+              "rank": 1
+            }
+          ],
+          "notes": [
+            "三方一致，差 1.5e-7 s，落在复算容差内，判平局。"
+          ],
+          "errata": null
+        },
+        {
+          "metric_id": "2025A.q2.full_cylinder_duration_s",
+          "problem_id": "2025A",
+          "label": "Q2 单机单弹最优有效遮蔽时长（全圆柱严格判据）",
+          "unit": "s",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "同判据同量纲。",
+          "scored": true,
+          "best_arm_id": "harness-2025a",
+          "best_value": 4.54288123958599,
+          "tie_abs_tolerance": 0.00022,
+          "observations": [
+            {
+              "arm_id": "harness-2025a",
+              "is_declared_arm": true,
+              "value": 4.54288123958599,
+              "artifact_label": "harness 8-02 登记臂",
+              "source_path": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json",
+              "source_pointer": "/problems/q2/effective_duration_s",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json#/problems/q2/effective_duration_s",
+                "source_raw_value": 4.54288123958599
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 4.541442631127515,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json",
+              "source_pointer": "/q2/union_duration_cylinder_total",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json#/q2/union_duration_cylinder_total",
+                "source_raw_value": 4.541442631127515
+              },
+              "gap_vs_best_pct": 0.0316673138,
+              "gap_vs_best_absolute": 0.001438608458,
+              "normalized_score": 0.999683326862,
+              "outcome": "behind",
+              "rank": 2
+            }
+          ],
+          "notes": [
+            "harness 略优，差 1.44e-3 s，超出复算容差一个量级，可判。"
+          ],
+          "errata": null
+        },
+        {
+          "metric_id": "2025A.q3.full_cylinder_duration_s",
+          "problem_id": "2025A",
+          "label": "Q3 单机三弹并集遮蔽时长（全圆柱严格判据）",
+          "unit": "s",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "同判据同量纲。",
+          "scored": true,
+          "best_arm_id": "codex-native-blind",
+          "best_value": 7.589782871260711,
+          "tie_abs_tolerance": 0.00022,
+          "observations": [
+            {
+              "arm_id": "harness-2025a",
+              "is_declared_arm": true,
+              "value": 7.583258259760671,
+              "artifact_label": "harness 8-02 登记臂",
+              "source_path": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json",
+              "source_pointer": "/problems/q3/union_duration_s",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json#/problems/q3/union_duration_s",
+                "source_raw_value": 7.583258259760671
+              },
+              "gap_vs_best_pct": 0.0859657201,
+              "gap_vs_best_absolute": 0.0065246115,
+              "normalized_score": 0.999140342799,
+              "outcome": "behind",
+              "rank": 2
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 7.589782871260711,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json",
+              "source_pointer": "/q3/union_duration_cylinder_total",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json#/q3/union_duration_cylinder_total",
+                "source_raw_value": 7.589782871260711
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            }
+          ],
+          "notes": [],
+          "errata": null
+        },
+        {
+          "metric_id": "2025A.q4.full_cylinder_duration_s",
+          "problem_id": "2025A",
+          "label": "Q4 三机接力并集遮蔽时长（全圆柱严格判据）",
+          "unit": "s",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "同判据同量纲。",
+          "scored": true,
+          "best_arm_id": "codex-native-blind",
+          "best_value": 11.688904697082927,
+          "tie_abs_tolerance": 0.00022,
+          "observations": [
+            {
+              "arm_id": "harness-2025a",
+              "is_declared_arm": true,
+              "value": 11.49187489796957,
+              "artifact_label": "harness 8-02 登记臂",
+              "source_path": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json",
+              "source_pointer": "/problems/q4/union_duration_s",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json#/problems/q4/union_duration_s",
+                "source_raw_value": 11.49187489796957
+              },
+              "gap_vs_best_pct": 1.6856138725,
+              "gap_vs_best_absolute": 0.197029799113,
+              "normalized_score": 0.983143861275,
+              "outcome": "behind",
+              "rank": 2
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 11.688904697082927,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json",
+              "source_pointer": "/q4/union_duration_cylinder_total",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json#/q4/union_duration_cylinder_total",
+                "source_raw_value": 11.688904697082927
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            }
+          ],
+          "notes": [],
+          "errata": null
+        },
+        {
+          "metric_id": "2025A.q5.total_full_cylinder_duration_s",
+          "problem_id": "2025A",
+          "label": "Q5 五机十五弹三导弹总遮蔽时长（全圆柱严格判据）——2025A 主指标",
+          "unit": "s",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "同判据同量纲；这是 2025A 规模最大、最能体现搜索深度的指标。",
+          "scored": true,
+          "best_arm_id": "codex-native-blind",
+          "best_value": 25.098089441414814,
+          "tie_abs_tolerance": 0.00022,
+          "observations": [
+            {
+              "arm_id": "harness-2025a",
+              "is_declared_arm": true,
+              "value": 23.77147840823222,
+              "artifact_label": "harness 8-02 登记臂",
+              "source_path": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json",
+              "source_pointer": "/problems/q5/total_union_duration_s",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/nominal.json#/problems/q5/total_union_duration_s",
+                "source_raw_value": 23.77147840823222
+              },
+              "gap_vs_best_pct": 5.2857052577,
+              "gap_vs_best_absolute": 1.326611033183,
+              "normalized_score": 0.947142947423,
+              "outcome": "behind",
+              "rank": 2
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 25.098089441414814,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json",
+              "source_pointer": "/q5/union_duration_cylinder_total",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json#/q5/union_duration_cylinder_total",
+                "source_raw_value": 25.098089441414814
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "best",
+              "rank": 1
+            }
+          ],
+          "notes": [
+            "差 1.3266 s，是全部 2025A 指标里差距最大的一项。"
+          ],
+          "errata": null
+        },
+        {
+          "metric_id": "2025A.q1.target_center_criterion_duration_s",
+          "problem_id": "2025A",
+          "label": "Q1 目标中心点对照判据时长（口径对照，非上报主答案）",
+          "unit": "s",
+          "direction": "max",
+          "comparability": "head_to_head",
+          "comparability_reason": "同为中心点判据；但这是口径敏感性对照量，不是任何一方的上报答案，故不计分。",
+          "scored": false,
+          "best_arm_id": "codex-native-blind",
+          "best_value": 1.435082101964472,
+          "tie_abs_tolerance": 0.00022,
+          "observations": [
+            {
+              "arm_id": "harness-2025a",
+              "is_declared_arm": true,
+              "value": 1.4350821019637348,
+              "artifact_label": "harness 8-02 登记臂（ERRATUM 修正值）",
+              "source_path": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/q1_center_criterion_corrected.json",
+              "source_pointer": "/corrected_value/duration_s",
+              "source_check": {
+                "status": "verified",
+                "detail": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/results/q1_center_criterion_corrected.json#/corrected_value/duration_s",
+                "source_raw_value": 1.4350821019637348
+              },
+              "gap_vs_best_pct": 1e-10,
+              "gap_vs_best_absolute": 1e-12,
+              "normalized_score": 0.999999999999,
+              "outcome": "tie_within_tolerance",
+              "rank": 1
+            },
+            {
+              "arm_id": "codex-native-blind",
+              "is_declared_arm": true,
+              "value": 1.435082101964472,
+              "artifact_label": "codex 原生盲测",
+              "source_path": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json",
+              "source_pointer": "/q1/bombs/0/duration_center",
+              "source_check": {
+                "status": "verified",
+                "detail": "C:/Users/12729/Desktop/数学建模/codex原生盲测/clean_benchmark/2025A_烟幕干扰弹投放策略/results/solution.json#/q1/bombs/0/duration_center",
+                "source_raw_value": 1.435082101964472
+              },
+              "gap_vs_best_pct": 0.0,
+              "gap_vs_best_absolute": 0.0,
+              "normalized_score": 1.0,
+              "outcome": "tie_within_tolerance",
+              "rank": 1
+            }
+          ],
+          "notes": [
+            "harness 取值为 ERRATUM 修正后的值；与 codex 差 6.0e-13 s，实质完全一致。",
+            "不计分：中心点判据双方都只当作口径对照，主答案是全圆柱口径。"
+          ],
+          "errata": {
+            "harness_archived_erroneous_value": 1.4055095783283242,
+            "harness_corrected_value": 1.4350821019637348,
+            "erratum_doc": "projects/2025a_烟幕干扰弹投放策略--20260802-174326/ERRATUM.md",
+            "root_cause": "判据在裁剪后的点到线段距离之外额外附加了 -lam 与 lam-1 两项，把云心投影落在导弹后方或超出目标端点的时刻强制记为未遮蔽；独立复核脚本复刻了同一错误因而互证通过。",
+            "impact": "主答案（全圆柱口径 Q1–Q5）不受影响；论文中『口径差异约 0.01 s 量级』的表述失实，实为约 0.043 s。"
+          }
+        }
+      ]
+    }
+  },
+  "overall_ranking_by_aggregate": [
+    {
+      "arm_id": "codex-native-blind",
+      "aggregate_normalized_score": 0.999954745621,
+      "rank": 1
+    },
+    {
+      "arm_id": "harness-2025a",
+      "aggregate_normalized_score": 0.985885430299,
+      "rank": 2
+    },
+    {
+      "arm_id": "harness-2024c",
+      "aggregate_normalized_score": 0.973425233822,
+      "rank": 3
+    },
+    {
+      "arm_id": "harness-2023d",
+      "aggregate_normalized_score": 0.894367573856,
+      "rank": 4
+    }
+  ],
+  "overall_ranking_caveat": "overall_ranking_by_aggregate 只是把各臂的无量纲汇总分排了个序，仅供参考：三条 harness 臂各自只做一题，codex 臂横跨三题，可比的指标集合并不相同，这个总排名不能读成『谁整体更强』。真正有判卷效力的是 per_problem 里的逐题排名。",
+  "source_verification": {
+    "observations_checked": 25,
+    "failures": [],
+    "all_verified": true
+  },
+  "integrity_findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "title": "2024C：评审判卷用的产物不是清单登记的那条臂",
+      "detail": "清单登记 harness-2024c = projects/projects/2024c-农作物种植策略--20260802-174349（8-02 run），其滞销口径七年总利润为 39,229,094.25 元（gap 3.96%）。评审引用的 39,889,103.62 元出自 projects/2024c_农作物种植策略--20260804-201441（8-04 run），该 run 并未在本清单里登记为任何一条臂。本报告以登记臂的数字定 arm 的 objective_value/verdict，同时把 8-04 口径作为不计分的对照行完整保留。"
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "title": "2023D：评审判卷用的产物在仓库外，也不是清单登记的那条臂",
+      "detail": "评审引用的 harness 期望年损失 1023.56 出自 C:/Users/12729/Desktop/数学建模/2023D_圈养湖羊_最终论文/results/final_summary.json（仓库外交付包）。清单登记的 harness-2023d = projects/projects/2023d_圈养湖羊空间利用率--20260802-174228，其 Q3 三年期望损失 3495.5333（同口径 idle + 3*rent），年化 1165.18，反而劣于 codex 的 1042.10。结论方向因此改变：按清单登记口径，2023D 是 harness 输。"
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "title": "『核心求解代码逐字节相同』只发生在仓库外交付包，登记臂是干净的",
+      "detail": "对 benchmarks/protocols/baselines/ 登记的 16 个 codex 文件哈希做全仓扫描：modeling-harness 仓库内 517 个 .py 无一命中（这与 comparison audit 检查 (c) 不报泄漏一致）。命中出现在仓库外：2023D_圈养湖羊_最终论文/src/solve_model.py 与 2023D_圈养湖羊_最终论文/support/package/2023D_支持材料/src/solve_model.py 与 codex 的 solve_model.py 逐字节相同（sha256 d234f077e2f029ddf8a95739febd47a631c9d7b39b64d382b749aa7304ebb2da）。所以『2023D 不构成独立对照』这条判断对那份交付包成立，对清单登记的 8-02 臂不成立。"
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "title": "评审给出的两个百分比分母口径不一致",
+      "detail": "『codex 高 5.3%』以更优值为分母，『codex 高 1.03%』以更劣值为分母。本报告统一以最优臂为分母重算，2024C 8-04 口径由 1.03% 变为 1.0197%，2025A Q5 维持 5.2857%（≈5.3%）。绝对差不变。"
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "title": "2025A 中心点判据几何 bug 已由 harness 自查出具 ERRATUM，且修正后与 codex 吻合",
+      "detail": "harness 8-02 臂归档的中心点对照口径 1.4055095783283242 s 有几何 bug（判据在裁剪后的点到线段距离外多加了投影窗口项），ERRATUM.md 给出修正值 1.4350821019637348 s；codex 同口径为 1.435082101964472 s，二者差 6.0e-13 s。主答案（全圆柱口径）不受影响。该 ERRATUM 是 harness 自查发现的，属正向证据，但它同时说明该臂的独立复核脚本复刻了同一错误、未能拦住。"
+    }
+  ]
+}

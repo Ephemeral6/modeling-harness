@@ -5,8 +5,15 @@ import re
 from pathlib import Path
 
 from .contracts import safe_relative
+from .paper_content import content_contract_enabled
 from .storage import atomic_write_json, read_json
 
+
+# 内部产物清单：这些文件只服务项目内部流程（如 --preview 逃生口），
+# 不进入交付冻结清单，也不进入 episode 打包。
+INTERNAL_ARTIFACTS: frozenset[str] = frozenset({
+    "paper/final_preview.md",
+})
 
 INTERNAL_PATTERNS: list[tuple[str, str]] = [
     (r"\[\[[^\]\n]{1,128}\]\]", "evidence_marker"),
@@ -32,11 +39,21 @@ _REFERENCE_HEADER_RE = re.compile(
 _REFERENCE_ENTRY_RE = re.compile(
     r"(?m)^\s*(?:\[[0-9]+\]|[0-9]+[.)])\s*(\S.*)$"
 )
+_REFERENCE_NUMBER_RE = re.compile(
+    r"(?m)^\s*(?:\[([0-9]+)\]|([0-9]+)[.)])\s*\S"
+)
+_CITATION_RE = re.compile(
+    r"\[([1-9][0-9]{0,2}(?:\s*[,，、-]\s*[1-9][0-9]{0,2})*)\](?!\()"
+)
 _SELF_REFERENCE_RE = re.compile(
     r"本文项目内|随论文交付|"
     r"(?<![\w./])(?:results|config|checks|paper|docs|src)/",
     re.IGNORECASE,
 )
+_YAML_FRONT_MATTER_RE = re.compile(
+    r"\A---\s*\n(?P<body>.*?)\n---\s*(?:\n|\Z)", re.DOTALL
+)
+_YAML_ABSTRACT_RE = re.compile(r"(?mi)^abstract\s*:")
 
 
 def _profile(root: Path) -> dict:
@@ -44,7 +61,13 @@ def _profile(root: Path) -> dict:
 
 
 def _titles(text: str) -> set[str]:
-    return {match.strip().casefold() for match in _HEADING_RE.findall(text)}
+    titles = {
+        match.strip().casefold() for match in _HEADING_RE.findall(text)
+    }
+    front_matter = _YAML_FRONT_MATTER_RE.match(text)
+    if front_matter and _YAML_ABSTRACT_RE.search(front_matter.group("body")):
+        titles.add("摘要")
+    return titles
 
 
 def _missing_sections(text: str, profile: dict, field: str) -> list[str]:
@@ -61,6 +84,44 @@ def _reference_entries(text: str) -> list[str]:
     if not match:
         return []
     return _REFERENCE_ENTRY_RE.findall(text[match.end():])
+
+
+def _cited_reference_numbers(body: str) -> set[int]:
+    """Collect numbers cited in-text as ``[k]``, ``[k,m]`` or ``[k-m]``."""
+    cited: set[int] = set()
+    for match in _CITATION_RE.finditer(body):
+        before = body[match.start() - 1] if match.start() else ""
+        after = body[match.end():match.end() + 1]
+        if "$" in (before, after):
+            continue
+        for part in re.split(r"[,，、]", match.group(1)):
+            bounds = [int(value) for value in re.findall(r"[0-9]+", part)]
+            if "-" in part and len(bounds) == 2 and bounds[0] <= bounds[1]:
+                cited.update(range(bounds[0], bounds[1] + 1))
+            else:
+                cited.update(bounds)
+    return cited
+
+
+def _citation_violations(text: str) -> list[dict]:
+    """Cross-check numbered reference entries against in-text ``[k]`` marks."""
+    header = _REFERENCE_HEADER_RE.search(text)
+    if not header:
+        return []
+    entries = {
+        int(first or second)
+        for first, second in _REFERENCE_NUMBER_RE.findall(text[header.end():])
+    }
+    cited = _cited_reference_numbers(text[:header.start()])
+    violations: list[dict] = []
+    for number in sorted(entries - cited):
+        violations.append({"kind": "uncited_reference", "reference": number})
+    for number in sorted(cited - entries):
+        violations.append({
+            "kind": "citation_without_entry",
+            "reference": number,
+        })
+    return violations
 
 
 def _inject_deferred(root: Path, text: str) -> str:
@@ -96,13 +157,27 @@ def render_final(
     root: Path,
     draft: str = "paper/draft.md",
     out: str = "paper/final.md",
+    *,
+    preview: bool = False,
 ) -> Path:
-    """Strip internal evidence markers and materialize a delivery artifact."""
+    """Strip internal evidence markers and materialize a delivery artifact.
+
+    启用 paper_content_contract 的 delivery profile 下，正式渲染前必须
+    通过交付门禁：s6_paper_audit 谱系最新裁决为 APPROVE 且其
+    artifact_hashes 与当前工作稿一致。``preview=True`` 是唯一逃生口，
+    只写内部产物 ``paper/final_preview.md``，不产出 claim_map 与交付报告。
+    """
     root = root.resolve()
+    if preview:
+        out = "paper/final_preview.md"
     source = safe_relative(root, draft)
     target = safe_relative(root, out)
     if not source.is_file():
         raise ValueError(f"工作稿不存在: {draft}")
+    if not preview and content_contract_enabled(root):
+        from .delivery_core import require_terminal_approval
+
+        require_terminal_approval(root, draft=draft)
     text = _inject_deferred(
         root, source.read_text(encoding="utf-8")
     )
@@ -125,6 +200,9 @@ def render_final(
     rendered = "".join(parts)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(rendered, encoding="utf-8", newline="\n")
+    if preview:
+        # 预览不得伪装成交付物：不产出 claim_map，也不生成交付报告。
+        return target
     atomic_write_json(root / "paper" / "claim_map.json", {
         "schema": 1,
         "draft": draft,
@@ -191,6 +269,9 @@ def sanitize_report(
             "kind": "self_citation_only",
             "actual": len(references),
         })
+
+    if profile.get("require_in_text_citations") is True:
+        violations.extend(_citation_violations(text))
 
     for section in _missing_sections(text, profile, "required_sections"):
         violations.append({"kind": "missing_section", "section": section})

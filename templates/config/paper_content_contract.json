@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "body": "paper/final.md",
+  "appendices": ["paper/technical_appendix.md"],
+  "page_target": {
+    "min": 18,
+    "max": 25,
+    "enforcement": "advisory"
+  },
+  "appendix_only_labels": [
+    "权威数值锁定表",
+    "机器锁定表",
+    "machine lock table",
+    "numeric lock table"
+  ],
+  "decision_claim_phrases": [
+    "联合优化",
+    "同时决策",
+    "联合决策"
+  ],
+  "decision_claims": [],
+  "require_regenerator_for_headline_claims": true,
+  "self_imposed_disclosure": {
+    "enabled": true,
+    "obligation": "self_imposed_assumptions",
+    "note": "config/calibration_freeze.json 与 problem/constraint_ledger.json 中每个 origin=self_imposed 条目，都必须在正文的 disclosure_anchor 节里有非空披露。无自设条目时本义务零输出。"
+  },
+  "obligation_defaults": {
+    "answer": [
+      {
+        "kind": "direct_answer",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "model_definition",
+        "placement": "body",
+        "formats": ["equation"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "derivation",
+        "placement": "body",
+        "formats": ["equation"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "algorithm",
+        "placement": "either",
+        "formats": ["pseudocode"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "validation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1,
+        "disclosure_fields": ["method", "expected", "actual", "conclusion"]
+      },
+      {
+        "kind": "interpretation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1
+      }
+    ],
+    "constraint": [
+      {
+        "kind": "model_definition",
+        "placement": "body",
+        "formats": ["equation"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "validation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1,
+        "disclosure_fields": ["method", "expected", "actual", "conclusion"]
+      },
+      {
+        "kind": "interpretation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1
+      }
+    ],
+    "model_condition": [
+      {
+        "kind": "model_definition",
+        "placement": "body",
+        "formats": ["equation"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "validation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1,
+        "disclosure_fields": ["method", "expected", "actual", "conclusion"]
+      },
+      {
+        "kind": "interpretation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1
+      }
+    ],
+    "data": [
+      {
+        "kind": "data_definition",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "validation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1,
+        "disclosure_fields": ["method", "expected", "actual", "conclusion"]
+      }
+    ],
+    "delivery": [
+      {
+        "kind": "direct_answer",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1
+      },
+      {
+        "kind": "validation",
+        "placement": "body",
+        "formats": ["prose"],
+        "min_evidence": 1,
+        "disclosure_fields": ["method", "expected", "actual", "conclusion"]
+      }
+    ]
+  }
+}

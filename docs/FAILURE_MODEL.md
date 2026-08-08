@@ -15,6 +15,7 @@ The harness fails closed. Missing, malformed, stale, or ambiguous state never co
 | Overlapping write scopes | normalized parent/child conflict | re-plan ownership |
 | Intake crashes | staging directory | remove staging; do not update current pointer |
 | Duplicate Intake | unique run directory | preserve both runs |
+| Final rendered/frozen without terminal APPROVE | delivery gate rehashes the newest `s6_paper_audit` lineage verdict against the current draft | refuse render/freeze; append a new `_vN` terminal review and rerun |
 
 Still intentionally external to the kernel:
 

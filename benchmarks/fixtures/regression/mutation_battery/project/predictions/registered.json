@@ -1,0 +1,17 @@
+{
+  "claims": {
+    "Q2.annual_output": {"value": 1326.113537117904, "unit": "只/年"},
+    "Q2.ewes": {"value": 416, "unit": "只"},
+    "Q2.peak_pens": {"value": 112, "unit": "栏"},
+    "Q2.layer1_best": {"value": 1314.0, "unit": "只/年"},
+    "Q2.upper_bound": {"value": 1387.2518522707992, "unit": "只/年"},
+    "Q2.knapsack_bound": {"value": 1377.117903930131, "unit": "只/年"},
+    "Q1.gap_lower": {"value": 10, "unit": "栏"},
+    "Q1.gap_upper": {"value": 16, "unit": "栏"},
+    "Q1.restricted_lower": {"value": 11, "unit": "栏"},
+    "Q3.report_n": {"value": 200, "unit": "个"},
+    "Q3.report_headline": {"value": 962.478812, "unit": "只/年"},
+    "Q3.selection_headline": {"value": 950.354079, "unit": "只/年"},
+    "Q3.pairing_diff": {"value": -3.485905, "unit": "只"}
+  }
+}

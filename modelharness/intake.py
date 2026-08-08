@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+from .calibration import inherit_baseline
 from .contracts import safe_relative
 from .scaffold import create
 from .storage import file_lock
@@ -36,10 +37,16 @@ def safe_attachment_name(name: str) -> str:
 
 
 def intake(harness_root: Path, title: str, prompt: str, files: list[Path],
-           project_dir: Path | None = None, engine: str = "auto") -> dict:
+           project_dir: Path | None = None, engine: str = "auto",
+           baseline: Path | str | None = None) -> dict:
     harness_root = harness_root.resolve()
     projects = harness_root / "projects"
     projects.mkdir(parents=True, exist_ok=True)
+    baseline_root = (
+        Path(baseline).expanduser().resolve() if baseline is not None else None
+    )
+    if baseline_root is not None and not baseline_root.is_dir():
+        raise ValueError(f"baseline 项目目录不存在: {baseline_root}")
     sources = [Path(item).resolve(strict=True) for item in files]
     if any(not source.is_file() for source in sources):
         raise ValueError("所有 Intake 输入都必须是普通文件")
@@ -108,6 +115,10 @@ def intake(harness_root: Path, title: str, prompt: str, files: list[Path],
                 "schema": 2, "title": title, "received_at": now(),
                 "user_prompt": "problem/user_prompt.md", "files": manifest,
             })
+            inheritance = (
+                inherit_baseline(root, baseline_root)
+                if baseline_root is not None else None
+            )
             os.replace(staging, destination)
         except BaseException:
             if staging.exists():
@@ -118,9 +129,20 @@ def intake(harness_root: Path, title: str, prompt: str, files: list[Path],
             "project": destination.relative_to(harness_root).as_posix(),
             "title": title, "updated_at": now(),
         })
-    return {
+    result = {
         "project": str(destination), "title": title,
         "files_received": len(sources),
         "manifest": str(destination / "problem" / "intake_manifest.json"),
         "next_action": "运行 modelharness autopilot next 并持续推进到 S6。",
     }
+    if inheritance is not None:
+        # 上一 run 的自设口径已随项目落盘，改动必须写 superseded_reason。
+        result["baseline"] = inheritance["baseline"]
+        result["calibration"] = {
+            "freeze": inheritance["freeze"],
+            "diff": inheritance["diff"],
+            "entries": inheritance["entries"],
+            "constraints": inheritance["constraints"],
+            "counts": inheritance["counts"],
+        }
+    return result

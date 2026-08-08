@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "regression-comparison-leaked-baseline",
+  "problem_ids": ["FIXTURE-2"],
+  "arms": [
+    {
+      "arm_id": "harness_a",
+      "kind": "harness",
+      "project_path": "arms/harness_a",
+      "model": "fixture-harness-model",
+      "seed": 11,
+      "producer": "worker_a"
+    },
+    {
+      "arm_id": "external_b",
+      "kind": "external_baseline",
+      "artifact_dir": "arms/external_b",
+      "model": "fixture-baseline-model",
+      "producer": "worker_b"
+    }
+  ],
+  "baseline_artifacts": [
+    {
+      "baseline_id": "fixture_codex",
+      "path": "optimize.py",
+      "sha256": "8945c4914f0d03e94b6b377eefc054b8c359f7c9eaffd8be5ca14943e28d1eee"
+    }
+  ],
+  "judge": {
+    "command": "checks/judge_fixture.py",
+    "frozen_params_sha256": "6a3f0f1de0c8fbb9c2ef2a5a6dbb2b4a0f1c3d5e7a9b0c1d2e3f4a5b6c7d8e9f",
+    "frozen_at": "2026-08-02T09:00:00+08:00",
+    "worker": "judge_c"
+  },
+  "report_path": "reports/comparison.json",
+  "isolation": "arms 不得读取彼此目录"
+}

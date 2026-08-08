@@ -14,8 +14,10 @@ def test_episode_package_captures_authoritative_trace(tmp_path: Path):
         benchmark_id="smoke",
         model="test-model",
         seed=7,
+        allow_partial=True,
     )
     manifest = read_json(destination / "episode.json")
+    assert manifest["status"] == "active"
     assert manifest["benchmark_id"] == "smoke"
     assert manifest["model"] == "test-model"
     assert manifest["seed"] == 7

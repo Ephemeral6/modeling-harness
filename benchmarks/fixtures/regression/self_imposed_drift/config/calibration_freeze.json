@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "inherited_from": "projects/2024c-农作物种植策略--20260802-174349",
+  "entries": [
+    {
+      "id": "calib.min_planting_area_fraction",
+      "kind": "management_constraint",
+      "statement": "单地块单季单作物的最小种植面积不低于地块面积的 20%（并夹在 0.3 亩与 6 亩之间）。",
+      "value": 0.2,
+      "unit": "fraction_of_plot_area",
+      "origin": "self_imposed",
+      "rationale": "题面只写“便于田间管理”，没有给出任何数值；20% 是本题解自定的可管理性口径，跨 run 必须一致，否则两次 run 的利润不可比。",
+      "result_path": "model_calibration.min_planting_area_fraction",
+      "disclosure_anchor": "自设口径与管理假设",
+      "frozen_at": "2026-08-02T17:43:49+08:00",
+      "inherited": true
+    },
+    {
+      "id": "calib.management_group_caps",
+      "kind": "management_constraint",
+      "statement": "同一年—季—作物在每个管理分组内允许启用的地块数上限（分散度上限）。",
+      "value": {
+        "A": 6,
+        "B": 6,
+        "C": 6,
+        "D": 4,
+        "E1": 8,
+        "E2": 6,
+        "F": 4
+      },
+      "unit": "plots",
+      "origin": "self_imposed",
+      "rationale": "分散度上限同样是自设管理口径，题面无此数值；去掉上限会显著抬高利润，属于口径变化而非模型改进。",
+      "result_path": "model_calibration.management_group_caps",
+      "disclosure_anchor": "自设口径与管理假设",
+      "frozen_at": "2026-08-02T17:43:49+08:00",
+      "inherited": true
+    }
+  ]
+}

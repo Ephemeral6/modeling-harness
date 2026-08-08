@@ -1,3 +1,3 @@
 """Modeling Harness: problem-graph and toolchain-driven orchestration."""
 
-__version__ = "4.1.0"
+__version__ = "4.6.0"

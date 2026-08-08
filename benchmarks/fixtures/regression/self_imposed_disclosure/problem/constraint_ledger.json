@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "constraints": {
+    "constraint.management.dispersion_cap": {
+      "statement": "同一年—季—作物在每个管理分组内启用的地块数不超过分组上限。",
+      "type": "constraint",
+      "hard": true,
+      "scope": "model",
+      "origin": "self_imposed",
+      "rationale": "题面未给分散度数值，上限是为“便于田间管理”自定的口径。",
+      "disclosure_anchor": "分散度上限的管理解释",
+      "source_requirement_ids": [],
+      "status": "MODELED",
+      "reason": "",
+      "mathematical_form": "\\sum_{p \\in g} z_{tpsc} \\le U_g",
+      "implementation": {
+        "solver_artifact": "src/solver.py",
+        "checker_artifact": "checks/check_nominal.py"
+      }
+    }
+  }
+}

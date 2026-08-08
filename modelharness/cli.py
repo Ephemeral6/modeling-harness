@@ -10,6 +10,14 @@ from .engines import VALID as ENGINE_CHOICES, detect as detect_engines
 from .evidence import EvidenceGraph
 from .intake import intake
 from .integration import audit_integration
+from .lifecycle import (
+    CLOSE_REASON,
+    audit_projects,
+    close as close_run,
+    describe as describe_status,
+    resume as resume_run,
+    set_status,
+)
 from .method_packs import MethodPackRegistry
 from .narrative import audit_paper, build_brief
 from .problem_graph import ProblemGraph, validate_problem_graph
@@ -59,6 +67,10 @@ def build_parser() -> argparse.ArgumentParser:
     take.add_argument("--file", action="append", default=[])
     take.add_argument("--root", type=Path, default=Path.cwd())
     take.add_argument("--engine", choices=ENGINE_CHOICES, default="auto")
+    take.add_argument(
+        "--baseline", type=Path,
+        help="上一个同题项目路径：继承其自设口径冻结与自设约束条目",
+    )
 
     for name, help_text in (
         ("status", "汇总问题图、阶段、证据、任务和完整性"),
@@ -165,6 +177,28 @@ def build_parser() -> argparse.ArgumentParser:
     use.add_argument("name")
     add_project_option(use)
 
+    project = sub.add_parser("project", help="管理 run 生命周期状态")
+    project_sub = project.add_subparsers(dest="action", required=True)
+    abandon = project_sub.add_parser("abandon")
+    abandon.add_argument("--reason", required=True)
+    add_project_option(abandon)
+    project_close = project_sub.add_parser(
+        "close", help="给已盖 s6 印章的历史 run 回填 completed 终态"
+    )
+    project_close.add_argument("--reason", default=CLOSE_REASON)
+    add_project_option(project_close)
+    project_status = project_sub.add_parser("status")
+    add_project_option(project_status)
+    project_resume = project_sub.add_parser(
+        "resume", help="对账后生成续跑包并把 run 恢复为 active"
+    )
+    add_project_option(project_resume)
+    project_audit = project_sub.add_parser(
+        "audit", help="扫描 projects 目录，找出 stale_active 的 run"
+    )
+    project_audit.add_argument("--root", type=Path, required=True)
+    project_audit.add_argument("--hours", type=float, default=24.0)
+
     pack = sub.add_parser("pack", help="管理方法包")
     pack_sub = pack.add_subparsers(dest="action", required=True)
     for action in ("list", "audit", "lock"):
@@ -256,11 +290,17 @@ def main() -> int:
                 args.root, args.title, args.prompt,
                 [Path(x) for x in args.file],
                 engine=args.engine,
+                baseline=args.baseline,
             ))
             return 0
         if args.command == "plan" and args.action == "validate":
             emit(validate_problem_graph(read_json(args.file.resolve())))
             return 0
+        if args.command == "project" and args.action == "audit":
+            # audit 面向 projects 根目录批量扫描，不解析单项目。
+            report = audit_projects(args.root, hours=args.hours)
+            emit(report)
+            return int(not report["ok"])
         project = resolve(args)
         if args.command in {"autopilot", "work"}:
             emit(next_packet(project))
@@ -407,6 +447,15 @@ def main() -> int:
                     ) if service.content_hash() != before else []
                 )
                 emit({"profile": selected, "invalidated": invalidated})
+        elif args.command == "project":
+            if args.action == "resume":
+                emit(resume_run(project))
+            else:
+                if args.action == "abandon":
+                    set_status(project, "abandoned", args.reason)
+                elif args.action == "close":
+                    close_run(project, args.reason)
+                emit(describe_status(project))
         elif args.command == "pack":
             registry = MethodPackRegistry(project)
             if args.action == "list":

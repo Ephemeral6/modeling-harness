@@ -48,6 +48,14 @@ def _score_item(root: Path, item: dict, evaluation: dict) -> dict:
         passed = exists and _apply_op(
             "close_to", actual, item.get("target"), tolerance
         )
+    elif kind == "evaluation_value":
+        exists, actual = _json_path(
+            evaluation, str(item.get("field", ""))
+        )
+        passed = exists and _apply_op(
+            str(item.get("op", "eq")), actual, item.get("value"),
+            float(item.get("tolerance", 0)),
+        )
     elif kind == "integrity":
         actual = evaluation.get("integrity", {}).get("ok")
         passed = actual is bool(item.get("expected", True))
