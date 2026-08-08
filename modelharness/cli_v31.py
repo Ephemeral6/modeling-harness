@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from . import cli as legacy_cli
+from .comparison import audit_comparison
 from .coverage import audit_explanation_coverage, initialize_coverage_matrix
 from .delivery_core import freeze_delivery, verify_freeze
 from .opportunities import (
@@ -272,6 +273,22 @@ def _provenance(values: list[str]) -> int:
     return int(bool(errors))
 
 
+def _comparison(values: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="modelharness comparison")
+    sub = parser.add_subparsers(dest="action", required=True)
+    audit = sub.add_parser("audit")
+    audit.add_argument("--manifest", type=Path, required=True)
+    args = parser.parse_args(values)
+    manifest = Path(args.manifest).expanduser().resolve()
+    errors = audit_comparison(manifest)
+    _emit({
+        "ok": not errors,
+        "manifest": manifest.as_posix(),
+        "errors": errors,
+    })
+    return int(bool(errors))
+
+
 def _paper(values: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="modelharness paper")
     sub = parser.add_subparsers(dest="action", required=True)
@@ -405,6 +422,8 @@ def main() -> int:
             return _assurance(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "provenance":
             return _provenance(sys.argv[2:])
+        if len(sys.argv) >= 2 and sys.argv[1] == "comparison":
+            return _comparison(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "repair":
             return _repair(sys.argv[2:])
         if len(sys.argv) >= 2 and sys.argv[1] == "deliver":

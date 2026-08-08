@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "id": "YYYY-<短横线小写标识>",
+  "problem_ids": ["2023D", "2024C", "2025A"],
+  "arms": [
+    {
+      "arm_id": "harness-<problem_id>",
+      "kind": "harness",
+      "project_path": "projects/<run 目录名>",
+      "model": "<驱动该臂的模型标识；不知道就写 unrecorded>",
+      "seed": null,
+      "producer": "<跑这条臂的 worker id；未登记则删掉本字段>"
+    },
+    {
+      "arm_id": "<对照臂标识>",
+      "kind": "external_baseline",
+      "artifact_dir": "<产物目录；仓库外用绝对路径>",
+      "model": "<对照系统标识>",
+      "producer": "<跑这条臂的 worker id；未登记则删掉本字段>"
+    }
+  ],
+  "baseline_artifacts": [
+    {
+      "baseline_id": "<benchmarks/protocols/baselines/*.json 的 baseline_id>",
+      "path": "<登记表里的 files[].path，原样抄写>",
+      "sha256": "<登记表里的 files[].sha256，原样抄写，不要重算>"
+    }
+  ],
+  "judge": {
+    "command": "checks/<judge 脚本>.py",
+    "frozen_params_sha256": "<判卷参数文件的 sha256；开跑前冻结>",
+    "frozen_at": "<冻结时刻 ISO-8601 带时区；必须早于每条 harness 臂的完成时刻>",
+    "worker": "<判卷者 id；不得等于任一臂的 producer>"
+  },
+  "report_path": "benchmarks/reports/<id>/report.json",
+  "isolation": "arms 不得读取彼此目录",
+  "deadline": null,
+  "notes": [
+    "相对路径以协议根为基准：清单放在 benchmarks/protocols/ 下时协议根即仓库根。",
+    "report.json 至少要有 arms 数组（或以 arm_id 为键的对象），每条臂含 objective_value 与 verdict。"
+  ]
+}

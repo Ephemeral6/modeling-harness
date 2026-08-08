@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "comparison_id": "regression-comparison-leaked-baseline",
+  "arms": [
+    {
+      "arm_id": "harness_a",
+      "objective_value": 118.4,
+      "verdict": "PASS"
+    },
+    {
+      "arm_id": "external_b",
+      "objective_value": 104.9,
+      "verdict": "PASS"
+    }
+  ]
+}
