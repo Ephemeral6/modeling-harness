@@ -35,6 +35,9 @@ SELF_IMPOSED = "self_imposed"
 CONSTRAINT_ORIGINS = ("statement", SELF_IMPOSED)
 DIFF_STATES = ("same", "changed", "dropped", "added")
 _REQUIRED_TEXT_FIELDS = ("kind", "statement", "rationale", "result_path", "frozen_at")
+# Sentinel: an inherited entry whose result artifact this run has not produced
+# yet.  Not an error, and never rendered to the agent as one.
+_PENDING = object()
 
 
 def freeze_path(root: Path) -> Path:
@@ -61,8 +64,19 @@ def _values_equal(frozen: Any, actual: Any, tolerance: float = 0.0) -> bool:
     return frozen == actual
 
 
-def _resolve_result(root: Path, result_path: str) -> tuple[str | None, Any]:
-    """Read ``<stem>.<dotted.field>`` out of ``results/<stem>.json``."""
+def _resolve_result(
+    root: Path, result_path: str, inherited: bool = False
+) -> tuple[Any, Any]:
+    """Read ``<stem>.<dotted.field>`` out of ``results/<stem>.json``.
+
+    ``inherited`` entries arrive from a baseline run before this run has
+    computed anything.  Until the addressed result artifact exists there is
+    no number to drift from, so a missing file is *pending*, not a failure —
+    otherwise a freshly inherited project fails the freeze audit at S0 for
+    results it is not scheduled to produce until S3/S4.  The entry still
+    binds the moment the artifact appears, and the paper content contract
+    keeps requiring its disclosure either way.
+    """
     parts = str(result_path).split(".")
     if parts and parts[0] == "results":
         parts = parts[1:]
@@ -77,6 +91,8 @@ def _resolve_result(root: Path, result_path: str) -> tuple[str | None, Any]:
     except ValueError as exc:
         return str(exc), None
     if not path.is_file():
+        if inherited:
+            return (_PENDING, None)
         return f"result artifact missing: {relative}", None
     found, value = _json_path(read_json(path), ".".join(parts[1:]))
     if not found:
@@ -162,7 +178,12 @@ def audit_freeze(root: Path) -> list[str]:
         if not _numeric(tolerance) or float(tolerance) < 0:
             errors.append(f"calibration freeze tolerance invalid: {label}")
             tolerance = 0
-        message, actual = _resolve_result(root, result_path)
+        message, actual = _resolve_result(
+            root, result_path, inherited=entry.get("inherited") is True
+        )
+        if message is _PENDING:
+            # Inherited but not yet recomputed by this run: nothing to compare.
+            continue
         if message is not None:
             errors.append(f"calibration freeze {message}: {label}")
             continue

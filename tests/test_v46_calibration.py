@@ -495,3 +495,60 @@ def test_paper_audit_is_silent_without_self_imposed_entries(tmp_path: Path):
     root = _paper_project(tmp_path)
     (root / "config" / "calibration_freeze.json").unlink()
     assert _disclosure_issues(root) == []
+
+
+# ------------------------------------------- 继承 run 尚未产出 results 时
+
+
+def test_inherited_entry_is_pending_until_this_run_produces_results(
+    tmp_path: Path,
+):
+    """新 run 刚继承 baseline 冻结、results/ 还空时不得报 artifact missing。
+
+    回归 4.6 冒烟：`intake --baseline` 之后项目还停在 S0，被继承条目指向的
+    结果文件要到 S3/S4 才产出；旧实现在 S0 就抛出一串
+    "result artifact missing"，把没做错任何事的新项目直接判负。
+    """
+    baseline = _baseline_project(tmp_path)
+    root = _project(tmp_path, "run2")
+    inherit_baseline(root, baseline)
+
+    assert not (root / "results" / "model_calibration.json").exists()
+    assert audit_freeze(root) == []
+
+
+def test_inherited_entry_binds_once_the_result_artifact_appears(
+    tmp_path: Path,
+):
+    """待定只到结果落盘为止：一旦产出，继承值仍然必须复现。"""
+    baseline = _baseline_project(tmp_path)
+    root = _project(tmp_path, "run2")
+    inherit_baseline(root, baseline)
+
+    _write(root / "results" / "model_calibration.json", {
+        "schema": 1, "min_area_fraction": 0.35, "group_caps": {"A": 6, "D": 4},
+    })
+    errors = audit_freeze(root)
+    assert any(
+        "calib.min_area_fraction" in error and "drifted" in error
+        for error in errors
+    )
+
+    _write(root / "results" / "model_calibration.json", {
+        "schema": 1, "min_area_fraction": 0.2, "group_caps": {"A": 6, "D": 4},
+    })
+    assert audit_freeze(root) == []
+
+
+def test_own_frozen_entry_still_requires_its_result_artifact(tmp_path: Path):
+    """本 run 自己冻结的条目不享受待定豁免：冻结即代表数字已产出。"""
+    root = _project(tmp_path)
+    _write(root / "config" / "calibration_freeze.json", {
+        "schema": 1, "entries": [_entry(inherited=False)],
+    })
+    errors = audit_freeze(root)
+    assert any(
+        "result artifact missing" in error
+        and "calib.min_area_fraction" in error
+        for error in errors
+    )
