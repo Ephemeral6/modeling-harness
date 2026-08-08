@@ -11,7 +11,9 @@ from .evidence import EvidenceGraph
 from .intake import intake
 from .integration import audit_integration
 from .lifecycle import (
+    CLOSE_REASON,
     audit_projects,
+    close as close_run,
     describe as describe_status,
     resume as resume_run,
     set_status,
@@ -180,6 +182,11 @@ def build_parser() -> argparse.ArgumentParser:
     abandon = project_sub.add_parser("abandon")
     abandon.add_argument("--reason", required=True)
     add_project_option(abandon)
+    project_close = project_sub.add_parser(
+        "close", help="给已盖 s6 印章的历史 run 回填 completed 终态"
+    )
+    project_close.add_argument("--reason", default=CLOSE_REASON)
+    add_project_option(project_close)
     project_status = project_sub.add_parser("status")
     add_project_option(project_status)
     project_resume = project_sub.add_parser(
@@ -446,6 +453,8 @@ def main() -> int:
             else:
                 if args.action == "abandon":
                     set_status(project, "abandoned", args.reason)
+                elif args.action == "close":
+                    close_run(project, args.reason)
                 emit(describe_status(project))
         elif args.command == "pack":
             registry = MethodPackRegistry(project)

@@ -10,6 +10,8 @@ from .util import now
 
 STATUSES = ("active", "interrupted", "completed", "delivered", "abandoned")
 RESUMABLE = ("active", "interrupted")
+CLOSABLE = ("active", "interrupted")
+CLOSE_REASON = "s6 印章已存在，回填终态 completed"
 RECOVERY_ACTION = (
     "需先 tool recover 对账（workflow 任务经 modelharness task recover "
     "裁决）；非幂等任务的未知结果不得当普通失败自动重跑"
@@ -58,6 +60,35 @@ def set_status(root: Path, status: str, reason: str) -> dict:
         })
         atomic_write_json(path, meta)
     return meta
+
+
+def close(root: Path, reason: str = CLOSE_REASON) -> dict:
+    """Backfill ``completed`` on a run whose s6 gate already stamped.
+
+    ``completed`` is normally written only by the s6 gate success path
+    (``StageService.gate``), and this command must not weaken that: it never
+    invents the milestone, it only reconciles the manifest of a historical run
+    whose gate ran before lifecycle status was wired in. An s6 stamp on disk is
+    therefore a hard precondition, and only non-terminal runs are closable so a
+    ``delivered``/``abandoned`` verdict can never be silently downgraded.
+    """
+    root = Path(root).resolve()
+    stamp = root / ".harness" / "stamps" / "s6.json"
+    if not stamp.is_file():
+        raise ValueError(
+            f"拒绝收口：s6 印章不存在 ({stamp})；"
+            "completed 只能出自 s6 gate 成功路径，close 只回填已盖章的历史 run"
+        )
+    record = read_json(stamp)
+    if not isinstance(record, dict) or record.get("stage") != "s6":
+        raise ValueError(f"拒绝收口：s6 印章损坏或 stage 字段不符: {stamp}")
+    status = get_status(root)
+    if status not in CLOSABLE:
+        raise ValueError(
+            f"拒绝收口：项目状态为 {status}；仅 {CLOSABLE} 可收口为 completed"
+        )
+    set_status(root, status="completed", reason=reason)
+    return describe(root)
 
 
 def reconcile_status(root: Path) -> dict:
