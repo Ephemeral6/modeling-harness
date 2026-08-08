@@ -20,6 +20,19 @@ KINDS = EVIDENCE_KINDS
 STATUSES = {
     "candidate", "verified", "rejected", "revoked", "invalidated",
 }
+# Profiles whose delivery contract forbids self-verified evidence outright.
+ISOLATION_ENFORCED_PROFILES = {"cumcm", "mcm_icm"}
+SELF_VERIFY_HINT = (
+    "生成者不得自验，请由另一 worker 执行："
+    "modelharness evidence verify <id> --worker <另一 worker>"
+)
+
+
+def normalize_worker(value: str | None) -> str | None:
+    """Case/space-insensitive identity used for isolation comparison."""
+    if value is None:
+        return None
+    return str(value).strip().casefold() or None
 
 
 class EvidenceGraph:
@@ -189,11 +202,134 @@ class EvidenceGraph:
                 return "stale"
         return "valid"
 
-    def verify(self, node_id: str, timeout: int = 1800) -> dict:
+    def _active_profile_name(self) -> str | None:
+        data = read_json(self.root / "config" / "delivery_profile.json")
+        if isinstance(data, dict) and isinstance(data.get("name"), str):
+            return data["name"]
+        return None
+
+    def _isolation_required(self) -> bool:
+        return self._active_profile_name() in ISOLATION_ENFORCED_PROFILES
+
+    def _producer_identity(self, node: dict) -> dict:
+        """Who produced this evidence, as far as durable workflow state knows.
+
+        `producer_task_id` is authoritative when registered; tasks that own the
+        artifact are the fallback so that omitting `producer_task_id` is not a
+        way around the isolation rule.
+        """
+        from .workflow import WorkflowEngine, owners_overlap
+
+        workflow = WorkflowEngine(self.root)
+        producer_task_id = node.get("producer_task_id")
+        producer_worker = None
+        if producer_task_id:
+            try:
+                producer_worker = workflow.get_task(
+                    producer_task_id
+                ).get("worker")
+            except ValueError:
+                producer_worker = None
+        workers = {producer_worker} if producer_worker else set()
+        for task in workflow.list_tasks():
+            if task.get("task_type") == "independent_review":
+                continue
+            if not task.get("worker"):
+                continue
+            if any(
+                owners_overlap(node["artifact"], scope)
+                for scope in task.get("owns", [])
+            ):
+                workers.add(task["worker"])
+        return {
+            "task_id": producer_task_id,
+            "worker": producer_worker,
+            "workers": sorted(workers),
+        }
+
+    def _resolve_isolation(
+        self,
+        node_id: str,
+        node: dict,
+        worker: str | None,
+        verifier_task_id: str | None,
+    ) -> dict:
+        """Bind the verifier identity and refuse producer self-verification."""
+        declared = None if worker is None else str(worker).strip()
+        if worker is not None and not declared:
+            raise ValueError("verifier worker 不能为空")
+        task_id = (
+            None if verifier_task_id is None else str(verifier_task_id).strip()
+        )
+        if verifier_task_id is not None and not task_id:
+            raise ValueError("verifier task 不能为空")
+        record = {
+            "isolation": "unverified",
+            "verifier_worker": declared,
+            "verifier_task_id": task_id,
+            "producer_worker": None,
+        }
+        if declared is None and task_id is None:
+            if self._isolation_required():
+                raise ValueError(
+                    f"当前 Delivery Profile "
+                    f"({self._active_profile_name()}) 要求验证者身份隔离："
+                    f"evidence verify 必须提供 --worker；{SELF_VERIFY_HINT}"
+                )
+            return record
+        from .workflow import WorkflowEngine
+
+        if task_id:
+            try:
+                verifier_task = WorkflowEngine(self.root).get_task(task_id)
+            except ValueError as exc:
+                raise ValueError(f"verifier task 不存在: {task_id}") from exc
+            task_worker = verifier_task.get("worker")
+            if (
+                declared
+                and task_worker
+                and normalize_worker(declared) != normalize_worker(task_worker)
+            ):
+                raise ValueError(
+                    f"verifier worker 与 verifier task 记录的 worker 不一致: "
+                    f"{declared} != {task_worker}"
+                )
+            declared = declared or task_worker
+            record["verifier_worker"] = declared
+        producer = self._producer_identity(node)
+        record["producer_worker"] = producer["worker"]
+        if task_id and producer["task_id"] and task_id == producer["task_id"]:
+            raise ValueError(
+                f"证据 {node_id} 的 producer task 不能自验: {task_id}；"
+                f"{SELF_VERIFY_HINT}"
+            )
+        clash = [
+            item for item in producer["workers"]
+            if normalize_worker(item) == normalize_worker(declared)
+        ]
+        if normalize_worker(declared) and clash:
+            raise ValueError(
+                f"证据 {node_id} 的生成者 worker 不能自验: {clash[0]}；"
+                f"{SELF_VERIFY_HINT}"
+            )
+        record["isolation"] = "isolated"
+        return record
+
+    def verify(
+        self,
+        node_id: str,
+        timeout: int = 1800,
+        *,
+        worker: str | None = None,
+        verifier_task_id: str | None = None,
+    ) -> dict:
         snapshot = self.data
         if node_id not in snapshot["nodes"]:
             raise ValueError(f"evidence does not exist: {node_id}")
         node = snapshot["nodes"][node_id]
+        isolation = self._resolve_isolation(
+            node_id, node, worker, verifier_task_id
+        )
         bad = [
             dep for dep in node["depends_on"]
             if snapshot["nodes"][dep]["status"] != "verified"
@@ -257,6 +393,7 @@ class EvidenceGraph:
                     item.get("task_id") for item in review_records
                     if item.get("task_id")
                 ],
+                **isolation,
             },
         }
         with json_transaction(self.path, snapshot) as data:
@@ -448,8 +585,16 @@ class EvidenceGraph:
             "cascade": cascade,
         }
 
+    @staticmethod
+    def isolation_state(node: dict) -> str | None:
+        """Recorded verifier isolation, or None for pre-4.6 stamps."""
+        binding = (node.get("verification") or {}).get("binding") or {}
+        state = binding.get("isolation")
+        return state if isinstance(state, str) else None
+
     def audit(self) -> list[str]:
         data = self.data
+        enforced = self._isolation_required()
         errors: list[str] = []
         for node_id, node in data["nodes"].items():
             if node["status"] != "verified":
@@ -457,6 +602,14 @@ class EvidenceGraph:
             state = self.freshness(node_id, data)
             if state != "valid":
                 errors.append(f"{node_id}: freshness={state}")
+            isolation = self.isolation_state(node)
+            # isolation is None only for stamps written before 4.6.1; those
+            # stay valid until the evidence is re-verified by this binary.
+            if enforced and isolation is not None and isolation != "isolated":
+                errors.append(
+                    f"{node_id}: verifier isolation={isolation}；"
+                    f"{SELF_VERIFY_HINT}"
+                )
         return errors
 
     def freshness_report(self) -> dict[str, str]:

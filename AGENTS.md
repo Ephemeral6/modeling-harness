@@ -59,6 +59,10 @@ State Capsule 与 Task / Progress / Failure / Resource / Opportunity 五本账�
    论文 claim；历史记录不删除。
 4. 未知执行结果进入 RECOVERY_PENDING；非幂等动作不得在对账前自动重试。
 5. 生成者不能批准自己的结论；登记 producer 后，审核 task 和 worker 均必须独立。
+   机制落点：`evidence verify --worker/--verifier-task` 把验证者身份写进
+   `verification.binding.isolation`，与 producer task 或占有该工件的任务 worker
+   冲突时直接拒绝；未声明身份时记 `isolation=unverified`，cumcm/mcm_icm profile
+   下 verify 直接报错、evidence audit 也判失败。
 6. mandatory requirement 未闭合时，S6 不能宣告完整交付。
 7. 正式数字未绑定权威字段，或推导式与源字段不一致时，不能发布。
 8. 存在随机选择过程时，头条性能数字若不来自独立 report set，不能标为无偏终评。

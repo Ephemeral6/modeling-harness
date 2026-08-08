@@ -1,0 +1,7 @@
+{
+  "schema": 4,
+  "title": "evidence self-verify regression",
+  "harness": "modeling-harness/4.6",
+  "engine": "codex",
+  "status": "active"
+}

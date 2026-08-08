@@ -127,6 +127,12 @@ def build_parser() -> argparse.ArgumentParser:
     add_project_option(ev_revise)
     ev_verify = ev_sub.add_parser("verify")
     ev_verify.add_argument("id")
+    ev_verify.add_argument(
+        "--worker", help="执行本次验证的 worker；不得与生成者相同",
+    )
+    ev_verify.add_argument(
+        "--verifier-task", help="执行本次验证的 task id；不得与 producer task 相同",
+    )
     add_project_option(ev_verify)
     ev_revoke = ev_sub.add_parser("revoke")
     ev_revoke.add_argument("id")
@@ -399,7 +405,11 @@ def main() -> int:
                     reason=args.reason,
                 ))
             elif args.action == "verify":
-                emit(graph.verify(args.id))
+                emit(graph.verify(
+                    args.id,
+                    worker=args.worker,
+                    verifier_task_id=args.verifier_task,
+                ))
             elif args.action == "revoke":
                 affected = graph.revoke(args.id, args.reason)
                 emit({
