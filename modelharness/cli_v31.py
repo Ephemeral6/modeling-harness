@@ -22,7 +22,9 @@ from .paper_content import audit_paper_content, initialize_content_coverage
 from .paper_ir import compile_paper
 from .profiles import ProfileService
 from .proposals import ProposalService
-from .provenance_core import audit_warm_start_keys, scan_against_baselines
+from .provenance_core import (
+    IMPORT_METHODS, audit_provenance, register_import, scan_against_baselines,
+)
 from .repairs import begin_repair, verify_repair
 from .requirements import audit_requirements, extract_sources
 from .sanitize import render_final
@@ -247,9 +249,23 @@ def _provenance(values: list[str]) -> int:
     scan = sub.add_parser("scan")
     scan.add_argument("--root", type=Path, required=True)
     scan.add_argument("--baselines", type=Path, required=True)
+    register = sub.add_parser("register")
+    register.add_argument("--project", type=Path)
+    register.add_argument("--source", type=Path, required=True)
+    register.add_argument("--target", required=True)
+    register.add_argument(
+        "--method", required=True, choices=list(IMPORT_METHODS)
+    )
+    register.add_argument("--reason", required=True)
     args = parser.parse_args(values)
+    if args.action == "register":
+        _emit(register_import(
+            _root(args.project), args.source, args.target,
+            args.method, args.reason,
+        ))
+        return 0
     if args.action == "audit":
-        errors = audit_warm_start_keys(_root(args.project))
+        errors = audit_provenance(_root(args.project))
     else:
         errors = scan_against_baselines(args.root, args.baselines)
     _emit({"ok": not errors, "errors": errors})

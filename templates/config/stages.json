@@ -41,7 +41,8 @@
     "reviews": ["reviews/s6_paper_audit.json"],
     "checks": [
       ["python", "-m", "modelharness", "narrative", "audit", "--paper", "paper/draft.md"],
-      ["python", "-m", "modelharness", "paper", "compile", "--check"]
+      ["python", "-m", "modelharness", "paper", "compile", "--check"],
+      ["python", "-m", "modelharness", "provenance", "audit"]
     ]
   }
 }

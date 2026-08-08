@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "candidate": {
+    "artifact": "results/candidate.json",
+    "sha256": "f6aa1ee1fc729b2510bc542fef80fad236369b944f27fd21559747c7c2689c38",
+    "producer_id": "worker-solver"
+  },
+  "solver": {
+    "artifact": "src/solver.py",
+    "sha256": "3bd7d14e20f5cb68cbdcaba9e28c37a5e06a2a6a54d506a0908fc028ed0db16d",
+    "identity": "worker-solver"
+  },
+  "checker": {
+    "artifact": "checks/checker.py",
+    "sha256": "3bd7d14e20f5cb68cbdcaba9e28c37a5e06a2a6a54d506a0908fc028ed0db16d",
+    "identity": "worker-checker",
+    "implementation_reuse": false
+  },
+  "execution_status": "completed",
+  "verdict": "PASS",
+  "constraints": {}
+}

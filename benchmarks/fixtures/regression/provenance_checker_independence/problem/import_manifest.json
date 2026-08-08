@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "imports": [
+    {
+      "index": 0,
+      "source_path": "codex_run/src/solver.py",
+      "source_sha256": "3bd7d14e20f5cb68cbdcaba9e28c37a5e06a2a6a54d506a0908fc028ed0db16d",
+      "stored_as": "checks/checker.py",
+      "stored_sha256": "3bd7d14e20f5cb68cbdcaba9e28c37a5e06a2a6a54d506a0908fc028ed0db16d",
+      "method": "copy",
+      "reason": "reused blind-run solver as the feasibility checker",
+      "registered_at": "2026-08-07T12:00:00+08:00"
+    }
+  ]
+}
