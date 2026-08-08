@@ -121,10 +121,16 @@
     }
   ],
   "judge": {
-    "command": null,
-    "frozen_params_sha256": null,
-    "frozen_at": null,
-    "worker": null
+    "command": "benchmarks/protocols/judges/retrospective_2026_blind.py",
+    "frozen_params_sha256": "d92882d91528463cc5776b21e2d8c724f8256b9b924ffa2d69babcc49b88573e",
+    "frozen_at": "2026-08-08T17:13:00+08:00",
+    "worker": "retrospective-independent-judge",
+    "pre_registered": false,
+    "protocol_clause_d_satisfied": false,
+    "frozen_params_sha256_covers": "judge 脚本自身；判卷参数全部内联在脚本里（gap 公式、归一化、平局容差、verdict 规则），没有独立参数文件，故脚本哈希即参数哈希。脚本运行时自算 sha256 写进 report.json，与此处不一致即可机器发现。",
+    "inputs_path": "benchmarks/reports/2026-blind-codex-vs-harness/measurements.json",
+    "inputs_sha256": "41aa5534183fde676f5664e65e0682985f6d04116411c9d73015f3df088ec9ba",
+    "note": "⚠️ 事后判卷（retrospective judgment），不具备预注册效力。judge 脚本与判卷参数是在三条 harness 臂全部完成（2026-08-08T17:02:15/16+08:00 收口）之后才写、才冻结的，frozen_at=2026-08-08T17:13:00+08:00 是真实冻结时刻，晚于每条臂的完成时刻，因此**不满足协议 (d)『先冻结后跑』**。audit 中保留的 `judge freeze too late` 是本次补判卷的正确、预期残留，不得通过回填一个早于各臂完成时间的假 frozen_at 来消除。本判卷能证明的只是『有人判了卷、判法可复算、每个数字都能回读到磁盘出处』，不能证明『判法没有被结果反向调过』。"
   },
   "report_path": "benchmarks/reports/2026-blind-codex-vs-harness/report.json",
   "isolation": "arms 不得读取彼此目录",
@@ -134,8 +140,10 @@
     "三条 harness 臂是 2026-08-02 17:42-17:44 之间连开的三个 run；三者都盖到了 s6 印章（2023D 19:35:28、2025A 20:18:50、2024C 21:46:41），但 modeling-project.json 的 status 至今仍是 active，从未 completed/delivered/abandoned 收口。",
     "harness-2023d 与 harness-2024c 的 run 目录当年被误建在 projects/projects/ 下（多套了一层），路径按磁盘实况登记，未做搬迁。",
     "judge 四个字段全部为 null：这次对照从头到尾没有独立判卷者，也没有在开跑前冻结任何判卷参数。",
-    "report_path 指向的 benchmarks/reports/2026-blind-codex-vs-harness/report.json 不存在——三条臂跑完之后没有任何人出过对照报告，这正是本机制要机器可见化的事实。",
+    "report_path 指向的 benchmarks/reports/2026-blind-codex-vs-harness/report.json 在 2026-08-08 由事后补判卷补上；在此之前它一直不存在——三条臂跑完之后没有任何人出过对照报告，这正是本机制要机器可见化的事实。补判卷不改写上面这条历史，只是清偿它。",
     "baseline_artifacts 直接抄自 benchmarks/protocols/baselines/2023d_codex.json 与 2025a_codex.json 的 files 条目（path + sha256 原样引用，未重算）。2024C 没有对应的基线登记表，因此该题的对照臂代码目前不在哈希扫描覆盖范围内。",
-    "各臂 producer 与 model 当年均未登记，故 producer 字段整体缺省，model 一律写 unrecorded；只有 2024C 的项目清单里留下了 engine=codex。"
+    "各臂 producer 与 model 当年均未登记，故 producer 字段整体缺省，model 一律写 unrecorded；只有 2024C 的项目清单里留下了 engine=codex。",
+    "2026-08-08 事后补判卷时复核过 producer：磁盘上四条臂的 modeling-project.json 里都没有任何 producer/worker 记载，TEMPLATE_comparison.json 对未登记 producer 的规定是『删掉本字段』，因此本次**没有**给任何一条臂补写 producer。检查 (e)（judge.worker 不得等于任一臂的 producer）因此仍然是空跑通过，而不是被真实数据验证通过——judge.worker=retrospective-independent-judge 与各臂的独立性在数据上不可判，只能靠『判卷者不是当年跑臂的那个会话』这一事实性陈述背书。",
+    "判卷发现三条与本清单登记内容直接冲突的事实，已写进 report.json 的 integrity_findings（F1/F2/F3）：(1) 事后评审给 2024C 判卷用的是 projects/2024c_农作物种植策略--20260804-201441（8-04 重跑），不是本清单登记的 8-02 臂；(2) 给 2023D 判卷用的是仓库外的 2023D_圈养湖羊_最终论文 交付包，也不是登记臂；(3)『核心求解代码与 codex 逐字节相同』只在那份仓库外交付包成立，登记的 8-02 臂经全仓哈希扫描与 baselines 零命中，是干净的独立臂。report.json 以登记臂的数字定 objective_value/verdict，评审引用的那两组数字作为不计分对照行完整保留。"
   ]
 }

@@ -431,9 +431,12 @@ def test_shipped_blind_comparison_manifest_records_the_open_verdict():
         assert (REPO / arm["project_path"]).is_dir()
     # 外部盲测臂在仓库外，按绝对路径如实登记。
     assert Path(external[0]["artifact_dir"]).is_absolute()
-    # judge 从未冻结，报告从未产出 —— 这正是本协议要机器可见化的历史事实。
-    assert manifest["judge"]["frozen_at"] is None
-    assert not (REPO / manifest["report_path"]).exists()
+    # 判卷已于 2026-08-08 事后补做：报告存在、judge 已冻结，但冻结时刻必然晚于
+    # 各臂完成（2026-07/08），因此本清单永远不满足预注册要求 —— 这是如实登记，
+    # 不是缺陷。若日后重跑对照，必须新建清单并在开跑前冻结 judge。
+    assert manifest["judge"]["frozen_at"] is not None
+    assert manifest["judge"]["frozen_params_sha256"]
+    assert (REPO / manifest["report_path"]).exists()
     # baseline_artifacts 逐条引用已有登记表，不重算哈希。
     registered = {
         entry["sha256"]
@@ -452,10 +455,13 @@ def test_shipped_blind_comparison_manifest_records_the_open_verdict():
 def test_shipped_blind_comparison_audit_is_not_green():
     manifest = load_manifest(SHIPPED)
     errors = audit_comparison(SHIPPED)
-    # 报告从未产出、judge 从未冻结：这两条是本清单登记的核心事实。
-    assert any("comparison report missing" in error for error in errors)
+    # 报告与 judge 冻结已于事后补齐，这两条历史欠账不再出现。
+    assert not any("comparison report missing" in error for error in errors)
+    assert not any("judge freeze missing" in error for error in errors)
+    # 但事后冻结不具备预注册效力：judge 晚于各臂完成，审计必须继续拒绝放行。
+    assert errors, "事后判卷不得让协议审计变绿"
     assert any(
-        "judge freeze missing" in error and "frozen_at" in error
+        "judge freeze too late" in error or "judge freeze unverifiable" in error
         for error in errors
     )
     # (a) 在真实 run 上的判定必须与磁盘状态一致（状态被收口后本断言自动放行）。
