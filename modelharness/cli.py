@@ -65,6 +65,10 @@ def build_parser() -> argparse.ArgumentParser:
     take.add_argument("--file", action="append", default=[])
     take.add_argument("--root", type=Path, default=Path.cwd())
     take.add_argument("--engine", choices=ENGINE_CHOICES, default="auto")
+    take.add_argument(
+        "--baseline", type=Path,
+        help="上一个同题项目路径：继承其自设口径冻结与自设约束条目",
+    )
 
     for name, help_text in (
         ("status", "汇总问题图、阶段、证据、任务和完整性"),
@@ -279,6 +283,7 @@ def main() -> int:
                 args.root, args.title, args.prompt,
                 [Path(x) for x in args.file],
                 engine=args.engine,
+                baseline=args.baseline,
             ))
             return 0
         if args.command == "plan" and args.action == "validate":

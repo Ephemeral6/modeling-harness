@@ -1,0 +1,7 @@
+{
+  "schema": 4,
+  "title": "2024C 农作物种植策略（论文披露）",
+  "harness": "modeling-harness/4.6",
+  "engine": "codex",
+  "status": "active"
+}

@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from .calibration import CONSTRAINT_ORIGINS, SELF_IMPOSED
 from .contracts import safe_relative
 from .storage import atomic_write_json, read_json
 from .util import sha256
@@ -157,6 +158,27 @@ def render_constraint_ledger(root: Path) -> Path:
     return output
 
 
+def _origin_errors(item: dict, constraint_id: str) -> list[str]:
+    """Audit the optional ``origin`` field; ledgers without it stay clean.
+
+    A constraint the modeler invented must say why it exists and where the
+    paper discloses it, so a self-imposed management rule cannot masquerade
+    as a statement requirement.
+    """
+    origin = item.get("origin")
+    if origin is None:
+        return []
+    if origin not in CONSTRAINT_ORIGINS:
+        return [f"invalid constraint origin: {constraint_id}"]
+    if origin != SELF_IMPOSED:
+        return []
+    return [
+        f"self-imposed constraint missing {field}: {constraint_id}"
+        for field in ("rationale", "disclosure_anchor")
+        if not str(item.get(field, "")).strip()
+    ]
+
+
 def audit_constraint_ledger(root: Path, phase: str = "model") -> list[str]:
     root = root.resolve()
     if not optimization_relevant(root):
@@ -176,6 +198,7 @@ def audit_constraint_ledger(root: Path, phase: str = "model") -> list[str]:
         for field in ("statement", "type", "scope"):
             if not str(item.get(field, "")).strip():
                 errors.append(f"constraint missing {field}: {constraint_id}")
+        errors.extend(_origin_errors(item, constraint_id))
         source_ids = item.get("source_requirement_ids", [])
         if not isinstance(source_ids, list):
             errors.append(f"source_requirement_ids must be a list: {constraint_id}")

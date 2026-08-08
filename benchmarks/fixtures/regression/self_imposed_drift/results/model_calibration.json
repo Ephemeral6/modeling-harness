@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "generator": "src/solver.py",
+  "min_planting_area_fraction": 0.1,
+  "min_planting_area_floor_mu": 0.1,
+  "management_group_caps": {},
+  "concentration_profit_tolerance": 0.002
+}

@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "body": "paper/final.md",
+  "appendices": [],
+  "appendix_only_labels": [],
+  "decision_claim_phrases": [],
+  "decision_claims": [],
+  "require_regenerator_for_headline_claims": false,
+  "self_imposed_disclosure": {
+    "enabled": true,
+    "obligation": "self_imposed_assumptions"
+  },
+  "obligation_defaults": {}
+}

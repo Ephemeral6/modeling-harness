@@ -366,6 +366,36 @@ def _reproduction_chain_issues(root: Path, contract: dict) -> list[str]:
     return issues
 
 
+def _self_imposed_disclosure_issues(
+    root: Path, contract: dict, body: str
+) -> list[str]:
+    """Every self-imposed calibration owes the body a non-empty section.
+
+    Silent when the contract does not carry the obligation or when the run
+    declared no self-imposed quantity at all.
+    """
+    spec = contract.get("self_imposed_disclosure")
+    if not isinstance(spec, dict) or spec.get("enabled") is not True:
+        return []
+    # Lazy import keeps paper_content free of a module-level calibration edge.
+    from .calibration import self_imposed_records
+
+    obligation = str(spec.get("obligation") or "self_imposed_assumptions")
+    issues: list[str] = []
+    for record in self_imposed_records(root):
+        label = f"{obligation}: {record['source']}: {record['id']}"
+        anchor = record.get("disclosure_anchor")
+        if not isinstance(anchor, str) or not anchor.strip():
+            issues.append(f"{label}: disclosure_anchor missing")
+            continue
+        section = _section_text(body, anchor)
+        if section is None:
+            issues.append(f"{label}: disclosure section missing: {anchor}")
+        elif not _has_format(section, "prose"):
+            issues.append(f"{label}: disclosure section is empty: {anchor}")
+    return issues
+
+
 def _appendix_policy_issues(contract: dict, body: str) -> list[str]:
     labels = contract.get("appendix_only_labels", [])
     if not isinstance(labels, list):
@@ -428,6 +458,7 @@ def audit_paper_content(root: Path) -> list[str]:
         )
     issues.extend(_decision_claim_issues(root, contract, claim_texts))
     issues.extend(_reproduction_chain_issues(root, contract))
+    issues.extend(_self_imposed_disclosure_issues(root, contract, body))
 
     matrix_requirements = matrix.get("requirements", {})
     if not isinstance(matrix_requirements, dict):

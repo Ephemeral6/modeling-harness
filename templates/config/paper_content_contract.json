@@ -20,6 +20,11 @@
   ],
   "decision_claims": [],
   "require_regenerator_for_headline_claims": true,
+  "self_imposed_disclosure": {
+    "enabled": true,
+    "obligation": "self_imposed_assumptions",
+    "note": "config/calibration_freeze.json 与 problem/constraint_ledger.json 中每个 origin=self_imposed 条目，都必须在正文的 disclosure_anchor 节里有非空披露。无自设条目时本义务零输出。"
+  },
   "obligation_defaults": {
     "answer": [
       {
