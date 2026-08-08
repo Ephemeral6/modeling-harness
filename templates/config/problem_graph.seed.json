@@ -219,6 +219,9 @@
           "kind": "search_quality",
           "phase": "solver",
           "when": "optimization_relevant"
+        },
+        {
+          "kind": "calibration_freeze"
         }
       ],
       "workstreams": [

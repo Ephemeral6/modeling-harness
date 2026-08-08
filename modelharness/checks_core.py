@@ -347,6 +347,15 @@ def evaluate_acceptance(
                 kind, not errors, errors=errors,
                 freshness="valid" if not errors else "stale",
             ))
+        elif kind == "calibration_freeze":
+            from .calibration import audit_freeze
+
+            errors = audit_freeze(root)
+            records.append(_record(
+                kind, not errors, errors=errors,
+                path="config/calibration_freeze.json",
+                freshness="valid" if not errors else "stale",
+            ))
         elif kind == "result_provenance":
             from .optimization import audit_result_provenance
 
