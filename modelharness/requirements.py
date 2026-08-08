@@ -23,6 +23,9 @@ MODEL_MARKERS: tuple[str, ...] = (
 )
 
 DISPOSITIONS = {"requirement", "background", "data", "prohibition", "format"}
+# Where a non-requirement disposition on a marker-hit segment is registered.
+OVERRIDE_LEDGER = "problem/source_segmentation.json"
+OVERRIDE_FIELDS: tuple[str, ...] = ("reason", "override_review")
 REQUIREMENT_TYPES = {
     "answer", "constraint", "model_condition", "data_input", "delivery",
     "prohibition",
@@ -207,16 +210,26 @@ def audit_segmentation(root: Path) -> list[str]:
             markers = [
                 marker for marker in MODEL_MARKERS if marker in actual
             ]
+            # Both fields are read off this very segment in
+            # problem/source_segmentation.json; name them so the fix has a
+            # landing spot instead of an unlocatable "override".
+            missing = [
+                field for field in OVERRIDE_FIELDS
+                if not str(segment.get(field, "")).strip()
+            ]
             if (
                 markers
                 and segment.get("disposition") != "requirement"
-                and (
-                    not str(segment.get("reason", "")).strip()
-                    or not str(segment.get("override_review", "")).strip()
-                )
+                and missing
             ):
                 errors.append(
-                    f"命中建模标记但无 requirement/独立 override: {actual.strip()}"
+                    f"命中建模标记但无 requirement/独立 override: "
+                    f"{actual.strip()}"
+                    f"（segment={segment.get('id')}，artifact={artifact}）；"
+                    f"如确属背景，请在 {OVERRIDE_LEDGER} 的该 segment 上补齐 "
+                    f"{'、'.join(missing)} 字段登记 override；"
+                    f"否则把 disposition 改为 requirement 并回填 "
+                    f"requirement_ids"
                 )
             if segment.get("disposition") not in DISPOSITIONS:
                 errors.append(

@@ -26,6 +26,29 @@ def owners_overlap(left: str, right: str) -> bool:
 
 class WorkflowEngine:
     ACTIVE_STATES = ("pending", "claimed", "running", "recovery_pending")
+    FINISHABLE_STATES = ("claimed", "running")
+    # Next step to unblock `finish`, keyed by the status the task is really
+    # in. Rendered with task_id/worker so the hint is copy-pasteable.
+    FINISH_BLOCKED_ACTIONS = {
+        "pending": (
+            "需先 `modelharness task claim {task_id} --worker {worker}` "
+            "再 finish"
+        ),
+        "failed": (
+            "需先 `modelharness task retry {task_id}`，"
+            "再 `modelharness task claim {task_id} --worker {worker}`，"
+            "然后重跑 finish"
+        ),
+        "completed": "任务已完成，不需要再 finish；如需重做请新建任务",
+        "recovery_pending": (
+            "需先 `modelharness task recover {task_id} --outcome <outcome> "
+            "--note <note>` 结清恢复"
+        ),
+        "superseded": (
+            "任务已被 supersede，请改做同 work_item 的当前代任务"
+        ),
+    }
+    FINISH_BLOCKED_FALLBACK = "需先把任务恢复为 claimed/running 再 finish"
 
     def __init__(self, project: Path):
         self.project = project.resolve()
@@ -287,6 +310,30 @@ class WorkflowEngine:
                 raise ValueError("task lease does not belong to worker")
         return self.get_task(task_id)
 
+    def _finish_rejection(
+        self, con: sqlite3.Connection, task_id: str, worker: str
+    ) -> str:
+        """Explain why finish matched no row: wrong worker vs wrong state."""
+        row = con.execute(
+            "SELECT status,worker FROM tasks WHERE id=?", (task_id,)
+        ).fetchone()
+        if row is None:
+            return f"task does not exist: {task_id}"
+        status = str(row["status"])
+        if status not in self.FINISHABLE_STATES:
+            action = self.FINISH_BLOCKED_ACTIONS.get(
+                status, self.FINISH_BLOCKED_FALLBACK
+            ).format(task_id=task_id, worker=worker)
+            return (
+                f"task {task_id} 处于 {status}，不可 finish：{action}"
+            )
+        return (
+            "task cannot be finished by this worker: "
+            f"{task_id} status={status}, "
+            f"current holder={row['worker'] or '<none>'}, "
+            f"requested worker={worker}"
+        )
+
     def finish(
         self, task_id: str, worker: str, success: bool, result: dict
     ) -> dict:
@@ -319,7 +366,9 @@ class WorkflowEngine:
                 ),
             )
             if cur.rowcount != 1:
-                raise ValueError("task cannot be finished by this worker")
+                raise ValueError(
+                    self._finish_rejection(con, task_id, worker)
+                )
         self.event(f"task.{status}", {
             "task_id": task_id,
             "worker": worker,
