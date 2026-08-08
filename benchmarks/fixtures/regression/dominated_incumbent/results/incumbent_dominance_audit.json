@@ -8,7 +8,7 @@
       "kind": "greedy",
       "objective": 108.5,
       "artifact": "results/baselines/greedy_plan.json",
-      "sha256": "ce70c1f214290eda794fb9ac25908aeb05dbdda73b85576518be1e1b89c5a33c",
+      "sha256": "0731492e09cbf9da23357255b1f97c18caeaf9523b55fd45115927499a4d1329",
       "checker_pass": true
     }
   ]
