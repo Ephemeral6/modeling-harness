@@ -106,16 +106,42 @@ def _gap_context(text: str, start: int, end: int) -> str:
     return text[start:end].strip()
 
 
+def _decodable(path: Path) -> bool:
+    """True when the artifact is UTF-8 text that sentence splitting accepts.
+
+    Intake keeps every attachment verbatim, including the official PDF that
+    almost every competition package ships, so ``data_raw`` routinely holds
+    bytes that are not text at all.  Segmentation only claims authority over
+    text; a binary attachment is recorded as skipped rather than crashing the
+    whole extraction.
+    """
+    try:
+        path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return False
+    return True
+
+
 def extract_sources(root: Path, passes: int = 2) -> dict:
     """Create a deterministic two-pass source-segmentation baseline."""
     if passes < 1:
         raise ValueError("requirements extract passes must be positive")
     root = root.resolve()
     directory = root / "problem" / "data_raw"
+    present = [path for path in sorted(directory.glob("*")) if path.is_file()]
     artifacts = [
         path.relative_to(root).as_posix()
-        for path in sorted(directory.glob("*"))
-        if path.is_file()
+        for path in present
+        if _decodable(path)
+    ]
+    skipped = [
+        {
+            "artifact": path.relative_to(root).as_posix(),
+            "sha256": sha256(path),
+            "reason": "非 UTF-8 文本附件，机械分句不适用；语义内容须由同题文本件承载",
+        }
+        for path in present
+        if not _decodable(path)
     ]
     if not artifacts:
         raise ValueError("problem/data_raw 中没有可分句源文件")
@@ -147,6 +173,7 @@ def extract_sources(root: Path, passes: int = 2) -> dict:
     }
     result = runs[0]
     result["passes"] = passes
+    result["skipped_sources"] = skipped
     result["extraction_diff"] = diff
     result["needs_review"] = bool(needs_review)
     for source in result["sources"]:

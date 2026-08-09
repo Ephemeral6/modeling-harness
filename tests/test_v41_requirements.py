@@ -137,3 +137,37 @@ def test_requirement_coverage_checks_verified_fresh_claim_evidence(tmp_path):
     evidence["nodes"]["claim.answer"]["freshness"] = "valid"
     _write(evidence_path, evidence)
     assert evaluate_acceptance(root, acceptance)["ok"] is True
+
+
+def test_extraction_skips_binary_attachments(tmp_path):
+    """Intake keeps the official PDF verbatim; segmentation must not crash."""
+    root = tmp_path
+    _write(root / "problem/data_raw/001__statement.md", "请估算年化出栏范围。")
+    (root / "problem/data_raw/002__statement.pdf").write_bytes(
+        b"%PDF-1.7\n\xb5\xff\xfe binary payload \x00\x01\x02"
+    )
+
+    segmentation = extract_sources(root)
+
+    assert [item["artifact"] for item in segmentation["sources"]] == [
+        "problem/data_raw/001__statement.md"
+    ]
+    skipped = segmentation["skipped_sources"]
+    assert [item["artifact"] for item in skipped] == [
+        "problem/data_raw/002__statement.pdf"
+    ]
+    assert skipped[0]["sha256"] and skipped[0]["reason"]
+    assert segmentation["sources"][0]["segments"]
+
+
+def test_extraction_still_fails_when_no_text_source_exists(tmp_path):
+    root = tmp_path
+    (root / "problem/data_raw").mkdir(parents=True)
+    (root / "problem/data_raw/only.pdf").write_bytes(b"%PDF-1.7\n\xb5\xff")
+
+    try:
+        extract_sources(root)
+    except ValueError as exc:
+        assert "没有可分句源文件" in str(exc)
+    else:
+        raise AssertionError("binary-only data_raw must not silently pass")
