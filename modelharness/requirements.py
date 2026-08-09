@@ -26,6 +26,13 @@ DISPOSITIONS = {"requirement", "background", "data", "prohibition", "format"}
 # Where a non-requirement disposition on a marker-hit segment is registered.
 OVERRIDE_LEDGER = "problem/source_segmentation.json"
 OVERRIDE_FIELDS: tuple[str, ...] = ("reason", "override_review")
+# A segment override and a not_applicable requirement both waive a mandatory
+# obligation, so both are held to the one review shape defined by
+# templates/reviews/README.md. Prose is not a review at either layer.
+REVIEW_SHAPE_HINT = (
+    '{"verdict": "APPROVE", "reviewer": "<独立审核者>"} 或指向 reviews/*.json '
+    "的项目内相对路径（该文件同样需 verdict=APPROVE 且 reviewer 非空）"
+)
 REQUIREMENT_TYPES = {
     "answer", "constraint", "model_condition", "data_input", "delivery",
     "prohibition",
@@ -153,6 +160,77 @@ def extract_sources(root: Path, passes: int = 2) -> dict:
     return result
 
 
+def _review_is_approved(root: Path, review: Any) -> bool:
+    """True only for an APPROVE record that names its reviewer.
+
+    The record may be inline or a project-relative path to the reviews/*.json
+    file holding it. Free text never qualifies. Both the requirement-level
+    not_applicable exemption and the segment-level disposition override route
+    through here so that neither waiver can be bought with prose.
+    """
+    if isinstance(review, dict):
+        return (
+            str(review.get("verdict", "")).upper() == "APPROVE"
+            and bool(str(review.get("reviewer", "")).strip())
+        )
+    if isinstance(review, str) and review.strip():
+        # Free text lands here too; it resolves to a path that does not exist
+        # (or refuses to resolve at all), which is exactly a rejection.
+        try:
+            data = read_json(safe_relative(root, review.strip()))
+        except (OSError, ValueError, RuntimeError):
+            return False
+        return isinstance(data, dict) and _review_is_approved(root, data)
+    return False
+
+
+def _segment_override_defects(root: Path, segment: dict) -> list[str]:
+    """Name the override fields that are absent or too weak to count."""
+    satisfied = {
+        "reason": bool(str(segment.get("reason", "")).strip()),
+        "override_review": _review_is_approved(
+            root, segment.get("override_review")
+        ),
+    }
+    return [field for field in OVERRIDE_FIELDS if not satisfied[field]]
+
+
+def _review_defect(root: Path, review: Any) -> str:
+    """Say why this override_review value is not a review, in its own terms."""
+    if review is None or (isinstance(review, str) and not review.strip()):
+        return "当前 override_review 缺失；"
+    if isinstance(review, dict):
+        faults = []
+        if str(review.get("verdict", "")).upper() != "APPROVE":
+            faults.append(f"verdict={review.get('verdict')!r} 不是 APPROVE")
+        if not str(review.get("reviewer", "")).strip():
+            faults.append("reviewer 为空")
+        return f"当前 inline 评审记录 {'、'.join(faults)}；"
+    if not isinstance(review, str):
+        return (
+            f"当前 override_review 类型是 {type(review).__name__}，"
+            "既不是评审记录也不是路径；"
+        )
+    value = review.strip()
+    try:
+        target = safe_relative(root, value)
+    except (OSError, ValueError):
+        target = None
+    if target is not None and target.is_file():
+        return f"{value} 存在，但内容不是 APPROVE 且署名 reviewer 的评审记录；"
+    if value.endswith(".json") and not any(ch.isspace() for ch in value):
+        return f"override_review 指向的评审文件不存在: {value}；"
+    return (
+        f"当前 override_review 是自由文本（{value[:30]}），"
+        "自由文本不构成独立评审；"
+    )
+
+
+def _override_review_hint(root: Path, segment: dict) -> str:
+    detail = _review_defect(root, segment.get("override_review"))
+    return f"（{detail}override_review 必须是 {REVIEW_SHAPE_HINT}）"
+
+
 def audit_segmentation(root: Path) -> list[str]:
     root = root.resolve()
     ledger = read_json(root / "problem" / "source_segmentation.json")
@@ -213,21 +291,22 @@ def audit_segmentation(root: Path) -> list[str]:
             # Both fields are read off this very segment in
             # problem/source_segmentation.json; name them so the fix has a
             # landing spot instead of an unlocatable "override".
-            missing = [
-                field for field in OVERRIDE_FIELDS
-                if not str(segment.get(field, "")).strip()
-            ]
+            defects = _segment_override_defects(root, segment)
             if (
                 markers
                 and segment.get("disposition") != "requirement"
-                and missing
+                and defects
             ):
+                hint = (
+                    _override_review_hint(root, segment)
+                    if "override_review" in defects else ""
+                )
                 errors.append(
                     f"命中建模标记但无 requirement/独立 override: "
                     f"{actual.strip()}"
                     f"（segment={segment.get('id')}，artifact={artifact}）；"
                     f"如确属背景，请在 {OVERRIDE_LEDGER} 的该 segment 上补齐 "
-                    f"{'、'.join(missing)} 字段登记 override；"
+                    f"{'、'.join(defects)} 字段登记 override{hint}；"
                     f"否则把 disposition 改为 requirement 并回填 "
                     f"requirement_ids"
                 )
@@ -419,23 +498,10 @@ def _kind_matches(kind: str, value: Any, fields: list[str]) -> bool:
 def _not_applicable_is_reviewed(root: Path, requirement: dict) -> bool:
     if not str(requirement.get("reason", "")).strip():
         return False
-    review = requirement.get("independent_review", requirement.get("review"))
-    if isinstance(review, dict):
-        return (
-            str(review.get("verdict", "")).upper() == "APPROVE"
-            and bool(review.get("reviewer"))
-        )
-    if isinstance(review, str) and review:
-        try:
-            data = read_json(safe_relative(root, review))
-        except (ValueError, RuntimeError):
-            return False
-        return (
-            isinstance(data, dict)
-            and str(data.get("verdict", "")).upper() == "APPROVE"
-            and bool(data.get("reviewer"))
-        )
-    return False
+    return _review_is_approved(
+        root,
+        requirement.get("independent_review", requirement.get("review")),
+    )
 
 
 def _claim_contract_errors(

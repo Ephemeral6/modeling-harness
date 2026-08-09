@@ -115,7 +115,13 @@ def test_marker_segment_error_names_override_file_and_fields(tmp_path: Path):
     assert "override_review" in message
     assert segment["id"] in message
 
-    segment["override_review"] = "reviews/s0_override.json 已 APPROVE"
+    # 4.6 起 override_review 不再接受自由文本：必须是 APPROVE 且署名的评审记录，
+    # 或指向这样一份 reviews/*.json 的路径（见 test_v46_override_strength.py）。
+    _write(root / "reviews" / "s0_override.json", {
+        "verdict": "APPROVE",
+        "reviewer": "independent-s0-auditor",
+    })
+    segment["override_review"] = "reviews/s0_override.json"
     _write(path, ledger)
     assert audit_segmentation(root) == []
 

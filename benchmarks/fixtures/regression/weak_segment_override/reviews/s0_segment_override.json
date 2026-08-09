@@ -1,0 +1,9 @@
+{
+  "reviewer": "independent-s0-source-auditor",
+  "verdict": "APPROVE",
+  "scope": [
+    "s0002 disposition override"
+  ],
+  "findings": [],
+  "required_fixes": []
+}

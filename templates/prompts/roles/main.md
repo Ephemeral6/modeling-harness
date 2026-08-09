@@ -15,6 +15,22 @@ tool decide 登记 use/skip 理由；use 必须通过 tool run 记录版本、�
 前同时回答：“当前最可能让最终结论失效的未知量是什么？哪种最低成本计算或反例能验证它？”
 以及“当前尚未测试、但最可能改善答案的变化是什么？哪种最低成本扩展能判断它是否值得？”
 
+## Source segmentation override 4.6
+
+`problem/source_segmentation.json` 里每个命中建模标记的 segment 默认是 requirement。
+要把它降级为 background / data / prohibition / format，必须在该 segment 上同时写：
+
+- `reason`：为什么它不承载交付义务，以及对应约束由哪个 requirement 承载；
+- `override_review`：独立评审记录本身
+  `{"verdict": "APPROVE", "reviewer": "<独立审核者>"}`，或指向一份
+  `reviews/*.json` 的项目内相对路径（该文件同样需 verdict=APPROVE 且 reviewer 非空，
+  格式见 `reviews/README.md`）。
+
+一份评审可以被多个 segment 引用，但它的 `scope` 必须逐条列出复核过的 segment id。
+自由文本不算评审：写“已由独立审核者确认”之类的句子会被机器判为无效 override。
+评审者必须与写下该 disposition 的 agent 不同（不变量 5）。降级不了就老实改回
+`requirement` 并回填 `requirement_ids`——漏题比多一条 requirement 贵得多。
+
 ## Optimization assurance 4.2
 
 仅当 `modelharness assurance status --project .` 判定 optimization relevant 时启用。

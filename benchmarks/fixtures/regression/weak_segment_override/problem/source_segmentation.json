@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "artifact": "problem/data_raw/001__statement.md",
+      "sha256": "f9530ce4e51b725daecd44068140fe1f872c75bded6c6fc14d351fd921cba8c0",
+      "segments": [
+        {
+          "id": "s0001",
+          "span": [
+            0,
+            15
+          ],
+          "text": "请给出每类圈舍的最优存栏数量。",
+          "text_sha256": "b08de58cca2d3947e21619dbe0efc4abb64f187637310eff35ad2ad562832d75",
+          "markers": [
+            "请",
+            "给出",
+            "最优"
+          ],
+          "disposition": "requirement",
+          "requirement_ids": [
+            "Q1.housing_plan"
+          ]
+        },
+        {
+          "id": "s0002",
+          "span": [
+            15,
+            16
+          ],
+          "text": "\n",
+          "text_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+          "markers": [],
+          "disposition": "background",
+          "reason": "机械分句未命中建模标记，待 S0 语义分类确认"
+        },
+        {
+          "id": "s0003",
+          "span": [
+            16,
+            35
+          ],
+          "text": "附表价格仅供参考，实际售价允许有波动。",
+          "text_sha256": "6609b9d1f8af2d8c6e25304b4278e82c63bc8ac05d25ca003326f954d63ddeaf",
+          "markers": [
+            "波动",
+            "允许"
+          ],
+          "disposition": "background",
+          "requirement_ids": [],
+          "reason": "附表价格属于背景说明，售价约束由 Q2 单独承载",
+          "override_review": "已由独立审核者确认属背景，不构成交付义务。"
+        },
+        {
+          "id": "s0004",
+          "span": [
+            35,
+            36
+          ],
+          "text": "\n",
+          "text_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+          "markers": [],
+          "disposition": "background",
+          "reason": "机械分句未命中建模标记，待 S0 语义分类确认"
+        }
+      ]
+    }
+  ],
+  "passes": 2,
+  "extraction_diff": {
+    "requirement_ids": [],
+    "dispositions": []
+  },
+  "needs_review": false
+}
