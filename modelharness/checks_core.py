@@ -392,13 +392,13 @@ def evaluate_acceptance(
                 freshness="valid" if not errors else "stale",
             ))
         elif kind == "profile_mandatory_outputs":
+            from .profiles_overlay_core import resolve_mandatory_outputs
+
             profile = read_json(
                 root / "config" / "delivery_profile.json", {}
             )
-            required = (
-                profile.get("mandatory_outputs", [])
-                if isinstance(profile, dict) else []
-            )
+            profile = profile if isinstance(profile, dict) else {}
+            required = profile.get("mandatory_outputs", [])
             graph = read_json(
                 root / ".harness" / "evidence.json", {"nodes": {}}
             )
@@ -410,7 +410,23 @@ def evaluate_acceptance(
             def normalized(value: Any) -> str:
                 return str(value).strip().casefold().replace("-", "_")
 
-            def matches(output: str, node_id: str, node: Any) -> bool:
+            def delivered(node: Any) -> bool:
+                """交付物已登记且产物在位。
+
+                这条验收挂在 *生产者* task 上，而强制交付物大多是问题图声明
+                输出（带 obligation_hash），其 verify 又要求 producer task 已
+                completed：若这里继续要求 verified，builder 完不成⟺证据验不
+                了，互锁无解。verified 由 evidence 层和 gate 的
+                ``缺少 verified 证据`` 检查在里程碑边界另行保证。
+                """
+                return (
+                    isinstance(node, dict)
+                    and node.get("status") in {"candidate", "verified"}
+                    and node.get("freshness", "valid") == "valid"
+                )
+
+            def legacy_alias(output: str, node_id: str, node: Any) -> bool:
+                """4.6 及更早项目把强制交付物登记成裸语义名，继续认账。"""
                 if not isinstance(node, dict):
                     return False
                 aliases = {
@@ -421,25 +437,40 @@ def evaluate_acceptance(
                 }
                 profile_outputs = node.get("profile_outputs", [])
                 if isinstance(profile_outputs, list):
-                    aliases.update(normalized(item) for item in profile_outputs)
-                return (
-                    normalized(output) in aliases
-                    and node.get("status") == "verified"
-                    and node.get("freshness", "valid") == "valid"
-                )
+                    aliases.update(
+                        normalized(item) for item in profile_outputs
+                    )
+                return normalized(output) in aliases
 
-            missing = [
-                output for output in required
-                if not any(
-                    matches(str(output), node_id, node)
-                    for node_id, node in nodes.items()
-                )
-            ]
+            resolved = resolve_mandatory_outputs(
+                profile.get("name", ""),
+                required if isinstance(required, list) else [],
+            )
+            missing: list[str] = []
+            satisfied_by: dict[str, list[str]] = {}
+            for output in (required if isinstance(required, list) else []):
+                name = str(output)
+                hits = [
+                    target for target in resolved.get(name, [name])
+                    if delivered(nodes.get(target))
+                ]
+                if not hits:
+                    hits = [
+                        node_id for node_id, node in nodes.items()
+                        if legacy_alias(name, node_id, node)
+                        and delivered(node)
+                    ]
+                if hits:
+                    satisfied_by[name] = sorted(dict.fromkeys(hits))
+                else:
+                    missing.append(name)
             records.append(_record(
                 kind,
                 isinstance(required, list) and not missing,
                 required=required,
                 missing=missing,
+                satisfied_by=satisfied_by,
+                resolved=resolved,
                 path="config/delivery_profile.json",
                 freshness="valid" if not missing else "missing",
             ))

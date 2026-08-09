@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "pipeline": [
+    "parse",
+    "solve",
+    "verify"
+  ],
+  "error_analysis": {
+    "relative_gap": 0.004
+  },
+  "complexity": "O(n log n)",
+  "reproduce": "python src/solver.py --all"
+}

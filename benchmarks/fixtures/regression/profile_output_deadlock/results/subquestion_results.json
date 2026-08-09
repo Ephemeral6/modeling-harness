@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "problem_1": {
+    "objective": 1234.5,
+    "unit": "yuan"
+  },
+  "problem_2": {
+    "objective": 987.6,
+    "unit": "yuan"
+  }
+}

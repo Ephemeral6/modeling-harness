@@ -1,6 +1,6 @@
 {
   "name": "cumcm",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "renderer": "competition_answer_by_subquestion",
   "paper_content_contract": "config/paper_content_contract.json",
   "paper_delivery": {
@@ -11,10 +11,10 @@
   },
   "max_parallel_agents": 3,
   "mandatory_outputs": [
-    "subquestion_results",
-    "algorithm_process",
-    "reproducible_code",
-    "error_analysis"
+    "result.subquestions",
+    "narrative.algorithm_process",
+    "code.solver",
+    "result.uq"
   ],
   "human_checkpoints": [],
   "report_sections": ["问题重述", "逐问模型与算法", "数值结果", "检验", "评价"],

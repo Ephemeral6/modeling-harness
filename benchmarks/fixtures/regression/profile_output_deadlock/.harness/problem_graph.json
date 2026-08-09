@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "last_revision_reason": "delivery profile overlay: cumcm",
+  "nodes": {
+    "s6.delivery": {
+      "question": "如何只用已验证证据交付，并确保关键数字和限定语不被改写？",
+      "task_type": "evidence_delivery",
+      "milestone": "s6",
+      "depends_on": [],
+      "input_evidence": [],
+      "method_pack": "evidence-writing",
+      "enforce_contract": true,
+      "outputs": [
+        {
+          "evidence_id": "result.subquestions",
+          "kind": "result",
+          "statement": "按题目子问组织的机器可读数值结果",
+          "artifact": "results/subquestion_results.json",
+          "profile_managed": true
+        },
+        {
+          "evidence_id": "narrative.algorithm_process",
+          "kind": "narrative",
+          "statement": "算法流程、误差、复杂度和复现入口",
+          "artifact": "results/algorithm_process.json",
+          "profile_managed": true
+        }
+      ],
+      "acceptance": [
+        {
+          "kind": "profile_mandatory_outputs"
+        }
+      ],
+      "workstreams": [
+        {
+          "id": "delivery",
+          "role": "delivery-team",
+          "description": "从 verified evidence 生成交付物与图表",
+          "owns": [
+            "results/subquestion_results.json",
+            "results/algorithm_process.json"
+          ],
+          "outputs": [
+            "result.subquestions",
+            "narrative.algorithm_process"
+          ],
+          "budget": {
+            "max_attempts": 3
+          }
+        }
+      ],
+      "reviews": [],
+      "risk": {
+        "downstream_impact": 3,
+        "uncertainty": 2,
+        "estimated_cost": 2
+      }
+    }
+  }
+}

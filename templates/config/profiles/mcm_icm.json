@@ -1,14 +1,14 @@
 {
   "name": "mcm_icm",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "renderer": "decision_narrative_paper",
   "paper_content_contract": "config/paper_content_contract.json",
   "max_parallel_agents": 3,
   "mandatory_outputs": [
-    "executive_summary",
-    "model_rationale",
-    "sensitivity",
-    "policy_implications"
+    "narrative.summary",
+    "model.spec",
+    "result.robustness",
+    "decision.answer"
   ],
   "human_checkpoints": [],
   "report_sections": [

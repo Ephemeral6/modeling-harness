@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "parameter_uncertainty": {
+    "ci95": [
+      1180.0,
+      1290.0
+    ]
+  },
+  "intrinsic_noise": {
+    "sd": 12.3
+  }
+}
