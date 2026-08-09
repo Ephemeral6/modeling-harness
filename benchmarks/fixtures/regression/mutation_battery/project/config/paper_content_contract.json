@@ -1,6 +1,26 @@
 {
   "number_whitelist": [
     {"value": "1", "reason": "文内参考文献编号"},
-    {"value": "2", "reason": "文内参考文献编号"}
+    {"value": "2", "reason": "文内参考文献编号"},
+    {"value": "0", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "3", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "4", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "5", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "6", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "7", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "8", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "9", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "10", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "28", "reason": "问题二批次表结构量：批次日偏移/栏位计数，逐行与 results/q2_plan.json 核对"},
+    {"value": "40", "reason": "问题二批次表结构量：批规模，逐行与 results/q2_plan.json 核对"},
+    {"value": "48", "reason": "问题二批次表结构量：批规模，逐行与 results/q2_plan.json 核对"},
+    {"value": "56", "reason": "问题二批次表结构量：批规模，逐行与 results/q2_plan.json 核对"},
+    {"value": "57", "reason": "问题二批次表结构量：批次日偏移，逐行与 results/q2_plan.json 核对"},
+    {"value": "64", "reason": "问题二批次表结构量：批规模，逐行与 results/q2_plan.json 核对"},
+    {"value": "86", "reason": "问题二批次表结构量：批次日偏移，逐行与 results/q2_plan.json 核对"},
+    {"value": "114", "reason": "问题二批次表结构量：批次日偏移，逐行与 results/q2_plan.json 核对"},
+    {"value": "143", "reason": "问题二批次表结构量：批次日偏移，逐行与 results/q2_plan.json 核对"},
+    {"value": "172", "reason": "问题二批次表结构量：批次日偏移，逐行与 results/q2_plan.json 核对"},
+    {"value": "200", "reason": "问题二批次表结构量：批次日偏移，逐行与 results/q2_plan.json 核对"}
   ]
 }

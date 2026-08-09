@@ -13,6 +13,7 @@ PLACEHOLDER_RE = re.compile(
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
 _FENCE_RE = re.compile(r"^\s*```")
 _TABLE_RE = re.compile(r"^\s*\|")
+_TABLE_DELIMITER_RE = re.compile(r"^\s*\|[\s|:-]*$")
 _NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_.])\d+(?:\.\d+)?(?![A-Za-z0-9_.])")
 _YEAR_RE = re.compile(r"^(?:19|20)\d\d$")
 _INLINE_MATH_RE = re.compile(r"\$[^$\n]+\$")
@@ -28,6 +29,10 @@ _BANNER = (
 )
 _INLINE_TYPES = {"num": "claim_number", "ev": "citation", "decision": "decision"}
 _INLINE_KEYS = {"num": "claim_id", "ev": "evidence_id", "decision": "variable_id"}
+# Blocks whose numbers reach the reader as conclusions: they carry typed
+# placeholders and are linted.  `equation` and fenced `pseudocode` stay out on
+# purpose — their digits are coefficients, indices and literals, not results.
+_BOUND_BLOCKS = {"prose", "front_matter", "table"}
 
 
 def parse_manifest(data: Any) -> tuple[list[dict], list[str]]:
@@ -151,9 +156,10 @@ def parse_section(text: str) -> list[dict]:
             start = index
             while index < total and _TABLE_RE.match(lines[index]):
                 index += 1
+            chunk = "\n".join(lines[start:index])
             blocks.append({
-                "type": "table", "line": start + 1,
-                "text": "\n".join(lines[start:index]),
+                "type": "table", "line": start + 1, "text": chunk,
+                "inlines": _parse_inlines(chunk, start + 1),
             })
             continue
         start = index
@@ -275,19 +281,70 @@ def _lint_prose_line(
     return errors
 
 
+def _table_cells(raw: str) -> list[str]:
+    body = raw.strip()
+    if body.startswith("|"):
+        body = body[1:]
+    if body.endswith("|"):
+        body = body[:-1]
+    return body.split("|")
+
+
+def _mask_leading_cell(raw: str) -> str:
+    """Blank out the first cell so its digits never reach the number scan."""
+    opening = raw.find("|")
+    closing = raw.find("|", opening + 1)
+    if opening < 0 or closing < 0:
+        return raw
+    return raw[:opening + 1] + "\x00" + raw[closing:]
+
+
+def _row_index_offsets(lines: list[str]) -> set[int]:
+    """Offsets of body rows whose first cell is a 1..N ordinal row marker.
+
+    Mirrors the ordered-list exemption: an index column that counts 1, 2, 3…
+    is table furniture, not a result.  A single stray integer never qualifies,
+    so a result cannot be hidden by parking it in the first column.
+    """
+    body = [
+        (offset, raw) for offset, raw in enumerate(lines)
+        if raw.strip() and _TABLE_DELIMITER_RE.match(raw) is None
+    ]
+    rows = body[1:]
+    if len(rows) < 2:
+        return set()
+    offsets = set()
+    for expected, (offset, raw) in enumerate(rows, start=1):
+        cells = _table_cells(raw)
+        if not cells or cells[0].strip() != str(expected):
+            return set()
+        offsets.add(offset)
+    return offsets
+
+
+def _lint_lines(block: dict) -> list[str]:
+    lines = block["text"].split("\n")
+    if block["type"] != "table":
+        return lines
+    masked = list(lines)
+    for offset in _row_index_offsets(lines):
+        masked[offset] = _mask_leading_cell(lines[offset])
+    return masked
+
+
 def lint_document(
     sections: list[dict],
     claims: dict[str, dict],
     whitelist: list[str],
     decisions: dict[str, str],
 ) -> list[str]:
-    """Lint prose and front matter; each error carries file plus line."""
+    """Lint prose, front matter and tables; errors carry file plus line."""
     errors: list[str] = []
     for section in sections:
         for block in section["blocks"]:
-            if block["type"] not in {"prose", "front_matter"}:
+            if block["type"] not in _BOUND_BLOCKS:
                 continue
-            for offset, raw in enumerate(block["text"].split("\n")):
+            for offset, raw in enumerate(_lint_lines(block)):
                 errors.extend(_lint_prose_line(
                     raw, section["file"], block["line"] + offset,
                     claims, whitelist, decisions,
@@ -323,7 +380,7 @@ def render_document(
         for block in section["blocks"]:
             if block["type"] == "heading":
                 parts.append("#" * block["level"] + " " + block["text"])
-            elif block["type"] in {"prose", "front_matter"}:
+            elif block["type"] in _BOUND_BLOCKS:
                 parts.append(_render_inline(block["text"], claims, decisions))
             else:
                 parts.append(block["text"])

@@ -27,19 +27,19 @@
 
 | 指标 | 登记值 |
 | --- | --- |
-| Q2.annual_output | 1326.11 只/年 |
-| Q2.ewes | 416 只 |
-| Q2.peak_pens | 112 栏 |
-| Q2.layer1_best | 1314.00 只/年 |
-| Q2.upper_bound | 1387.25 只/年 |
-| Q2.knapsack_bound | 1377.12 只/年 |
-| Q1.gap_lower | 10 栏 |
-| Q1.gap_upper | 16 栏 |
-| Q1.restricted_lower | 11 栏 |
-| Q3.report_n | 200 个 |
-| Q3.report_headline | 962.48 只/年 |
-| Q3.selection_headline | 950.35 只/年 |
-| Q3.pairing_diff | -3.49 只 |
+| Q2.annual_output | {num:Q2.annual_output} 只/年 |
+| Q2.ewes | {num:Q2.ewes} 只 |
+| Q2.peak_pens | {num:Q2.peak_pens} 栏 |
+| Q2.layer1_best | {num:Q2.layer1_best} 只/年 |
+| Q2.upper_bound | {num:Q2.upper_bound} 只/年 |
+| Q2.knapsack_bound | {num:Q2.knapsack_bound} 只/年 |
+| Q1.gap_lower | {num:Q1.gap_lower} 栏 |
+| Q1.gap_upper | {num:Q1.gap_upper} 栏 |
+| Q1.restricted_lower | {num:Q1.restricted_lower} 栏 |
+| Q3.report_n | {num:Q3.report_n} 个 |
+| Q3.report_headline | {num:Q3.report_headline} 只/年 |
+| Q3.selection_headline | {num:Q3.selection_headline} 只/年 |
+| Q3.pairing_diff | {num:Q3.pairing_diff} 只 |
 
 ## 参考文献
 

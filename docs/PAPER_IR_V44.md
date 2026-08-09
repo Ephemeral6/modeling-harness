@@ -49,7 +49,7 @@ all output writing.
 
 | Rule | Trigger |
 |---|---|
-| `bare_number_in_prose` | A digit sequence in prose or front matter that is not produced by a placeholder |
+| `bare_number_in_prose` | A digit sequence in prose, front matter or a **table** that is not produced by a placeholder |
 | `unbound_claim` | `{num:X}` where `X` has no binding |
 | `stale_claim_value` | `{num:X}` where the binding evaluation is not `valid` (drift, missing artifact, type or unit error) |
 | `cross_caliber_arithmetic` | Two `{num:}` placeholders on one prose line with an arithmetic expression between them (`+ - ± × ÷ * / %`, 相差/之和/之差/合计/百分之) and neither binding declares `derived_from`; a `/` flanked by CJK characters on both sides (`只/年` unit form) does not count |
@@ -57,21 +57,41 @@ all output writing.
 | `invalid_number_whitelist` | A whitelist entry without a non-empty `reason` (the entry grants no exemption) |
 | `manifest_invalid` / `section_missing` | Broken manifest schema or a listed section file that does not exist |
 
+### Which blocks are bound
+
+`prose`, `front_matter` and `table` are **bound blocks**: they are linted for
+bare numbers *and* their placeholders are substituted by `render_document`.
+A table is body text a reader takes as the answer, so a result parked in a
+cell is exactly as unbound as one parked in a sentence — 4.7 closed that hole
+after an end-to-end run shipped a ±1% scenario table whose three result
+numbers reached `paper/draft.md` under no binding at all.
+
+`equation` (`$$…$$`) and fenced `pseudocode` stay **out** on purpose: their
+digits are coefficients, exponents, indices, horizons and code literals
+(`365`, `229`, `HORIZON = 229`), not conclusions, and forcing them through
+`{num:}` would either mangle the math or invite a whitelist so broad that it
+would neuter the rule everywhere else. Numbers that a reader will quote as a
+result belong in prose or a table, both of which are bound.
+
 ### Bare-number exemptions
 
-Numbers are legal in prose only when they cannot be a result claim:
+Numbers are legal in a bound block only when they cannot be a result claim:
 
 1. **Years**: standalone `1900`–`2099` (e.g. `2023 年`).
 2. **Identifier-adjacent digits**: digits touching ASCII letters, `_` or `.`
    (`Q2`, `fig1`, `10_main.md`, `v4.3`) are labels, not values.
 3. **Ordered-list markers**: a leading `1. ` or `1) `.
-4. **Inline math and inline code**: `$...$` and `` `...` `` spans; block-level
-   equations, tables and fenced code are entirely outside prose linting.
-5. **Whitelisted constants**: `number_whitelist` entries with a `reason`,
-   meant for problem-statement constants (`112` pens, a `1:50` ratio), never
-   for computed results.
+4. **Table row indices**: the first column of a table, and only when its body
+   rows spell the ordinals `1, 2, 3, …` in order over at least two rows. One
+   stray integer in column 1 is still linted, so a result cannot be hidden by
+   moving it left.
+5. **Inline math and inline code**: `$...$` and `` `...` `` spans.
+6. **Whitelisted constants**: `number_whitelist` entries with a `reason`,
+   meant for problem-statement constants and printed structural quantities
+   (`112` pens, a batch table's day offsets), never for computed results.
 
-Everything else must go through `{num:}`.
+Everything else must go through `{num:}`. Units carry no digits of their own
+(`只/年` in a header cell), so they are unaffected.
 
 ## Compilation pipeline
 

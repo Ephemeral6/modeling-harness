@@ -28,6 +28,54 @@ SELF_VERIFY_HINT = (
 )
 
 
+VERIFY_FAILURE_PREFIX = "证据验证失败"
+# The CLI only ever prints the exception text, so the reasons that decide the
+# verdict have to travel inside it; .harness/evidence.json keeps the full copy.
+_REPORTED_REASONS = 10
+
+
+def verify_failure_message(
+    node_id: str,
+    check_records: list[dict],
+    review_errors: list[str],
+) -> str:
+    """Failing verify text carrying review_errors and failed checks inline."""
+    lines = [f"{VERIFY_FAILURE_PREFIX}: {node_id}"]
+    failed_checks = [item for item in check_records if not item.get("ok")]
+    if failed_checks:
+        lines.append(f"机械检查失败 {len(failed_checks)} 项：")
+        for item in failed_checks[:_REPORTED_REASONS]:
+            tail = (
+                str(item.get("stderr_tail") or "").strip()
+                or str(item.get("stdout_tail") or "").strip()
+            ).splitlines()
+            lines.append(
+                f"  - {item.get('argv')} returncode={item.get('returncode')}"
+                + (f": {tail[-1]}" if tail else "")
+            )
+        if len(failed_checks) > _REPORTED_REASONS:
+            lines.append(
+                f"  - 另有 {len(failed_checks) - _REPORTED_REASONS} 项，"
+                f"见 .harness/evidence.json 的 verification.checks"
+            )
+    if review_errors:
+        lines.append(f"review_errors {len(review_errors)} 条：")
+        lines.extend(
+            f"  - {item}" for item in review_errors[:_REPORTED_REASONS]
+        )
+        if len(review_errors) > _REPORTED_REASONS:
+            lines.append(
+                f"  - 另有 {len(review_errors) - _REPORTED_REASONS} 条，"
+                f"见 .harness/evidence.json 的 verification.review_errors"
+            )
+    lines.append(
+        f"证据已置为 rejected；修好后执行 modelharness evidence revise "
+        f"{node_id} --reason <修复说明>，再由非生成者 worker 重新 "
+        f"modelharness evidence verify {node_id} --worker <另一 worker>。"
+    )
+    return "\n".join(lines)
+
+
 def normalize_worker(value: str | None) -> str | None:
     """Case/space-insensitive identity used for isolation comparison."""
     if value is None:
@@ -436,7 +484,9 @@ class EvidenceGraph:
             data["revision"] += 1
             result = dict(current)
         if failed:
-            raise RuntimeError(f"证据验证失败: {node_id}")
+            raise RuntimeError(
+                verify_failure_message(node_id, check_records, review_errors)
+            )
         return result
 
     @staticmethod

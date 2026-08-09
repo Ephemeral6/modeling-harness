@@ -3,17 +3,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .contracts import validate_review
+from .contracts import STAGES, validate_review
 from .evidence import EvidenceGraph
 from .integration import audit_integration
 from .method_packs import MethodPackRegistry
-from .problem_graph import ProblemGraph, canonical_hash
+from .problem_graph import ACTIVE_TASK_STATES, ProblemGraph, canonical_hash
 from .profiles import ProfileService
 from .review_store import review_lineage_signature
 from .stages import StageService
 from .storage import read_json
 from .util import sha256
 from .workflow import WorkflowEngine
+
+
+# Instruction text stays readable; the packet keeps the full reason list.
+_INSTRUCTION_REASONS = 8
 
 
 def _active_outputs(root: Path, node: dict) -> list[dict]:
@@ -187,6 +191,98 @@ class AdaptiveScheduler:
             created.append(task)
         return created
 
+    def _stamp_collapse(self, valid_prefix: list[str]) -> dict:
+        """Stamps still on disk that dropped out of the valid prefix.
+
+        One stale or tampered piece of evidence fails the global evidence
+        audit inside ``validate_stamp``, so every stamp reports it at once and
+        ``valid_prefix`` collapses — that is what silently rewinds the
+        scheduler to an earlier stage.  Only the earliest collapsed stamp is
+        re-validated for its reason: the later ones repeat it and each call
+        re-hashes every signed artifact.
+        """
+        collapsed = [
+            stage for stage in STAGES
+            if stage not in valid_prefix
+            and self.stages.stamp_path(stage).is_file()
+        ]
+        if not collapsed:
+            return {"stages": [], "errors": []}
+        return {
+            "stages": collapsed,
+            "errors": self.stages.validate_stamp(collapsed[0]),
+        }
+
+    def _blocking_diagnosis(
+        self,
+        stage: str,
+        evidence_nodes: dict,
+        states: dict[str, str],
+        tasks: list[dict],
+        missing: list[str],
+        valid_prefix: list[str],
+    ) -> dict:
+        """Why the frontier is empty, stated in terms an agent can act on."""
+        reasons: list[str] = []
+        actions: list[str] = []
+        audit = self.evidence.audit()
+        for item in audit:
+            reasons.append(f"证据审计失败: {item}")
+        for evidence_id in sorted({item.split(":", 1)[0] for item in audit}):
+            actions.append(
+                f"modelharness evidence revise {evidence_id} "
+                f"--reason <重新产出后的说明>，再由非生成者 worker 重新 "
+                f"modelharness evidence verify {evidence_id}"
+            )
+        collapse = self._stamp_collapse(valid_prefix)
+        if collapse["stages"]:
+            names = "、".join(collapse["stages"])
+            reasons.append(
+                f"印章链塌陷: {names} 印章仍在盘上但已失效，"
+                f"valid_stage_prefix={valid_prefix}，调度阶段被回退到 {stage}"
+            )
+            reasons.extend(
+                f"印章失效原因: {error}" for error in collapse["errors"]
+            )
+        for evidence_id in missing:
+            record = evidence_nodes.get(evidence_id)
+            if record is None:
+                reasons.append(f"里程碑证据未登记: {evidence_id}")
+            elif record.get("status") != "verified":
+                reasons.append(
+                    f"里程碑证据未通过验证: {evidence_id} "
+                    f"status={record.get('status')}"
+                )
+            else:
+                reasons.append(
+                    f"里程碑证据未绑定当前问题合同: {evidence_id}"
+                )
+        holding = sorted({
+            task["work_item_id"] for task in tasks
+            if task.get("status") in ACTIVE_TASK_STATES
+            and task.get("work_item_id")
+        })
+        if holding:
+            reasons.append(
+                f"以下局部问题已有在途任务，因此不再进入前沿: {holding}"
+            )
+            actions.append(
+                "modelharness task list --project . 查看在途任务，"
+                "完成或 modelharness task retry 后前沿才会重开"
+            )
+        stalled = sorted(
+            node_id for node_id, state in states.items()
+            if state == "blocked"
+        )
+        if stalled:
+            reasons.append(f"依赖未闭合而阻塞的局部问题: {stalled}")
+        if collapse["stages"] and not audit:
+            actions.append(
+                f"modelharness gate {stage} 会复用同一套审计；"
+                "先修复上面列出的印章失效原因"
+            )
+        return {"reasons": reasons, "actions": actions}
+
     def next_packet(self) -> dict:
         stage = self.stages.current()
         recovered = self.workflow.reconcile()
@@ -224,6 +320,12 @@ class AdaptiveScheduler:
                 missing.append(evidence_id)
             elif enforce and record.get("obligation_hash") != contract:
                 missing.append(evidence_id)
+        valid_prefix = self.stages.valid_prefix()
+        diagnosis = {"reasons": [], "actions": []}
+        if not selected:
+            diagnosis = self._blocking_diagnosis(
+                stage, evidence_nodes, states, tasks, missing, valid_prefix,
+            )
         phase = "work"
         instruction = "领取最高优先级局部研究任务，按方法包协议产出 candidate 证据。"
         if not missing:
@@ -242,6 +344,15 @@ class AdaptiveScheduler:
         elif not selected:
             phase = "blocked"
             instruction = "当前无可执行前沿；检查缺失输入、冲突任务或问题图依赖。"
+        if diagnosis["reasons"]:
+            head = diagnosis["reasons"][:_INSTRUCTION_REASONS]
+            rest = len(diagnosis["reasons"]) - len(head)
+            instruction += "真实原因：" + "；".join(head)
+            instruction += (
+                f"；另有 {rest} 条见 blocking_reasons。" if rest else "。"
+            )
+        if diagnosis["actions"]:
+            instruction += "可执行动作：" + "；".join(diagnosis["actions"]) + "。"
         packet = {
             "continue": True,
             "terminal": None,
@@ -249,7 +360,9 @@ class AdaptiveScheduler:
             "stage": stage,
             "phase": phase,
             "profile": self.profiles.active["name"],
-            "valid_stage_prefix": self.stages.valid_prefix(),
+            "valid_stage_prefix": valid_prefix,
+            "blocking_reasons": diagnosis["reasons"],
+            "blocking_actions": diagnosis["actions"],
             "problem_revision": self.graph.data["revision"],
             "node_states": states,
             "frontier": [
