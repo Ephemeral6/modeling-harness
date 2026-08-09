@@ -257,6 +257,42 @@ def test_statement_origin_needs_no_rationale(tmp_path: Path):
     assert self_imposed_records(root) == []
 
 
+def test_self_imposed_scope_cannot_be_relabelled_as_statement(tmp_path: Path):
+    """A ledger may not admit self_imposed scope while claiming statement origin.
+
+    Otherwise the disclosure obligation (rationale, disclosure_anchor and the
+    paper's self-imposed section) is bypassed by a one-word relabel.
+    """
+    root = _ledger_project(tmp_path, _modeled_constraint(
+        scope="self_imposed",
+        origin="statement",
+        rationale="题面无该口径。",
+        disclosure_anchor="自设口径与管理假设",
+    ))
+    errors = audit_constraint_ledger(root, "model")
+    assert any(
+        "scope is self_imposed but origin claims statement" in error
+        and "constraint.dispersion" in error
+        for error in errors
+    ), errors
+    assert self_imposed_records(root) == []
+
+
+def test_self_imposed_scope_with_matching_origin_is_clean(tmp_path: Path):
+    root = _ledger_project(tmp_path, _modeled_constraint(
+        scope="self_imposed",
+        origin="self_imposed",
+        rationale="题面无该口径，取自设管理阈值。",
+        disclosure_anchor="自设口径与管理假设",
+    ))
+    assert audit_constraint_ledger(root, "model") == []
+
+
+def test_self_imposed_scope_without_origin_stays_legacy_clean(tmp_path: Path):
+    root = _ledger_project(tmp_path, _modeled_constraint(scope="self_imposed"))
+    assert audit_constraint_ledger(root, "model") == []
+
+
 # ----------------------------------------------------------- 跨 run 继承
 
 

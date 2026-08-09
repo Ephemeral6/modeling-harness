@@ -163,7 +163,12 @@ def _origin_errors(item: dict, constraint_id: str) -> list[str]:
 
     A constraint the modeler invented must say why it exists and where the
     paper discloses it, so a self-imposed management rule cannot masquerade
-    as a statement requirement.
+    as a statement requirement.  A ledger that already admits the constraint
+    is self-imposed in its ``scope`` may not then contradict itself in
+    ``origin``: that combination would silently drop the entry out of
+    :func:`modelharness.calibration.self_imposed_records` and out of the
+    paper's disclosure obligation while the ledger itself still says the
+    modeler invented it.
     """
     origin = item.get("origin")
     if origin is None:
@@ -171,6 +176,11 @@ def _origin_errors(item: dict, constraint_id: str) -> list[str]:
     if origin not in CONSTRAINT_ORIGINS:
         return [f"invalid constraint origin: {constraint_id}"]
     if origin != SELF_IMPOSED:
+        if str(item.get("scope", "")).strip().lower() == SELF_IMPOSED:
+            return [
+                f"scope is self_imposed but origin claims {origin}: "
+                f"{constraint_id}"
+            ]
         return []
     return [
         f"self-imposed constraint missing {field}: {constraint_id}"
