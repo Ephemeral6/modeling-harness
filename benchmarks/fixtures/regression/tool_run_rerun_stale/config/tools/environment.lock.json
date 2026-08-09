@@ -1,0 +1,524 @@
+{
+  "schema": 1,
+  "time": "2026-08-09T12:32:47+08:00",
+  "python": {
+    "version": "3.13.0",
+    "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe"
+  },
+  "catalog_sha256": "3f5ae86c1715f8aebedcd84703a9878c19ba07b63eefe8e1565219459d5c2541",
+  "tools": {
+    "python": {
+      "id": "python",
+      "available": true,
+      "version": "Python 3.13.0",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.EXE",
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "scripting",
+        "data_io",
+        "simulation"
+      ],
+      "warnings": []
+    },
+    "numpy": {
+      "id": "numpy",
+      "available": true,
+      "version": "2.4.3",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "numerical_computing",
+        "linear_algebra",
+        "monte_carlo"
+      ],
+      "warnings": []
+    },
+    "scipy": {
+      "id": "scipy",
+      "available": true,
+      "version": "1.17.1",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "numerical_computing",
+        "continuous_optimization",
+        "differential_equations",
+        "statistics",
+        "signal_processing"
+      ],
+      "warnings": []
+    },
+    "pandas": {
+      "id": "pandas",
+      "available": true,
+      "version": "3.0.1",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "data_io",
+        "tabular_data",
+        "data_cleaning"
+      ],
+      "warnings": []
+    },
+    "sympy": {
+      "id": "sympy",
+      "available": true,
+      "version": "1.14.0",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "symbolic_math",
+        "analytic_validation",
+        "differential_equations"
+      ],
+      "warnings": []
+    },
+    "scikit-learn": {
+      "id": "scikit-learn",
+      "available": true,
+      "version": "1.8.0",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "machine_learning",
+        "regression",
+        "classification",
+        "clustering",
+        "model_selection"
+      ],
+      "warnings": []
+    },
+    "statsmodels": {
+      "id": "statsmodels",
+      "available": true,
+      "version": "0.14.6",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "statistics",
+        "statistical_inference",
+        "forecasting",
+        "time_series"
+      ],
+      "warnings": []
+    },
+    "networkx": {
+      "id": "networkx",
+      "available": true,
+      "version": "3.6.1",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "graph_analysis",
+        "network_optimization"
+      ],
+      "warnings": []
+    },
+    "cvxpy": {
+      "id": "cvxpy",
+      "available": true,
+      "version": "1.8.2",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "continuous_optimization",
+        "convex_optimization",
+        "linear_programming",
+        "quadratic_programming"
+      ],
+      "warnings": [
+        "CVXPY 当前不支持 OR-Tools 9.15+ 的 GLOP/PDLP 接口；请使用独立 OR-Tools 或 CVXPY 其他后端"
+      ]
+    },
+    "ortools": {
+      "id": "ortools",
+      "available": true,
+      "version": "9.15.6755",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "mixed_integer_optimization",
+        "constraint_programming",
+        "routing",
+        "scheduling",
+        "linear_programming"
+      ],
+      "warnings": []
+    },
+    "z3": {
+      "id": "z3",
+      "available": true,
+      "version": "4.16.0.0",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "formal_constraints",
+        "counterexample_search",
+        "constraint_programming"
+      ],
+      "warnings": []
+    },
+    "matplotlib": {
+      "id": "matplotlib",
+      "available": true,
+      "version": "3.10.8",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "visualization",
+        "diagnostic_plotting"
+      ],
+      "warnings": []
+    },
+    "seaborn": {
+      "id": "seaborn",
+      "available": true,
+      "version": "0.13.2",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "visualization",
+        "diagnostic_plotting"
+      ],
+      "warnings": []
+    },
+    "openpyxl": {
+      "id": "openpyxl",
+      "available": true,
+      "version": "3.1.5",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "spreadsheet",
+        "data_io"
+      ],
+      "warnings": []
+    },
+    "torch": {
+      "id": "torch",
+      "available": true,
+      "version": "2.12.0",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "deep_learning",
+        "automatic_differentiation",
+        "machine_learning"
+      ],
+      "warnings": []
+    },
+    "xgboost": {
+      "id": "xgboost",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "machine_learning",
+        "regression",
+        "classification"
+      ],
+      "warnings": []
+    },
+    "lightgbm": {
+      "id": "lightgbm",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "machine_learning",
+        "regression",
+        "classification"
+      ],
+      "warnings": []
+    },
+    "pymc": {
+      "id": "pymc",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "bayesian_inference",
+        "monte_carlo",
+        "uncertainty_quantification"
+      ],
+      "warnings": []
+    },
+    "arviz": {
+      "id": "arviz",
+      "available": true,
+      "version": "1.2.0",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "bayesian_diagnostics",
+        "diagnostic_plotting"
+      ],
+      "warnings": []
+    },
+    "simpy": {
+      "id": "simpy",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "discrete_event_simulation",
+        "simulation"
+      ],
+      "warnings": []
+    },
+    "geopandas": {
+      "id": "geopandas",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "gis_vector",
+        "spatial_analysis"
+      ],
+      "warnings": []
+    },
+    "shapely": {
+      "id": "shapely",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "computational_geometry",
+        "gis_vector"
+      ],
+      "warnings": []
+    },
+    "rasterio": {
+      "id": "rasterio",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "gis_raster",
+        "spatial_analysis"
+      ],
+      "warnings": []
+    },
+    "folium": {
+      "id": "folium",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "map_visualization",
+        "spatial_analysis"
+      ],
+      "warnings": []
+    },
+    "plotly": {
+      "id": "plotly",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "python_module",
+      "risk": "local",
+      "capabilities": [
+        "interactive_visualization",
+        "visualization"
+      ],
+      "warnings": []
+    },
+    "requests": {
+      "id": "requests",
+      "available": true,
+      "version": "2.33.1",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "kind": "python_module",
+      "risk": "network",
+      "capabilities": [
+        "external_data",
+        "api_access"
+      ],
+      "warnings": []
+    },
+    "rscript": {
+      "id": "rscript",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "statistics",
+        "forecasting",
+        "bayesian_inference"
+      ],
+      "warnings": []
+    },
+    "julia": {
+      "id": "julia",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "numerical_computing",
+        "continuous_optimization",
+        "differential_equations"
+      ],
+      "warnings": []
+    },
+    "octave": {
+      "id": "octave",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "numerical_computing",
+        "linear_algebra",
+        "signal_processing"
+      ],
+      "warnings": []
+    },
+    "matlab": {
+      "id": "matlab",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "commercial",
+      "capabilities": [
+        "numerical_computing",
+        "optimization",
+        "simulation",
+        "signal_processing"
+      ],
+      "warnings": []
+    },
+    "gurobi": {
+      "id": "gurobi",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "commercial",
+      "capabilities": [
+        "linear_programming",
+        "mixed_integer_optimization",
+        "quadratic_programming"
+      ],
+      "warnings": []
+    },
+    "scip": {
+      "id": "scip",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "mixed_integer_optimization",
+        "nonlinear_optimization"
+      ],
+      "warnings": []
+    },
+    "cbc": {
+      "id": "cbc",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "linear_programming",
+        "mixed_integer_optimization"
+      ],
+      "warnings": []
+    },
+    "glpk": {
+      "id": "glpk",
+      "available": false,
+      "version": null,
+      "executable": null,
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "linear_programming",
+        "mixed_integer_optimization"
+      ],
+      "warnings": []
+    },
+    "pandoc": {
+      "id": "pandoc",
+      "available": true,
+      "version": "pandoc 3.8.3",
+      "executable": "C:\\Program Files\\Pandoc\\pandoc.EXE",
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "report_rendering",
+        "document_conversion"
+      ],
+      "warnings": []
+    },
+    "xelatex": {
+      "id": "xelatex",
+      "available": true,
+      "version": "MiKTeX-XeTeX 4.15 (MiKTeX 25.4)",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\MiKTeX\\miktex\\bin\\x64\\xelatex.EXE",
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "report_rendering",
+        "latex",
+        "pdf"
+      ],
+      "warnings": []
+    },
+    "latexmk": {
+      "id": "latexmk",
+      "available": true,
+      "version": "Latexmk, John Collins, 15 June 2025. Version 4.87",
+      "executable": "C:\\Users\\12729\\AppData\\Local\\Programs\\MiKTeX\\miktex\\bin\\x64\\latexmk.EXE",
+      "kind": "command",
+      "risk": "local",
+      "capabilities": [
+        "report_rendering",
+        "latex"
+      ],
+      "warnings": []
+    }
+  },
+  "fingerprint": "310c44614919bd5cf6dc528fb0fe9230ae457ea26ff4d0b49016888f73c1cd6a"
+}

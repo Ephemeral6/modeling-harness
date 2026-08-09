@@ -1,0 +1,118 @@
+{
+  "schema": 2,
+  "id": "1730000600-bbbb1111bbb1",
+  "node_id": "s0.problem_definition",
+  "contract_hash": "1aa18c04697e3d065109fb911bb317d9cbabbbc585196f6cd5e5f500ae3c4811",
+  "decision_hash": "06b0c85cbc11aa614b8619cbc72893f4f4ea1c4c5cc5e1f28901973e7005dc5b",
+  "time": "2026-08-09T12:32:47+08:00",
+  "duration_seconds": 0.049074,
+  "seed": 5,
+  "timeout": 120,
+  "timed_out": false,
+  "argv": [
+    "python",
+    "src/search_telemetry.py"
+  ],
+  "cwd": ".",
+  "tools": [
+    {
+      "id": "python",
+      "version": "Python 3.13.0",
+      "executable": "python",
+      "risk": "local",
+      "warnings": []
+    }
+  ],
+  "python": {
+    "version": "3.13.0",
+    "executable": "python"
+  },
+  "inputs": [
+    {
+      "path": "src/search_telemetry.py",
+      "exists": true,
+      "size": 379,
+      "sha256": "6e724e13bf0a98ee3de49501a3bb43caf835359a9cc33a7126547dfc2ca1063b"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "results/search_telemetry.json",
+      "exists": true,
+      "size": 84,
+      "sha256": "c967297a7af181477c9a14f18a7efd4f4376df29de6273ec0fc3f57a84bc9c7d"
+    }
+  ],
+  "logs": {
+    "stdout": "logs/tool_runs/1730000600-bbbb1111bbb1.stdout.txt",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "logs/tool_runs/1730000600-bbbb1111bbb1.stderr.txt",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "returncode": 0,
+  "validators": [
+    {
+      "kind": "json_finite",
+      "path": "results/search_telemetry.json"
+    },
+    {
+      "kind": "json_fields",
+      "path": "results/search_telemetry.json",
+      "fields": [
+        "schema",
+        "tool_run_id"
+      ]
+    }
+  ],
+  "run_hash": "b7b5ce39ef9f43e6810a1cc6bd4f5464b256b2631cae07ba9124ac66be85b0fd",
+  "verification": {
+    "time": "2026-08-09T12:32:47+08:00",
+    "status": "verified",
+    "checks": [
+      {
+        "kind": "input_freshness",
+        "path": "src/search_telemetry.py",
+        "expected_sha256": "6e724e13bf0a98ee3de49501a3bb43caf835359a9cc33a7126547dfc2ca1063b",
+        "current_sha256": "6e724e13bf0a98ee3de49501a3bb43caf835359a9cc33a7126547dfc2ca1063b",
+        "freshness": "valid",
+        "ok": true
+      },
+      {
+        "kind": "process_exit",
+        "returncode": 0,
+        "ok": true
+      },
+      {
+        "kind": "output_integrity",
+        "path": "results/search_telemetry.json",
+        "expected_sha256": "c967297a7af181477c9a14f18a7efd4f4376df29de6273ec0fc3f57a84bc9c7d",
+        "current_sha256": "c967297a7af181477c9a14f18a7efd4f4376df29de6273ec0fc3f57a84bc9c7d",
+        "ok": true
+      },
+      {
+        "kind": "json_finite",
+        "path": "results/search_telemetry.json",
+        "ok": true
+      },
+      {
+        "kind": "json_fields",
+        "path": "results/search_telemetry.json",
+        "fields": [
+          "schema",
+          "tool_run_id"
+        ],
+        "missing": [],
+        "ok": true
+      }
+    ],
+    "execution_status": "completed",
+    "verdict": "pass",
+    "authority": "machine",
+    "freshness": "valid",
+    "ok": true
+  },
+  "execution_status": "completed",
+  "verdict": "pass",
+  "authority": "machine",
+  "freshness": "valid"
+}

@@ -6,7 +6,6 @@ from .toolchain_core import (
     ToolchainService as _ToolchainService,
     validate_tool_policy,
 )
-from .toolchain_execution import validate_validators
 from .util import sha256
 from .workflow import WorkflowEngine
 
@@ -102,15 +101,17 @@ class ToolchainService(_ToolchainService):
                 contract = self.graph.contract_hash(node_id)
             except (KeyError, ValueError):
                 contract = None
-            for run in self.executor.list(node_id):
-                if (
-                    run.get("contract_hash") != contract
-                    or run.get("decision_hash") != decision.get("decision_hash")
-                ):
-                    continue
-                verification = self.executor._verify_record(
-                    run, validate_validators(run.get("validators", []))
-                )
+            runs = [
+                run for run in self.executor.list(node_id)
+                if run.get("contract_hash") == contract
+                and run.get("decision_hash") == decision.get("decision_hash")
+            ]
+            for run in runs:
+                # Judge each run against the artifacts it still owns: a run
+                # whose output another run of this same decision has since
+                # rewritten is superseded, not tampered, so re-running a
+                # node stays safe instead of blocking it forever.
+                verification = self.executor.live_verification(run, runs)
                 if verification["status"] != "verified":
                     live_errors.append(
                         f"{node_id}: tool run 当前产物验证失败: {run.get('id')}"

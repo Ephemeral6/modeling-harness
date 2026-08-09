@@ -1,0 +1,45 @@
+{
+  "name": "cumcm",
+  "version": "1.4.0",
+  "renderer": "competition_answer_by_subquestion",
+  "paper_content_contract": "config/paper_content_contract.json",
+  "paper_delivery": {
+    "source": "paper/final.md",
+    "output": "paper/final.pdf",
+    "template": "paper/cumcm-template.tex",
+    "pdf_engine": "xelatex"
+  },
+  "max_parallel_agents": 3,
+  "mandatory_outputs": [
+    "subquestion_results",
+    "algorithm_process",
+    "reproducible_code",
+    "error_analysis"
+  ],
+  "human_checkpoints": [],
+  "report_sections": ["问题重述", "逐问模型与算法", "数值结果", "检验", "评价"],
+  "quality_dimensions": [
+    "numeric_correctness",
+    "process_completeness",
+    "exposition_completeness",
+    "reproducibility",
+    "robustness"
+  ],
+  "min_figures": 3,
+  "min_external_references": 3,
+  "require_in_text_citations": true,
+  "format_spec": "problem/format_spec.md",
+  "robustness_degradation_threshold": null,
+  "required_sections": [
+    "摘要",
+    "问题重述",
+    "模型假设",
+    "符号说明",
+    "模型建立与求解",
+    "模型检验",
+    "灵敏度分析",
+    "模型评价",
+    "管理建议",
+    "参考文献"
+  ]
+}

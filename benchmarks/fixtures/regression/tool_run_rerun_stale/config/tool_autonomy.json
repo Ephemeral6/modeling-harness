@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "mode": "agent_choice",
+  "autonomous_risks": ["local"],
+  "allow_skip": true,
+  "allow_install": false,
+  "require_reason": true,
+  "require_reproducible_run": true,
+  "require_validation": true,
+  "max_timeout_seconds": 7200,
+  "max_parallel_runs": 3,
+  "policy": {
+    "local_compute": "agent_may_choose_and_run",
+    "network": "requires_new_user_authorization",
+    "commercial": "requires_license_and_new_user_authorization",
+    "installation": "requires_new_user_authorization",
+    "external_write": "requires_new_user_authorization"
+  }
+}

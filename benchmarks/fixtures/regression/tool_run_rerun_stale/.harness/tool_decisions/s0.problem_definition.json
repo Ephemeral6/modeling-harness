@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "node_id": "s0.problem_definition",
+  "contract_hash": "1aa18c04697e3d065109fb911bb317d9cbabbbc585196f6cd5e5f500ae3c4811",
+  "plan_hash": "8cafd36e41548fbcbeaa89cbecb8c6167d84e6089b13300535b06b0856a4c116",
+  "catalog_hash": "c82054647e78770f6941bb6887f7a266cfa6c83bbc677c5c7d8d524bd7fc531d",
+  "revision": 1,
+  "time": "2026-08-09T12:32:47+08:00",
+  "action": "use",
+  "reason": "用本地 Python 产出可复现的搜索预算遥测",
+  "selected_tools": [
+    {
+      "id": "python",
+      "version": "Python 3.13.0",
+      "risk": "local",
+      "warnings": []
+    }
+  ],
+  "required_capabilities": [],
+  "extra_capabilities": [],
+  "validation_protocols": [
+    "附件和题面交叉核对"
+  ],
+  "history": [],
+  "decision_hash": "06b0c85cbc11aa614b8619cbc72893f4f4ea1c4c5cc5e1f28901973e7005dc5b"
+}

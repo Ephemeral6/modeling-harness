@@ -1,4 +1,16 @@
-"""Reproducible, non-shell computation runs and mechanical verification."""
+"""Reproducible, non-shell computation runs and mechanical verification.
+
+Every child process receives three harness variables:
+
+* ``PYTHONHASHSEED`` and ``MODEL_HARNESS_SEED`` — determinism knobs;
+* ``MODEL_HARNESS_TOOL_RUN_ID`` — the id of the tool run executing the
+  process, published *before* the process starts.  A script can therefore
+  pin its own telemetry to the run that produced it (for example the
+  ``searches[].budget.tool_run_id`` block inside
+  ``results/research_diagnostics.json``) while it writes the file, instead
+  of patching the artifact after the run — which would immediately
+  invalidate the output hash the manifest just recorded.
+"""
 from __future__ import annotations
 
 import json
@@ -8,6 +20,7 @@ import subprocess
 import sys
 import time
 import uuid
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +30,11 @@ from .problem_graph import canonical_hash
 from .storage import atomic_write_json, read_json
 from .toolchain_registry import ToolRegistry
 from .util import now, sha256
+
+
+#: Checks decided by the recorded process outcome alone.  Everything else
+#: re-reads the working tree and can therefore be superseded by a re-run.
+IMMUTABLE_CHECK_KINDS = frozenset({"process_exit", "process_outcome"})
 
 
 def _json_path(value: Any, dotted: str) -> tuple[bool, Any]:
@@ -184,6 +202,7 @@ class ToolRunExecutor:
         environment = os.environ.copy()
         environment["PYTHONHASHSEED"] = str(seed)
         environment["MODEL_HARNESS_SEED"] = str(seed)
+        environment["MODEL_HARNESS_TOOL_RUN_ID"] = run_id
         started = time.monotonic()
         timed_out = False
         try:
@@ -362,6 +381,127 @@ class ToolRunExecutor:
                 "difference": difference, "limit": limit, "ok": ok,
             }
         return {"kind": kind, "ok": False, "error": "未知 validator"}
+
+    @staticmethod
+    def _artifact_key(value: Any) -> str:
+        return str(value or "").replace("\\", "/")
+
+    @classmethod
+    def _declared_outputs(cls, record: dict) -> dict[str, dict]:
+        outputs = record.get("outputs")
+        declared: dict[str, dict] = {}
+        for output in outputs if isinstance(outputs, list) else []:
+            if not isinstance(output, dict):
+                continue
+            key = cls._artifact_key(output.get("path"))
+            if key:
+                declared[key] = output
+        return declared
+
+    def _current_sha256(self, relative: str) -> str | None:
+        try:
+            path = safe_relative(self.root, relative)
+        except ValueError:
+            return None
+        return sha256(path) if path.is_file() else None
+
+    def superseded_outputs(
+        self, record: dict, peers: Iterable[dict] = ()
+    ) -> list[str]:
+        """Outputs of ``record`` that another run now owns on disk.
+
+        Re-running a node overwrites the artifacts its previous run
+        declared, so the earlier manifest stops matching the bytes on disk.
+        That is supersession, not tampering: the overwriting run's manifest
+        does match those bytes, so the artifact keeps unbroken tool-run
+        provenance.  Ownership is decided by content and never by
+        timestamps, because run ids only carry whole-second resolution and
+        two runs can share a second.  When no peer owns the current bytes
+        nothing is superseded, which is what keeps hand edits detectable.
+        """
+        claims = [
+            self._declared_outputs(peer)
+            for peer in peers
+            if isinstance(peer, dict) and peer.get("id") != record.get("id")
+        ]
+        superseded = []
+        for relative, output in self._declared_outputs(record).items():
+            current = self._current_sha256(relative)
+            if current is None or output.get("sha256") == current:
+                continue
+            for claim in claims:
+                other = claim.get(relative)
+                if (
+                    isinstance(other, dict)
+                    and other.get("exists") is True
+                    and other.get("sha256") == current
+                ):
+                    superseded.append(relative)
+                    break
+        return sorted(superseded)
+
+    @staticmethod
+    def _live_freshness(checks: list[dict]) -> str:
+        inputs = [
+            item for item in checks if item.get("kind") == "input_freshness"
+        ]
+        if any(item.get("freshness") == "missing" for item in inputs):
+            return "missing"
+        if any(item.get("ok") is not True for item in inputs):
+            return "stale"
+        if any(
+            item.get("kind") == "output_integrity"
+            and item.get("ok") is not True
+            for item in checks
+        ):
+            return "tampered"
+        return "valid"
+
+    def live_verification(
+        self, record: dict, peers: Iterable[dict] = ()
+    ) -> dict:
+        """Re-verify a run against disk, tolerating superseded outputs.
+
+        Checks that re-read an artifact a peer run has since rewritten are
+        marked ``superseded`` instead of failing, so re-running a node is
+        idempotent rather than self-blocking.  A run whose every declared
+        output is superseded owns nothing live, so only its immutable
+        process outcome still counts; a run that still owns an untouched
+        output keeps being judged on that output.
+        """
+        verification = self._verify_record(
+            record, validate_validators(record.get("validators", []))
+        )
+        if verification.get("status") == "recovery_pending":
+            return verification
+        superseded = set(self.superseded_outputs(record, peers))
+        if not superseded:
+            return verification
+        declared = set(self._declared_outputs(record))
+        retired = bool(declared) and declared <= superseded
+        checks = []
+        for check in verification.get("checks", []):
+            stale = retired or any(
+                self._artifact_key(check.get(key)) in superseded
+                for key in ("path", "other_path")
+                if check.get(key)
+            )
+            if stale and check.get("kind") not in IMMUTABLE_CHECK_KINDS:
+                check = {**check, "superseded": True}
+            checks.append(check)
+        live = [item for item in checks if not item.get("superseded")]
+        passed = all(item.get("ok") is True for item in live)
+        verification["checks"] = checks
+        verification["status"] = "verified" if passed else "failed"
+        verification["superseded_outputs"] = sorted(superseded)
+        if "verdict" in verification:
+            freshness = self._live_freshness(live)
+            verification.update({
+                "verdict": "pass" if passed else "fail",
+                "freshness": freshness,
+                "ok": passed and freshness == "valid",
+            })
+        return verification
 
     def verify(self, run_id: str) -> dict:
         path = self.manifest_path(run_id)

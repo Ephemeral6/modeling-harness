@@ -1,0 +1,44 @@
+{
+  "name": "real_world",
+  "version": "1.0.0",
+  "renderer": "decision_and_deployment_packet",
+  "max_parallel_agents": 3,
+  "mandatory_outputs": [
+    "stakeholder_objective",
+    "data_governance",
+    "decision_policy",
+    "monitoring_plan",
+    "rebuild_triggers"
+  ],
+  "human_checkpoints": [
+    "objective_or_utility_change",
+    "new_external_data_authorization",
+    "deployment_or_external_write"
+  ],
+  "report_sections": [
+    "Decision Context",
+    "Data Contract",
+    "Model",
+    "Validation",
+    "Action",
+    "Monitoring"
+  ],
+  "quality_dimensions": [
+    "decision_utility",
+    "operational_feasibility",
+    "data_governance",
+    "monitorability"
+  ],
+  "min_figures": 0,
+  "min_external_references": 0,
+  "format_spec": null,
+  "robustness_degradation_threshold": null,
+  "required_sections": [
+    "Decision Context",
+    "Data Contract",
+    "Model",
+    "Validation",
+    "Action",
+    "Monitoring"
+  ]
+}
