@@ -10,7 +10,12 @@ from .evidence import EvidenceGraph
 from .method_packs import MethodPackRegistry
 from .problem_graph import ProblemGraph
 from .profiles import ProfileService
-from .review_store import latest_review_path, relative_review_path
+from .review_store import (
+    identity_enforced,
+    latest_review_path,
+    relative_review_path,
+    review_identity_errors,
+)
 from .storage import file_lock, read_json
 from .util import now, sha256, write_json
 
@@ -148,6 +153,30 @@ class StageService:
             for evidence_id, (contract, enforce) in result.items()
         ]
 
+    def _stage_artifacts(
+        self,
+        stage: str,
+        required: list[tuple[str, str | None, bool]],
+        nodes: dict,
+    ) -> list[str]:
+        """本阶段独立审核实际在批的工件，用于判定审核者是否就是生成者。"""
+        artifacts = []
+        for node_id, _contract, _enforce in required:
+            artifact = (nodes.get(node_id) or {}).get("artifact")
+            if artifact:
+                artifacts.append(artifact)
+        graph = ProblemGraph(self.project)
+        if graph.exists:
+            for node in graph.nodes.values():
+                if node.get("milestone") != stage or node.get("superseded"):
+                    continue
+                for output in node.get("outputs", []):
+                    evidence_id = output.get("evidence_id")
+                    artifact = (nodes.get(evidence_id) or {}).get("artifact")
+                    if artifact:
+                        artifacts.append(artifact)
+        return sorted(set(artifacts))
+
     def _node_acceptance(
         self, stage: str, *, include_checks: bool = True
     ) -> dict:
@@ -202,6 +231,8 @@ class StageService:
                         f"{item.get('errors', item.get('error', ''))}"
                     )
         reviews = []
+        stage_artifacts = self._stage_artifacts(stage, required, nodes)
+        enforce_reviewer = identity_enforced(self.project)
         for relative in spec["reviews"]:
             path = (
                 latest_review_path(self.project, relative)
@@ -217,8 +248,19 @@ class StageService:
             except ValueError as exc:
                 errors.append(str(exc))
                 continue
+            stored = relative_review_path(self.project, path)
+            # 硬不变量 5：APPROVE 之外还要问「谁批的」。生成者自签的
+            # APPROVE 不得开门，否则阶段 gate 只是一个 verdict 字符串检查。
+            errors.extend(review_identity_errors(
+                self.project,
+                review,
+                stored,
+                stage_artifacts,
+                label=f"{stage} 阶段独立审核",
+                require_reviewer=enforce_reviewer,
+            ))
             reviews.append({
-                "path": relative_review_path(self.project, path),
+                "path": stored,
                 "sha256": sha256(path),
             })
         checks = [run_check(self.project, raw) for raw in spec["checks"]]

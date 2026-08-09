@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "role": "paper-verifier",
+  "reviewer": "builder-01",
+  "verdict": "REJECT",
+  "findings": [
+    "F1 终审谱系起点：工作稿尚未经独立审核，占位为拒绝"
+  ],
+  "required_fixes": [
+    "RF1 由未参与产出的 worker 出具 APPROVE 终审后方可渲染成稿"
+  ],
+  "artifact_hashes": {}
+}

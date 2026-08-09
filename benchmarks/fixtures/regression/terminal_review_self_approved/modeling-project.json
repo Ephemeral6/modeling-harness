@@ -1,0 +1,7 @@
+{
+  "schema": 4,
+  "title": "terminal review self approved regression",
+  "harness": "modeling-harness/4.7",
+  "engine": "codex",
+  "status": "active"
+}

@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "source": "src/solver.py",
+  "mix": {"powder_a": 0.42, "powder_b": 0.35, "powder_c": 0.23},
+  "objective": 18.7
+}

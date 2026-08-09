@@ -1,0 +1,44 @@
+{
+  "s0": {
+    "name": "问题定义",
+    "requires": ["result.nominal"],
+    "reviews": ["reviews/s0_referee.json"],
+    "checks": []
+  },
+  "s1": {
+    "name": "模型构建",
+    "requires": [],
+    "reviews": [],
+    "checks": []
+  },
+  "s2": {
+    "name": "数据与参数",
+    "requires": [],
+    "reviews": [],
+    "checks": []
+  },
+  "s3": {
+    "name": "求解与验证",
+    "requires": [],
+    "reviews": [],
+    "checks": []
+  },
+  "s4": {
+    "name": "不确定性",
+    "requires": [],
+    "reviews": [],
+    "checks": []
+  },
+  "s5": {
+    "name": "决策分析",
+    "requires": [],
+    "reviews": [],
+    "checks": []
+  },
+  "s6": {
+    "name": "交付",
+    "requires": [],
+    "reviews": ["reviews/s6_paper_audit.json"],
+    "checks": []
+  }
+}

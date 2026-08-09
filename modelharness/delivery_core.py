@@ -7,7 +7,13 @@ from .claims import audit_claims
 from .contracts import safe_relative, validate_review
 from .lifecycle import set_status
 from .paper_content import audit_paper_content
-from .review_store import relative_review_path, review_candidates
+from .review_store import (
+    has_independent_review_task,
+    identity_enforced,
+    relative_review_path,
+    review_candidates,
+    review_identity_errors,
+)
 from .sanitize import INTERNAL_ARTIFACTS, sanitize_report
 from .stages import StageService
 from .storage import atomic_write_json, read_json
@@ -39,6 +45,33 @@ def resolve_latest_review(
         "record": record,
         "sha256": sha256(path),
     }
+
+
+def terminal_identity_errors(
+    root: Path, resolved: dict, draft: str = "paper/draft.md"
+) -> list[str]:
+    """硬不变量 5 在交付终审的落点：终审不得由产物生成者出具。
+
+    审核范围取「当前工作稿」并上该审核 ``artifact_hashes`` 声明覆盖的全部
+    工件——reviewer 只要生产过其中任何一件，这份 APPROVE 就是自批。
+    """
+    root = Path(root).resolve()
+    record = resolved["record"]
+    artifacts = [draft, *record.get("artifact_hashes", {})]
+    return review_identity_errors(
+        root,
+        record,
+        resolved["path"],
+        artifacts,
+        label="交付终审",
+        require_reviewer=identity_enforced(root),
+        # 竞赛 profile 且项目确实在用工作流登记独立审核时，终审必须绑定
+        # 一个真实的 independent_review 任务；未启用工作流的历史项目
+        # （夹具、4.6 之前的 run）不因此塌陷。
+        require_review_task=(
+            identity_enforced(root) and has_independent_review_task(root)
+        ),
+    )
 
 
 def require_terminal_approval(
@@ -74,6 +107,9 @@ def require_terminal_approval(
             f"哈希与当前稿不一致（审核 {reviewed}，当前 {current}），"
             "陈旧批准不放行"
         )
+    identity = terminal_identity_errors(root, resolved, draft)
+    if identity:
+        raise ValueError("交付门禁: 终审身份校验失败:\n" + "\n".join(identity))
     return resolved
 
 
